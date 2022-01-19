@@ -1,6 +1,7 @@
 from pyteal import *
 
-staking_token_address = App.globalGet("staking_token_address")
+staking_token_address = App.globalGet(Bytes("staking_token_address"))
+print(staking_token_address.type_of())
 
 is_tipper = Txn.sender() == App.globalGet(Bytes("tipper"))
 
@@ -18,10 +19,9 @@ def create():
         - hardcode stake amount
         '''
         return Seq([
-
             App.globalPut(Bytes("tipper"), Txn.sender()),
             #TODO assert application args length is correct
-            Assert(Txn.application_args.length() == 3),
+            Assert(Txn.application_args.length() == Int(3)),
             App.globalPut(Bytes("governance_address"), Txn.application_args[0]),
             App.globalPut(Bytes("staking_token_address"), Txn.application_args[1]),
             App.globalPut(Bytes("stake_amount"), Txn.application_args[2]),
@@ -37,7 +37,7 @@ def stake():
             InnerTxnBuilder.SetFields({
                 TxnField.type_enum: TxnType.AssetTransfer,
                 TxnField.xfer_asset: staking_token_address,
-                TxnField.asset_amount: 100,
+                TxnField.asset_amount: Int(100),
                 TxnField.asset_receiver: Global.current_application_address()
             }),
             InnerTxnBuilder.Submit(),
@@ -59,16 +59,16 @@ def report():
     '''
     return Seq([
         Assert(
-            App.globalGet("currently_staked") == Int(1),
-            App.globalGet("query_id") == Txn.application_args()[1],
+            App.globalGet(Bytes("currently_staked")) == Int(1),
+            App.globalGet(Bytes("query_id")) == Txn.application_args[1],
             AssetHolding.balance(
                 Txn.sender(),
-                staking_token_address
+                staking_token_address #TODO how to check balance of ASA at the staking token address?
             ) >= App.globalGet(Bytes("stake_amount"))
         ),
-        App.globalPut(Bytes("query_id"), Txn.application_args()[1]),
-        App.globalPut(Bytes("query_data"), Txn.application_args()[2]),
-        App.globalPut(Bytes("value"), Txn.application_args()[3]),
+        App.globalPut(Bytes("query_id"), Txn.application_args[1]),
+        App.globalPut(Bytes("query_data"), Txn.application_args[2]),
+        App.globalPut(Bytes("value"), Txn.application_args[3]),
         Approve(),
     ])
 
