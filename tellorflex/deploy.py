@@ -87,12 +87,12 @@ def deploy_tellor_flex(
     assert response.applicationIndex is not None and response.applicationIndex > 0
     return response.applicationIndex
 
-def submit_value(client: AlgodClient, appID: int, bidder: Account, bidAmount: int) -> None:
+def stake(client: AlgodClient, appID: int, reporter: Account, bidAmount: int) -> None:
     """Place a bid on an active auction.
     Args:
         client: An Algod client.
         appID: The app ID of the auction.
-        bidder: The account providing the bid.
+        reporter: The account staking to report.
         bidAmount: The amount of the bid.
     """
     appAddr = get_application_address(appID)
