@@ -47,10 +47,8 @@ def deploy_tellor_flex(
     """Create a new tellor reporting contract.
     Args:
         client: An algod client.
-        sender: The account that will create the auction application.
-        governance_address: the account that can vote to change the
-                            properties of the contract
-        stake_amount: the amount of tokens needed to submit a value
+        sender: The account that will request data through the contract
+        governance_address: the account that can vote to dispute reports
         query_id: the ID of the data requested to be put on chain
         query_data: the in-depth specifications of the data requested
     Returns:

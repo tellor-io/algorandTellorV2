@@ -2,7 +2,7 @@
 txn ApplicationID
 int 0
 ==
-bnz main_l21
+bnz main_l23
 txn OnCompletion
 int NoOp
 ==
@@ -29,17 +29,14 @@ byte "curently_staked"
 int 0
 app_global_put
 itxn_begin
-int axfer
+int pay
 itxn_field TypeEnum
-byte "staking_token_address"
-app_global_get
-itxn_field XferAsset
 byte "stake_amount"
 app_global_get
-itxn_field AssetAmount
+itxn_field Amount
 byte "reporter_address"
 app_global_get
-itxn_field AssetReceiver
+itxn_field Receiver
 itxn_submit
 int 1
 return
@@ -56,22 +53,17 @@ app_global_get
 ==
 return
 main_l10:
-itxn_begin
-int axfer
-itxn_field TypeEnum
-byte "staking_token_address"
+gtxn 0 Sender
+balance
+byte "stake_amount"
 app_global_get
-itxn_field XferAsset
-int 100
-itxn_field AssetAmount
-global CurrentApplicationAddress
-itxn_field AssetReceiver
-itxn_submit
-byte "reporter_address"
-txn Sender
-app_global_put
+>
+assert
 byte "currently_staked"
 int 1
+app_global_put
+byte "reporter_address"
+gtxn 0 Sender
 app_global_put
 int 1
 return
@@ -79,13 +71,38 @@ main_l11:
 txna ApplicationArgs 0
 byte "report"
 ==
-bnz main_l20
+bnz main_l22
 txna ApplicationArgs 0
 byte "vote"
 ==
-bnz main_l14
+bnz main_l16
+txna ApplicationArgs 0
+byte "withdraw"
+==
+bnz main_l15
 err
-main_l14:
+main_l15:
+byte "currently_staked"
+app_global_get
+int 1
+==
+assert
+byte "currently_staked"
+int 0
+app_global_put
+itxn_begin
+int pay
+itxn_field TypeEnum
+byte "stake_amount"
+app_global_get
+itxn_field Amount
+byte "reporter_address"
+app_global_get
+itxn_field Receiver
+itxn_submit
+int 1
+return
+main_l16:
 txn Sender
 byte "tipper"
 app_global_get
@@ -95,48 +112,39 @@ txna ApplicationArgs 1
 btoi
 int 1
 ==
-bnz main_l19
+bnz main_l21
 txna ApplicationArgs 1
 btoi
 int 0
 ==
-bnz main_l17
+bnz main_l19
 err
-main_l17:
+main_l19:
 itxn_begin
-int axfer
+int pay
 itxn_field TypeEnum
-byte "staking_token_address"
-app_global_get
-itxn_field XferAsset
 byte "stake_amount"
 app_global_get
-itxn_field AssetAmount
-global CurrentApplicationAddress
-itxn_field AssetReceiver
+itxn_field Amount
+byte "governance_address"
+app_global_get
+itxn_field Receiver
 itxn_submit
 byte "currently_staked"
 int 1
 app_global_put
-main_l18:
+main_l20:
 int 1
 return
-main_l19:
-itxn_begin
-int axfer
-itxn_field TypeEnum
-byte "staking_token_address"
+main_l21:
+byte "num_reports"
+byte "num_reports"
 app_global_get
-itxn_field XferAsset
-byte "stake_amount"
-app_global_get
-itxn_field AssetAmount
-byte "governance_address"
-app_global_get
-itxn_field AssetReceiver
-itxn_submit
-b main_l18
-main_l20:
+int 1
++
+app_global_put
+b main_l20
+main_l22:
 byte "currently_staked"
 app_global_get
 int 1
@@ -158,31 +166,31 @@ txna ApplicationArgs 3
 app_global_put
 int 1
 return
-main_l21:
+main_l23:
 byte "tipper"
 txn Sender
 app_global_put
 txn NumAppArgs
-int 5
+int 4
 ==
 assert
 byte "governance_address"
 txna ApplicationArgs 0
 app_global_put
-byte "staking_token_id"
+byte "query_id"
 txna ApplicationArgs 1
 app_global_put
-byte "stake_amount"
+byte "query_data"
 txna ApplicationArgs 2
 app_global_put
-byte "query_id"
-txna ApplicationArgs 3
-app_global_put
-byte "query_data"
-txna ApplicationArgs 4
-app_global_put
-byte "currently_staked"
+byte "staking_status"
 int 0
+app_global_put
+byte "num_reports"
+int 0
+app_global_put
+byte "stake_amount"
+int 18050000
 app_global_put
 int 1
 return

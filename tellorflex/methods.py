@@ -4,56 +4,51 @@ import pyteal
 staking_token_id = App.globalGet(Bytes("staking_token_id"))
 
 is_tipper = Txn.sender() == App.globalGet(Bytes("tipper"))
+num_reports = Bytes("num_reports")
+stake_amount = Bytes("stake_amount")
+
 
 #TODO dispute statuses
 def create():
         '''
         args:
         0) governance address
-        1) staking-token address
-        2) stake amount
-        3) query id
-        4) query data
+        1) query id
+        2) query data
 
         maybe...:
         - add expiration
-        - hardcode stake amount
         '''
         return Seq([
             App.globalPut(Bytes("tipper"), Txn.sender()),
             #TODO assert application args length is correct
-            Assert(Txn.application_args.length() == Int(5)),
+            Assert(Txn.application_args.length() == Int(4)),
             App.globalPut(Bytes("governance_address"), Txn.application_args[0]),
-            App.globalPut(Bytes("staking_asset_id"), Txn.application_args[1]), #TODO rename to asset id
-            App.globalPut(Bytes("stake_amount"), Txn.application_args[2]),
-            App.globalPut(Bytes("query_id"), Txn.application_args[3]),
-            App.globalPut(Bytes("query_data"), Txn.application_args[4]), #TODO perhaps parse from ipfs
-            # 0-not Staked, 1=Staked, 2=LockedForWithdraw 3= OnDispute 4=ReadyForUnlocking 5=Unlocked
+            App.globalPut(Bytes("query_id"), Txn.application_args[1]),
+            App.globalPut(Bytes("query_data"), Txn.application_args[2]), #TODO perhaps parse from ipfs
+            # 0-not Staked, 1=Staked
             App.globalPut(Bytes("staking_status"), Int(0)),
+            App.globalPut(num_reports, Int(0)),
+            App.globalPut(stake_amount, Int(int(190 * 0.95 * 100000))), # 200 dollars of ALGO
             Approve(),
         ])
 
 def stake():
-        #TODO send ASA funds to contract in separate transaction
 
-        reporter_staking_asset_balance = AssetHolding.balance(
-            Txn.sender(),
-            staking_token_id
+        reporter_address = Gtxn[0].sender()
+
+        reporter_algo_balance = Balance(
+            reporter_address
         )
 
+        #TODO two part Gtxn: 1) send token to contract, 2) stake
         return Seq([
             Assert(
-                And(
-                    #TODO fail if not empty (solved below)
-                    App.globalGet(Bytes("reporter_address")).type_of() == pyteal.TealType.none,
-                    reporter_staking_asset_balance.hasValue(),
-                    reporter_staking_asset_balance.value() > App.globalGet("stake_amount"),
-                )
+                reporter_algo_balance > App.globalGet(stake_amount),
             ),
-            App.globalPut(Bytes("reporter_address"), Txn.sender()),
             App.globalPut(Bytes("currently_staked"), Int(1)),
+            App.globalPut(Bytes("reporter_address"), reporter_address),
             Approve(),
-            
         ])
 
 def report():
@@ -81,6 +76,7 @@ def report():
     ])
 
 def withdraw():
+    #TODO finish withdraw
     '''
     corresponds to withdrawStake()
 
@@ -91,9 +87,16 @@ def withdraw():
             App.globalGet(Bytes("currently_staked")) == Int(1),
         ),
         #change staking status to unstaked
-        App.globalPut(Bytes("currently_staked")) == Int(0)
+        App.globalPut(Bytes("currently_staked"), Int(0)),
         #send funds back to reporter (the sender) w/ inner tx
-
+        InnerTxnBuilder.Begin(),
+        InnerTxnBuilder.SetFields({
+            TxnField.type_enum: TxnType.Payment,
+            TxnField.amount: App.globalGet(Bytes("stake_amount")),
+            TxnField.receiver: App.globalGet(Bytes("reporter_address"))
+        }),
+        InnerTxnBuilder.Submit(),
+        Approve(),
     ])
 
 def vote():
@@ -106,26 +109,18 @@ def vote():
             return Seq([
                 InnerTxnBuilder.Begin(),
                 InnerTxnBuilder.SetFields({
-                    TxnField.type_enum: TxnType.AssetTransfer,
-                    TxnField.xfer_asset: staking_token_id,
-                    TxnField.asset_amount: App.globalGet(Bytes("stake_amount")),
-                    TxnField.asset_receiver: Global.current_application_address() #TODO can the receive be the contract itself?
+                    TxnField.type_enum: TxnType.Payment,
+                    TxnField.amount: App.globalGet(Bytes("stake_amount")),
+                    TxnField.receiver: App.globalGet(Bytes("governance_address")) #TODO can the receive be the contract itself?
                 }),
                 InnerTxnBuilder.Submit(),
                 App.globalPut(Bytes("currently_staked"), Int(1)),
             ])
 
         def reward_reporter():
-            return Seq([
-            InnerTxnBuilder.Begin(),
-            InnerTxnBuilder.SetFields({
-                TxnField.type_enum: TxnType.AssetTransfer,
-                TxnField.xfer_asset: staking_token_id,
-                TxnField.asset_amount: App.globalGet(Bytes("stake_amount")),
-                TxnField.asset_receiver: App.globalGet(Bytes("governance_address"))
-            }),
-            InnerTxnBuilder.Submit(),
-            ])
+            '''increase reporter's number of recorded reports'''
+            return App.globalPut(num_reports, App.globalGet(num_reports) + Int(1))
+
 
         return Seq([
             Assert(is_tipper),
@@ -150,10 +145,9 @@ def close():
         App.globalPut(Bytes("curently_staked"), Int(0)),
         InnerTxnBuilder.Begin(),
         InnerTxnBuilder.SetFields({
-            TxnField.type_enum: TxnType.AssetTransfer,
-            TxnField.xfer_asset: staking_token_id,
-            TxnField.asset_amount: App.globalGet(Bytes("stake_amount")),
-            TxnField.asset_receiver: App.globalGet(Bytes("reporter_address"))
+            TxnField.type_enum: TxnType.Payment,
+            TxnField.amount: App.globalGet(Bytes("stake_amount")),
+            TxnField.receiver: App.globalGet(Bytes("reporter_address"))
         }),
         InnerTxnBuilder.Submit(),
         Approve()
