@@ -5,11 +5,12 @@ from algosdk.future import transaction
 from algosdk.logic import get_application_address
 from algosdk import account, encoding
 
-from pyteal import compileTeal, Mode
+from pyteal import compileTeal, Mode, Keccak256
 
-from .account import Account
-from .contracts import approval_program, clear_state_program
-from .util import (
+from utils.account import Account
+from tellorflex.contracts import approval_program, clear_state_program
+from utils.helpers import add_standalone_account
+from utils.util import (
     waitForTransaction,
     fullyCompileContract,
     getAppGlobalState,
@@ -40,7 +41,6 @@ def deploy_tellor_flex(
     client: AlgodClient,
     sender: Account,
     governance_address: Account,
-    stake_amount: int,
     query_id: str,
     query_data: str
 ) -> int:
@@ -61,9 +61,8 @@ def deploy_tellor_flex(
 
     app_args = [
         encoding.decode_address(governance_address),
-        stake_amount.to_bytes(8, "big"),
-        query_id.to_bytes(32, "big"),
-        query_data.to_bytes(256, "big"),
+        query_id.encode("utf-8"),
+        query_data.encode("utf-8"),
     ]
 
     txn = transaction.ApplicationCreateTxn(
@@ -171,3 +170,23 @@ def closeAuction(client: AlgodClient, appID: int, closer: Account):
     client.send_transaction(signedDeleteTxn)
 
     waitForTransaction(client, signedDeleteTxn.get_txid())
+
+if __name__ == "__main__":
+    algo_address = "http://localhost:4001"
+    algo_token = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+
+    client = AlgodClient(algod_address=algo_address, algod_token=algo_token)
+
+    # tipper_priv_key, tipper_address = add_standalone_account()
+    tipper_priv_key = "WWLIRBBIPDBTOPJCXWK7GXZMJC7XMTKFTM2RHVIUZFJIMAIKHF7NMHS76M"
+    _, gov_address = add_standalone_account()
+
+    tipper = Account.FromMnemonic("lava side salad unit door frozen clay skate project slogan choose poverty magic arrow pond swing alcohol bachelor witness monkey iron remind team abstract mom")
+
+    deploy_tellor_flex(
+        client=client,
+        sender=tipper,
+        governance_address=gov_address,
+        query_id="hi",
+        query_data="hi",
+    )

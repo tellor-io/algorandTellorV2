@@ -1,5 +1,5 @@
-from helpers import call_sandbox_command
-from helpers import add_standalone_account
+from utils.helpers import call_sandbox_command
+from utils.helpers import add_standalone_account
 
 def setup_module(module):
     """Ensure Algorand Sandbox is up prior to running tests from this module."""
