@@ -40,7 +40,7 @@ def get_contracts(client: AlgodClient) -> Tuple[bytes, bytes]:
 def deploy_tellor_flex(
     client: AlgodClient,
     sender: Account,
-    governance_address: Account,
+    governance_address: str,
     query_id: str,
     query_data: str
 ) -> int:
@@ -64,6 +64,9 @@ def deploy_tellor_flex(
         query_id.encode("utf-8"),
         query_data.encode("utf-8"),
     ]
+
+    print(encoding.decode_address(governance_address))
+    print(governance_address)
 
     txn = transaction.ApplicationCreateTxn(
         sender=sender.getAddress(),

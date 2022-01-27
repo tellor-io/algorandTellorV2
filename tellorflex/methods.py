@@ -22,7 +22,7 @@ def create():
         return Seq([
             App.globalPut(Bytes("tipper"), Txn.sender()),
             #TODO assert application args length is correct
-            Assert(Txn.application_args.length() == Int(4)),
+            Assert(Txn.application_args.length() == Int(3)),
             App.globalPut(Bytes("governance_address"), Txn.application_args[0]),
             App.globalPut(Bytes("query_id"), Txn.application_args[1]),
             App.globalPut(Bytes("query_data"), Txn.application_args[2]), #TODO perhaps parse from ipfs

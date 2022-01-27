@@ -171,7 +171,7 @@ byte "tipper"
 txn Sender
 app_global_put
 txn NumAppArgs
-int 4
+int 3
 ==
 assert
 byte "governance_address"
