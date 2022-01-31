@@ -15,6 +15,8 @@ from algosdk.error import IndexerHTTPError
 from algosdk.future.transaction import LogicSig, LogicSigTransaction, PaymentTxn
 from algosdk.v2client import algod, indexer
 
+from utils.account import Account
+
 INDEXER_TIMEOUT = 10  # 61 for devMode
 
 
@@ -46,7 +48,7 @@ def _sandbox_directory():
     is implied to be the sibling of this Django project in the directory tree.
     """
     return os.environ.get("SANDBOX_DIR") or str(
-        Path(__file__).resolve().parent.parent / "sandbox"
+        Path(__file__).resolve().parent.parent.parent / "sandbox"
     )
 
 
@@ -155,17 +157,17 @@ def suggested_params():
 def add_standalone_account():
     """Create standalone account and return two-tuple of its private key and address."""
     private_key, address = account.generate_account()
-    return private_key, address
+    return Account(privateKey=private_key)
 
 
-def fund_account(address, initial_funds=1000000000):
+def fund_account(address:Account, initial_funds=1000000000):
     """Fund provided `address` with `initial_funds` amount of microAlgos."""
     initial_funds_address = _initial_funds_address()
     if initial_funds_address is None:
         raise Exception("Initial funds weren't transferred!")
     _add_transaction(
         initial_funds_address,
-        address,
+        address.getAddress(),
         _cli_passphrase_for_account(initial_funds_address),
         initial_funds,
         "Initial funds",
