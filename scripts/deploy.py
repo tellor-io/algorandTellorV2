@@ -27,7 +27,8 @@ class Scripts:
         self.client = client
         self.tipper = tipper
         self.reporter = reporter
-        self.governance_address = governance_address.getAddress()
+        # self.governance_address = governance_address.getAddress()
+        self.governance_address = governance_address
 
 
     def get_contracts(self, client: AlgodClient) -> Tuple[bytes, bytes]:
@@ -69,8 +70,10 @@ class Scripts:
 
         app_args = [
             encoding.decode_address(self.governance_address),
-            query_id.encode("utf-8"),
-            query_data.encode("utf-8"),
+            # query_id.encode("utf-8"),
+            # query_data.encode("utf-8"),
+            query_id,
+            query_data,
         ]
 
         txn = transaction.ApplicationCreateTxn(
@@ -92,6 +95,7 @@ class Scripts:
         assert response.applicationIndex is not None and response.applicationIndex > 0
         self.app_id = response.applicationIndex
         self.app_address = get_application_address(self.app_id)
+        return self.app_id
 
     def stake(self) -> None:
         """Place a bid on an active auction.
