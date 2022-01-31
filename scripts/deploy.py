@@ -182,10 +182,14 @@ if __name__ == "__main__":
 
         client = AlgodClient(algod_address=algo_address, algod_token=algo_token)
 
-        gov_address = Account.FromMnemonic("figure adapt crumble always cart twist scatter timber smooth artist gaze raise genre say scissors arena hidden poem mimic worry race burst yard about key")
-        tipper = Account.FromMnemonic("lava side salad unit door frozen clay skate project slogan choose poverty magic arrow pond swing alcohol bachelor witness monkey iron remind team abstract mom")
-        reporter = Account.FromMnemonic("gaze hockey eight fog scrub bind calm scrub change cannon recipe face shield smart member toward turkey pyramid item quote explain witness music ability weapon")
+        gov_address = add_standalone_account()
+        reporter = add_standalone_account()
+        tipper = add_standalone_account()
 
+
+        fund_account(gov_address)
+        fund_account(tipper)
+        fund_account(reporter)
 
         print("gov", gov_address.getAddress())
         print("tipper", tipper.getAddress())
