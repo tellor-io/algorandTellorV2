@@ -6,7 +6,7 @@ from algosdk import encoding
 
 from pyteal import compileTeal, Mode, Expr
 
-from .account import Account
+from algosdk.kmd import KMDClient
 
 
 class PendingTxnResponse:
@@ -113,3 +113,31 @@ def getLastBlockTimestamp(client: AlgodClient) -> Tuple[int, int]:
     timestamp = block["block"]["ts"]
 
     return block, timestamp
+
+
+def get_accounts(kmd_token, kmd_address, kmd_wallet_name, kmd_wallet_password):
+    kmd = KMDClient(kmd_token, kmd_address)
+    wallets = kmd.list_wallets()
+
+    walletID = None
+    for wallet in wallets:
+        if wallet["name"] == kmd_wallet_name:
+            walletID = wallet["id"]
+            break
+
+    if walletID is None:
+        raise Exception("Wallet not found: {}".format(kmd_wallet_name))
+
+    walletHandle = kmd.init_wallet_handle(walletID, kmd_wallet_password)
+
+    try:
+        addresses = kmd.list_keys(walletHandle)
+        privateKeys = [
+            kmd.export_key(walletHandle, kmd_wallet_password, addr)
+            for addr in addresses
+        ]
+        kmdAccounts = [(addresses[i], privateKeys[i]) for i in range(len(privateKeys))]
+    finally:
+        kmd.release_wallet_handle(walletHandle)
+
+    return kmdAccounts
