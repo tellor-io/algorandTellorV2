@@ -30,7 +30,7 @@ def create():
             # 0-not Staked, 1=Staked
             App.globalPut(Bytes("staking_status"), Int(0)),
             App.globalPut(num_reports, Int(0)),
-            App.globalPut(stake_amount, Int(int(190 * 0.95 * 100000))), # 200 dollars of ALGO
+            App.globalPut(stake_amount, Int(180)), # 200 dollars of ALGO
             Approve(),
         ])
 

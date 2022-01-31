@@ -10,7 +10,7 @@ from tellorflex.methods import report
 
 from utils.account import Account
 from tellorflex.contracts import approval_program, clear_state_program
-from utils.helpers import add_standalone_account
+from utils.helpers import add_standalone_account, fund_account
 from utils.util import (
     waitForTransaction,
     fullyCompileContract,
@@ -22,11 +22,12 @@ CLEAR_STATE_PROGRAM = b""
 
 class Scripts:
 
-    def __init__(self, client, tipper, governance_address) -> None:
+    def __init__(self, client, tipper, reporter, governance_address) -> None:
         
         self.client = client
         self.tipper = tipper
-        self.governance_address = governance_address
+        self.reporter = reporter
+        self.governance_address = governance_address.getAddress()
 
 
     def get_contracts(self, client: AlgodClient) -> Tuple[bytes, bytes]:
@@ -63,7 +64,7 @@ class Scripts:
         """
         approval, clear = self.get_contracts(self.client)
 
-        globalSchema = transaction.StateSchema(num_uints=7, num_byte_slices=4)
+        globalSchema = transaction.StateSchema(num_uints=7, num_byte_slices=5)
         localSchema = transaction.StateSchema(num_uints=0, num_byte_slices=0)
 
         app_args = [
@@ -90,8 +91,9 @@ class Scripts:
         response = waitForTransaction(self.client, signedTxn.get_txid())
         assert response.applicationIndex is not None and response.applicationIndex > 0
         self.app_id = response.applicationIndex
+        self.app_address = get_application_address(self.app_id)
 
-    def stake(self, reporter: Account) -> None:
+    def stake(self) -> None:
         """Place a bid on an active auction.
         Args:
             client: An Algod client.
@@ -107,25 +109,27 @@ class Scripts:
         # else:
         #     prevBidLeader = None
 
+        stake_amount = 180*1000000 #200 dollars of ALGO
+
         suggestedParams = self.client.suggested_params()
 
         payTxn = transaction.PaymentTxn(
-            sender=reporter.getAddress(),
-            receiver=appAddr,
+            sender=self.reporter.getAddress(),
+            receiver=self.app_address,
+            amt=stake_amount,
             sp=suggestedParams,
         )
 
-        optInTx = transaction.AssetOptInTxn(
-            sender=reporter.getAddress(),
+        optInTx = transaction.ApplicationOptInTxn(
+            sender=self.reporter.getAddress(),
             index=self.app_id,
-            on_complete=transaction.OnComplete.NoOpOC,
             sp=suggestedParams,
         )
 
         transaction.assign_group_id([payTxn, optInTx])
 
-        signedPayTxn = payTxn.sign(reporter.getPrivateKey())
-        signedAppCallTxn = optInTx.sign(reporter.getPrivateKey())
+        signedPayTxn = payTxn.sign(self.reporter.getPrivateKey())
+        signedAppCallTxn = optInTx.sign(self.reporter.getPrivateKey())
 
         self.client.send_transactions([signedPayTxn, signedAppCallTxn])
 
@@ -171,23 +175,30 @@ class Scripts:
         waitForTransaction(client, signedDeleteTxn.get_txid())
 
 if __name__ == "__main__":
-    algo_address = "http://localhost:4001"
-    algo_token = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 
-    client = AlgodClient(algod_address=algo_address, algod_token=algo_token)
+    def setup():
+        algo_address = "http://localhost:4001"
+        algo_token = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 
-    _, gov_address = add_standalone_account()
+        client = AlgodClient(algod_address=algo_address, algod_token=algo_token)
 
-    tipper = Account.FromMnemonic("lava side salad unit door frozen clay skate project slogan choose poverty magic arrow pond swing alcohol bachelor witness monkey iron remind team abstract mom")
+        gov_address = Account.FromMnemonic("figure adapt crumble always cart twist scatter timber smooth artist gaze raise genre say scissors arena hidden poem mimic worry race burst yard about key")
+        tipper = Account.FromMnemonic("lava side salad unit door frozen clay skate project slogan choose poverty magic arrow pond swing alcohol bachelor witness monkey iron remind team abstract mom")
+        reporter = Account.FromMnemonic("gaze hockey eight fog scrub bind calm scrub change cannon recipe face shield smart member toward turkey pyramid item quote explain witness music ability weapon")
 
-    s = Scripts(client=client, tipper=tipper, governance_address=gov_address)
 
+        print("gov", gov_address.getAddress())
+        print("tipper", tipper.getAddress())
+        print("reporter", reporter.getAddress())
+
+        s = Scripts(client=client, tipper=tipper, reporter=reporter, governance_address=gov_address)
+
+        return s
+
+    s = setup()
     app_id = s.deploy_tellor_flex(
-        client=client,
-        sender=tipper,
-        governance_address=gov_address,
         query_id="hi",
         query_data="hi",
     )
 
-    s.stake(client, appID=app_id, )
+    s.stake()
