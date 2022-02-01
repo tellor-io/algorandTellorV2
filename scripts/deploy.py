@@ -135,6 +135,17 @@ class Scripts:
 
         waitForTransaction(self.client, optInTx.get_txid())
 
+    def report():
+        pass
+    
+    def vote():
+        pass
+
+    def withdraw():
+        pass
+
+    def close():
+        pass
 
     def closeAuction(self, client: AlgodClient, appID: int, closer: Account):
         """Close an auction.
