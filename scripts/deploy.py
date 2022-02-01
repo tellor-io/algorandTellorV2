@@ -27,9 +27,7 @@ class Scripts:
         self.client = client
         self.tipper = tipper
         self.reporter = reporter
-        # self.governance_address = governance_address.getAddress()
-        self.governance_address = governance_address
-
+        self.governance_address = governance_address.getAddress()
 
     def get_contracts(self, client: AlgodClient) -> Tuple[bytes, bytes]:
         """Get the compiled TEAL contracts for the tellor contract.
@@ -70,10 +68,8 @@ class Scripts:
 
         app_args = [
             encoding.decode_address(self.governance_address),
-            # query_id.encode("utf-8"),
-            # query_data.encode("utf-8"),
-            query_id,
-            query_data,
+            query_id.encode("utf-8"),
+            query_data.encode("utf-8"),
         ]
 
         txn = transaction.ApplicationCreateTxn(
@@ -113,7 +109,7 @@ class Scripts:
         # else:
         #     prevBidLeader = None
 
-        stake_amount = 180*1000000 #200 dollars of ALGO
+        stake_amount = 100000 #200 dollars of ALGO
 
         suggestedParams = self.client.suggested_params()
 
