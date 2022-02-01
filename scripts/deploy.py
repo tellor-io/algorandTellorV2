@@ -29,7 +29,6 @@ class Scripts:
         self.reporter = reporter
         self.governance_address = governance_address.getAddress()
 
-
     def get_contracts(self, client: AlgodClient) -> Tuple[bytes, bytes]:
         """Get the compiled TEAL contracts for the tellor contract.
         Args:
@@ -92,6 +91,7 @@ class Scripts:
         assert response.applicationIndex is not None and response.applicationIndex > 0
         self.app_id = response.applicationIndex
         self.app_address = get_application_address(self.app_id)
+        return self.app_id
 
     def stake(self) -> None:
         """Place a bid on an active auction.
@@ -109,7 +109,7 @@ class Scripts:
         # else:
         #     prevBidLeader = None
 
-        stake_amount = 180*1000000 #200 dollars of ALGO
+        stake_amount = 100000 #200 dollars of ALGO
 
         suggestedParams = self.client.suggested_params()
 
