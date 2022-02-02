@@ -4,11 +4,11 @@ import pyteal
 staking_token_id = App.globalGet(Bytes("staking_token_id"))
 
 is_tipper = Txn.sender() == App.globalGet(Bytes("tipper"))
+is_governance = Txn.sender() == App.globalGet(Bytes("governance_address"))
 num_reports = Bytes("num_reports")
 stake_amount = Bytes("stake_amount")
 
 
-#TODO dispute statuses
 
 def create():
         '''
@@ -36,19 +36,26 @@ def create():
 
 def stake():
 
-        reporter_address = Gtxn[0].sender()
+        on_stake_tx_index = Txn.group_index() - Int(1)
 
         reporter_algo_balance = Balance(
-            reporter_address
+            Gtxn[on_stake_tx_index].sender()
         )
 
         #TODO two part Gtxn: 1) send token to contract, 2) stake
         return Seq([
             Assert(
-                reporter_algo_balance > App.globalGet(stake_amount),
+                And(
+                    App.globalGet("reporter_address").type_of() == pyteal.TealType.none,
+                    Gtxn[on_stake_tx_index].sender() == Txn.sender(),
+                    Gtxn[on_stake_tx_index].receiver() == Global.current_application_address(),
+                    Gtxn[on_stake_tx_index].amount() == stake_amount,
+                    Gtxn[on_stake_tx_index].type_enum() == TxnType.Payment,
+                    reporter_algo_balance > App.globalGet(stake_amount),
+                ),
             ),
-            App.globalPut(Bytes("currently_staked"), Int(1)),
-            App.globalPut(Bytes("reporter_address"), reporter_address),
+            App.globalPut(Bytes("staking_status"), Int(1)),
+            App.globalPut(Bytes("reporter_address"), Gtxn[on_stake_tx_index].sender()),
             Approve(),
         ])
 
@@ -83,6 +90,7 @@ def withdraw():
 
     '''
     return Seq([
+        #TODO assert tx.sender is reporter
         #assert the reporter is staked
         Assert(
             App.globalGet(Bytes("currently_staked")) == Int(1),
@@ -115,7 +123,7 @@ def vote():
                     TxnField.receiver: App.globalGet(Bytes("governance_address")) #TODO can the receive be the contract itself?
                 }),
                 InnerTxnBuilder.Submit(),
-                App.globalPut(Bytes("currently_staked"), Int(1)),
+                App.globalPut(Bytes("currently_staked"), Int(0)),
             ])
 
         def reward_reporter():
@@ -124,7 +132,7 @@ def vote():
 
 
         return Seq([
-            Assert(is_tipper),
+            Assert(is_governance),
             Cond(
                 # [Txn.application_args[1].type_of() == TealType.uint64, Reject()],
                 [Btoi(Txn.application_args[1]) == Int(1), reward_reporter()],
