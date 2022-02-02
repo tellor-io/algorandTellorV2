@@ -73,12 +73,11 @@ def report():
         Assert(
             And(
                 #TODO assert that the reporter is tx.sender()
+                App.globalGet(Bytes("reporter_address")) == Txn.sender(),
                 App.globalGet(Bytes("currently_staked")) == Int(1),
                 App.globalGet(Bytes("query_id")) == Txn.application_args[1]
             )
         ),
-        App.globalPut(Bytes("query_id"), Txn.application_args[1]),
-        App.globalPut(Bytes("query_data"), Txn.application_args[2]),
         App.globalPut(Bytes("value"), Txn.application_args[3]),
         Approve(),
     ])
