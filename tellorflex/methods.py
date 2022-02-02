@@ -3,7 +3,6 @@ import pyteal
 
 staking_token_id = App.globalGet(Bytes("staking_token_id"))
 
-is_tipper = Txn.sender() == App.globalGet(Bytes("tipper"))
 is_governance = Txn.sender() == App.globalGet(Bytes("governance_address"))
 num_reports = Bytes("num_reports")
 stake_amount = Bytes("stake_amount")
@@ -66,8 +65,7 @@ def report():
     Txn args:
     0) will always equal "report" (in order to route to this method)
     1) query_id -- the ID of the data requested to be put on chain
-    2) query_data -- the in-depth specifications of the data requested
-    3) value -- the data submitted to the query
+    2) value -- the data submitted to the query
     '''
     return Seq([
         Assert(
@@ -78,7 +76,8 @@ def report():
                 App.globalGet(Bytes("query_id")) == Txn.application_args[1]
             )
         ),
-        App.globalPut(Bytes("value"), Txn.application_args[3]),
+        App.globalPut(Bytes("value"), Txn.application_args[2]),
+        App.globalPut(num_reports, App.globalGet(num_reports) + Int(1)),
         Approve(),
     ])
 
@@ -92,7 +91,10 @@ def withdraw():
         #TODO assert tx.sender is reporter
         #assert the reporter is staked
         Assert(
-            App.globalGet(Bytes("currently_staked")) == Int(1),
+            And(
+                Txn.sender() == App.globalGet("reporter_address"),
+                App.globalGet(Bytes("currently_staked")) == Int(1),
+            )
         ),
         #change staking status to unstaked
         App.globalPut(Bytes("currently_staked"), Int(0)),
@@ -133,7 +135,12 @@ def vote():
         return Seq([
             Assert(is_governance),
             Cond(
-                # [Txn.application_args[1].type_of() == TealType.uint64, Reject()],
+                [Or(
+                    Txn.application_args[1] != Int(0),
+                    Txn.application_args[1] != Int(1)
+                ), 
+                Reject()
+                ],
                 [Btoi(Txn.application_args[1]) == Int(1), reward_reporter()],
                 [Btoi(Txn.application_args[1]) == Int(0), slash_reporter()]
             ),
@@ -143,9 +150,10 @@ def vote():
 def handle_method():
         contract_method = Txn.application_args[0]
         return Cond(
+            [contract_method == Bytes("stake"), stake()],
             [contract_method == Bytes("report"), report()],
             [contract_method == Bytes("vote"), vote()],
-            [contract_method == Bytes("withdraw"), withdraw()]
+            [contract_method == Bytes("withdraw"), withdraw()],
         )
 
 def close():
