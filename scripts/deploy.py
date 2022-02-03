@@ -101,51 +101,102 @@ class Scripts:
             reporter: The account staking to report.
         """
         appAddr = get_application_address(self.app_id)
-        # appGlobalState = getAppGlobalState(client, appID)
+        appGlobalState = getAppGlobalState(self.client, self.app_id)
 
         # if any(appGlobalState[b"bid_account"]):
         #     # if "bid_account" is not the zero address
         #     prevBidLeader = encoding.encode_address(appGlobalState[b"bid_account"])
         # else:
         #     prevBidLeader = None
-
-        stake_amount = 100000 #200 dollars of ALGO
+        '''no longer an optin
+        # add args [b"stake"]'''
+        # stake_amount = 100000 #200 dollars of ALGO
 
         suggestedParams = self.client.suggested_params()
 
         payTxn = transaction.PaymentTxn(
             sender=self.reporter.getAddress(),
             receiver=self.app_address,
-            amt=stake_amount,
+            amt=appGlobalState[b'stake_amount'],
             sp=suggestedParams,
         )
 
-        optInTx = transaction.ApplicationOptInTxn(
+        stakeInTx = transaction.ApplicationNoOpTxn(
             sender=self.reporter.getAddress(),
             index=self.app_id,
-            sp=suggestedParams,
+            on_complete=transaction.OnComplete.NoOpOC,
+            app_args=[b'stake'],
+            sp=self.client.suggested_params()
         )
 
-        transaction.assign_group_id([payTxn, optInTx])
+        transaction.assign_group_id([payTxn, stakeInTx])
 
         signedPayTxn = payTxn.sign(self.reporter.getPrivateKey())
-        signedAppCallTxn = optInTx.sign(self.reporter.getPrivateKey())
+        signedAppCallTxn = stakeInTx.sign(self.reporter.getPrivateKey())
 
         self.client.send_transactions([signedPayTxn, signedAppCallTxn])
 
-        waitForTransaction(self.client, optInTx.get_txid())
+        waitForTransaction(self.client, stakeInTx.get_txid())
 
-    def report():
-        pass
+    def report(self,value: str):
+        value = value.encode('utf-8')
+
+        submitValueTxn = transaction.ApplicationNoOpTxn(
+            sender=self.reporter.getAddress(),
+            index=self.app_id,
+            on_complete=transaction.OnComplete.NoOpOC,
+            app_args=[b'report',value],
+            sp=self.client.suggested_params()
+        )
+
+        signedSubmitValueTxn = submitValueTxn.sign(self.reporter.getPrivateKey())
+        self.client.send_transaction(signedSubmitValueTxn)
+        waitForTransaction(self.client, signedSubmitValueTxn.get_txid())
+
     
-    def vote():
-        pass
+    def vote(self, vote: int):
+        if not(vote == 0 or vote == 1):
+            raise ValueError
 
-    def withdraw():
-        pass
+        txn = transaction.ApplicationNoOpTxn(
+            sender=self.governance_address,
+            index=self.app_id,
+            on_complete=transaction.OnComplete.NoOpOC,
+            app_args=[b'vote',vote],
+            sp=self.client.suggested_params(),
+        )
+        signedTxn = txn.sign(self.governance_address.getPrivateKey())
+        self.client.send_transaction(signedTxn)
+        response = waitForTransaction(self.client, signedTxn.get_txid())
+        
 
-    def close():
-        pass
+    def withdraw(self):
+        appGlobalState = getAppGlobalState(self.client, self.app_id)
+        '''should be a noop txn'''
+        txn = transaction.ApplicationNoOpTxn(
+            sender=self.reporter.getAddress(),
+            index=self.app_id,
+            on_complete=transaction.OnComplete.NoOpOC,
+            app_args=[b'withdraw'],
+            sp=self.client.suggested_params(),
+        )
+        signedTxn = txn.sign(self.app_address.getPrivateKey())
+        self.client.send_transaction(signedTxn)
+        waitForTransaction(self.client, signedTxn.get_txid())
+        assert appGlobalState[b'staking_status'] == 0
+
+    def close(self):
+
+        closeOutTxn = transaction.ApplicationCloseOutTxn(
+            sender=self.governance_address(),
+            index=self.app_id,
+            app_args=['close'],
+            sp=self.client.suggested_params(),
+        )
+        
+        signedcloseOutTxn = closeOutTxn.sign(self.governance_address().getPrivateKey())
+        self.client.send_transaction(signedcloseOutTxn)
+        waitForTransaction(self.client, signedcloseOutTxn.get_txid())
 
     def closeAuction(self, client: AlgodClient, appID: int, closer: Account):
         """Close an auction.
