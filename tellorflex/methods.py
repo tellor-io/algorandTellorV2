@@ -6,6 +6,16 @@ staking_token_id = App.globalGet(Bytes("staking_token_id"))
 is_governance = Txn.sender() == App.globalGet(Bytes("governance_address"))
 num_reports = Bytes("num_reports")
 stake_amount = Bytes("stake_amount")
+governance_address = Bytes("governance_address")
+query_id = Bytes("query_id")
+query_data = Bytes("query_data")
+staking_status = Bytes("staking_status")
+tipper = Bytes("tipper")
+reporter = Bytes("reporter_address")
+currently_staked = Bytes("currently_staked")
+value = Bytes("value")
+
+# currently staked vs staking status???
 
 
 
@@ -20,14 +30,14 @@ def create():
         - add expiration
         '''
         return Seq([
-            App.globalPut(Bytes("tipper"), Txn.sender()),
+            App.globalPut(tipper, Txn.sender()),
             #TODO assert application args length is correct
             Assert(Txn.application_args.length() == Int(3)),
-            App.globalPut(Bytes("governance_address"), Txn.application_args[0]),
-            App.globalPut(Bytes("query_id"), Txn.application_args[1]),
-            App.globalPut(Bytes("query_data"), Txn.application_args[2]), #TODO perhaps parse from ipfs
+            App.globalPut(governance_address, Txn.application_args[0]),
+            App.globalPut(query_id, Txn.application_args[1]),
+            App.globalPut(query_data, Txn.application_args[2]), #TODO perhaps parse from ipfs
             # 0-not Staked, 1=Staked
-            App.globalPut(Bytes("staking_status"), Int(0)),
+            App.globalPut(staking_status, Int(0)),
             App.globalPut(num_reports, Int(0)),
             App.globalPut(stake_amount, Int(100000)), # 200 dollars of ALGO
             Approve(),
@@ -45,16 +55,16 @@ def stake():
         return Seq([
             Assert(
                 And(
-                    App.globalGet("reporter_address").type_of() == pyteal.TealType.none,
+                    App.globalGet(reporter).type_of() == pyteal.TealType.none,
                     Gtxn[on_stake_tx_index].sender() == Txn.sender(),
                     Gtxn[on_stake_tx_index].receiver() == Global.current_application_address(),
-                    Gtxn[on_stake_tx_index].amount() == stake_amount,
+                    Gtxn[on_stake_tx_index].amount() == App.globalGet(stake_amount),
                     Gtxn[on_stake_tx_index].type_enum() == TxnType.Payment,
                     reporter_algo_balance > App.globalGet(stake_amount),
                 ),
             ),
-            App.globalPut(Bytes("staking_status"), Int(1)),
-            App.globalPut(Bytes("reporter_address"), Gtxn[on_stake_tx_index].sender()),
+            App.globalPut(staking_status, Int(1)),
+            App.globalPut(reporter, Gtxn[on_stake_tx_index].sender()),
             Approve(),
         ])
 
@@ -71,12 +81,12 @@ def report():
         Assert(
             And(
                 #TODO assert that the reporter is tx.sender()
-                App.globalGet(Bytes("reporter_address")) == Txn.sender(),
-                App.globalGet(Bytes("currently_staked")) == Int(1),
-                App.globalGet(Bytes("query_id")) == Txn.application_args[1]
+                App.globalGet(reporter) == Txn.sender(),
+                App.globalGet(staking_status) == Int(1),
+                App.globalGet(query_id) == Txn.application_args[1]
             )
         ),
-        App.globalPut(Bytes("value"), Txn.application_args[2]),
+        App.globalPut(value, Txn.application_args[2]),
         App.globalPut(num_reports, App.globalGet(num_reports) + Int(1)),
         Approve(),
     ])
@@ -92,18 +102,18 @@ def withdraw():
         #assert the reporter is staked
         Assert(
             And(
-                Txn.sender() == App.globalGet("reporter_address"),
-                App.globalGet(Bytes("currently_staked")) == Int(1),
+                Txn.sender() == App.globalGet(reporter),
+                App.globalGet(staking_status) == Int(1),
             )
         ),
         #change staking status to unstaked
-        App.globalPut(Bytes("currently_staked"), Int(0)),
+        App.globalPut(staking_status, Int(0)),
         #send funds back to reporter (the sender) w/ inner tx
         InnerTxnBuilder.Begin(),
         InnerTxnBuilder.SetFields({
             TxnField.type_enum: TxnType.Payment,
-            TxnField.amount: App.globalGet(Bytes("stake_amount")),
-            TxnField.receiver: App.globalGet(Bytes("reporter_address"))
+            TxnField.amount: App.globalGet(stake_amount),
+            TxnField.receiver: App.globalGet(reporter)
         }),
         InnerTxnBuilder.Submit(),
         Approve(),
@@ -120,11 +130,11 @@ def vote():
                 InnerTxnBuilder.Begin(),
                 InnerTxnBuilder.SetFields({
                     TxnField.type_enum: TxnType.Payment,
-                    TxnField.amount: App.globalGet(Bytes("stake_amount")),
-                    TxnField.receiver: App.globalGet(Bytes("governance_address")) #TODO can the receive be the contract itself?
+                    TxnField.amount: App.globalGet(stake_amount),
+                    TxnField.receiver: App.globalGet(governance_address) #TODO can the receive be the contract itself?
                 }),
                 InnerTxnBuilder.Submit(),
-                App.globalPut(Bytes("currently_staked"), Int(0)),
+                App.globalPut(staking_status, Int(0)),
             ])
 
         def reward_reporter():
@@ -136,8 +146,8 @@ def vote():
             Assert(is_governance),
             Cond(
                 [Or(
-                    Txn.application_args[1] != Int(0),
-                    Txn.application_args[1] != Int(1)
+                    Btoi(Txn.application_args[1]) != Int(0),
+                    Btoi(Txn.application_args[1]) != Int(1)
                 ), 
                 Reject()
                 ],
@@ -158,12 +168,12 @@ def handle_method():
 
 def close():
     return Seq([
-        App.globalPut(Bytes("curently_staked"), Int(0)),
+        App.globalPut(staking_status, Int(0)),
         InnerTxnBuilder.Begin(),
         InnerTxnBuilder.SetFields({
             TxnField.type_enum: TxnType.Payment,
-            TxnField.amount: App.globalGet(Bytes("stake_amount")),
-            TxnField.receiver: App.globalGet(Bytes("reporter_address"))
+            TxnField.amount: App.globalGet(stake_amount),
+            TxnField.receiver: App.globalGet(reporter)
         }),
         InnerTxnBuilder.Submit(),
         Approve()

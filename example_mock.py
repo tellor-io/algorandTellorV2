@@ -10,7 +10,7 @@ from utils.util import (
     getLastBlockTimestamp,
 )
 from utils.helpers import _algod_client
-from testing.resources import (
+from utils.testing.resources import (
     getTemporaryAccount,
     optInToAsset,
     createDummyAsset,
@@ -18,7 +18,9 @@ from testing.resources import (
 
 def simple_oracle():
     client = _algod_client()
-
+    # client.flat_fee = True
+    # client.fee =1000
+    # print("fee ",client.fee)
     print("Generating temporary accounts...")
     tipper = getTemporaryAccount(client)
     reporter = getTemporaryAccount(client)
