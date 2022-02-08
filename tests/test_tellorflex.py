@@ -27,10 +27,13 @@ def setup_module(module):
     """Ensure Algorand Sandbox is up prior to running tests from this module."""
     call_sandbox_command("up")
 
-client = _algod_client()
-client.flat_fee = True
-client.fee =1000
-print("fee ", client.fee)
+@pytest.fixture
+def client():
+    client = _algod_client()
+    client.flat_fee = True
+    client.fee =1000
+    print("fee ", client.fee)
+    return client
 
 @pytest.fixture(autouse=True)
 def accounts(client):
@@ -84,7 +87,7 @@ def test_stake(client, scripts, accounts, deployed_contract):
 
     scripts.stake()
 
-    fee = client.suggested_params().fee
+    fee = client.fee
 
 
     state = getAppGlobalState(client, deployed_contract.id)
@@ -110,8 +113,5 @@ def test_withdraw():
     pass
 
 def test_vote():
-    pass
-
-def test_close():
     pass
 
