@@ -18,9 +18,9 @@ from utils.testing.resources import (
 
 def simple_oracle():
     client = _algod_client()
-    # client.flat_fee = True
-    # client.fee =1000
-    # print("fee ",client.fee)
+    client.flat_fee = True
+    client.fee =1000
+    print("fee ",client.fee)
     print("Generating temporary accounts...")
     tipper = getTemporaryAccount(client)
     reporter = getTemporaryAccount(client)

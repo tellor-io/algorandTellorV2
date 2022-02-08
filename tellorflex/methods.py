@@ -37,6 +37,7 @@ def create():
             App.globalPut(query_id, Txn.application_args[1]),
             App.globalPut(query_data, Txn.application_args[2]), #TODO perhaps parse from ipfs
             # 0-not Staked, 1=Staked
+            App.globalPut(reporter, Bytes("")),
             App.globalPut(staking_status, Int(0)),
             App.globalPut(num_reports, Int(0)),
             App.globalPut(stake_amount, Int(100000)), # 200 dollars of ALGO
@@ -55,12 +56,11 @@ def stake():
         return Seq([
             Assert(
                 And(
-                    App.globalGet(reporter).type_of() == pyteal.TealType.none,
+                    App.globalGet(reporter) == Bytes(""),
                     Gtxn[on_stake_tx_index].sender() == Txn.sender(),
                     Gtxn[on_stake_tx_index].receiver() == Global.current_application_address(),
                     Gtxn[on_stake_tx_index].amount() == App.globalGet(stake_amount),
                     Gtxn[on_stake_tx_index].type_enum() == TxnType.Payment,
-                    reporter_algo_balance > App.globalGet(stake_amount),
                 ),
             ),
             App.globalPut(staking_status, Int(1)),
@@ -112,8 +112,8 @@ def withdraw():
         InnerTxnBuilder.Begin(),
         InnerTxnBuilder.SetFields({
             TxnField.type_enum: TxnType.Payment,
-            TxnField.amount: App.globalGet(stake_amount),
-            TxnField.receiver: App.globalGet(reporter)
+            # TxnField.amount: App.globalGet(stake_amount),
+            TxnField.close_remainder_to: App.globalGet(reporter)
         }),
         InnerTxnBuilder.Submit(),
         Approve(),
@@ -130,8 +130,8 @@ def vote():
                 InnerTxnBuilder.Begin(),
                 InnerTxnBuilder.SetFields({
                     TxnField.type_enum: TxnType.Payment,
-                    TxnField.amount: App.globalGet(stake_amount),
-                    TxnField.receiver: App.globalGet(governance_address) #TODO can the receive be the contract itself?
+                    # TxnField.amount: App.globalGet(stake_amount),
+                    TxnField.close_remainder_to: App.globalGet(governance_address) #TODO can the receive be the contract itself?
                 }),
                 InnerTxnBuilder.Submit(),
                 App.globalPut(staking_status, Int(0)),
@@ -166,15 +166,15 @@ def handle_method():
             [contract_method == Bytes("withdraw"), withdraw()],
         )
 
-def close():
-    return Seq([
-        App.globalPut(staking_status, Int(0)),
-        InnerTxnBuilder.Begin(),
-        InnerTxnBuilder.SetFields({
-            TxnField.type_enum: TxnType.Payment,
-            TxnField.amount: App.globalGet(stake_amount),
-            TxnField.receiver: App.globalGet(reporter)
-        }),
-        InnerTxnBuilder.Submit(),
-        Approve()
-    ])
+# def close():
+#     return Seq([
+#         App.globalPut(staking_status, Int(0)),
+#         InnerTxnBuilder.Begin(),
+#         InnerTxnBuilder.SetFields({
+#             TxnField.type_enum: TxnType.Payment,
+#             TxnField.amount: App.globalGet(stake_amount),
+#             TxnField.receiver: App.globalGet(reporter)
+#         }),
+#         InnerTxnBuilder.Submit(),
+#         Approve()
+#     ])

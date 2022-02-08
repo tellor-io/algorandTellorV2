@@ -21,7 +21,7 @@ def approval_program():
         [Txn.on_completion() == OnComplete.NoOp, handle_method()],
         [Txn.on_completion() == OnComplete.DeleteApplication, Return(is_governance)],
         [Txn.on_completion() == OnComplete.UpdateApplication, Return(is_governance)],
-        [Txn.on_completion() == OnComplete.CloseOut, close()]
+        # [Txn.on_completion() == OnComplete.CloseOut, close()]
     )
 
     return program
