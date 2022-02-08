@@ -1,9 +1,12 @@
+import os
 from typing import Tuple, List
 
 from algosdk.v2client.algod import AlgodClient
 from algosdk.future import transaction
 from algosdk.logic import get_application_address
 from algosdk import account, encoding
+from dotenv import load_dotenv
+
 
 from pyteal import compileTeal, Mode, Keccak256
 from tellorflex.methods import report
@@ -28,6 +31,8 @@ class Scripts:
         self.tipper = tipper
         self.reporter = reporter
         self.governance_address = governance_address.getAddress()
+
+        self.flat_fee = 2000 #0.002 Algos
 
     def get_contracts(self, client: AlgodClient) -> Tuple[bytes, bytes]:
         """Get the compiled TEAL contracts for the tellor contract.
@@ -124,7 +129,6 @@ class Scripts:
         stakeInTx = transaction.ApplicationNoOpTxn(
             sender=self.reporter.getAddress(),
             index=self.app_id,
-            on_complete=transaction.OnComplete.NoOpOC,
             app_args=[b'stake'],
             sp=self.client.suggested_params()
         )
@@ -144,7 +148,6 @@ class Scripts:
         submitValueTxn = transaction.ApplicationNoOpTxn(
             sender=self.reporter.getAddress(),
             index=self.app_id,
-            on_complete=transaction.OnComplete.NoOpOC,
             app_args=[b'report',value],
             sp=self.client.suggested_params()
         )
@@ -161,7 +164,6 @@ class Scripts:
         txn = transaction.ApplicationNoOpTxn(
             sender=self.governance_address,
             index=self.app_id,
-            on_complete=transaction.OnComplete.NoOpOC,
             app_args=[b'vote',vote],
             sp=self.client.suggested_params(),
         )
@@ -198,60 +200,27 @@ class Scripts:
         self.client.send_transaction(signedcloseOutTxn)
         waitForTransaction(self.client, signedcloseOutTxn.get_txid())
 
-    def closeAuction(self, client: AlgodClient, appID: int, closer: Account):
-        """Close an auction.
-        This action can only happen before an auction has begun, in which case it is
-        cancelled, or after an auction has ended.
-        If called after the auction has ended and the auction was successful, the
-        NFT is transferred to the winning bidder and the auction proceeds are
-        transferred to the seller. If the auction was not successful, the NFT and
-        all funds are transferred to the seller.
-        Args:
-            client: An Algod client.
-            appID: The app ID of the auction.
-            closer: The account initiating the close transaction. This must be
-                either the seller or auction creator if you wish to close the
-                auction before it starts. Otherwise, this can be any account.
-        """
-        appGlobalState = getAppGlobalState(client, appID)
-
-        nftID = appGlobalState[b"nft_id"]
-
-        accounts: List[str] = [encoding.encode_address(appGlobalState[b"seller"])]
-
-        if any(appGlobalState[b"bid_account"]):
-            # if "bid_account" is not the zero address
-            accounts.append(encoding.encode_address(appGlobalState[b"bid_account"]))
-
-        deleteTxn = transaction.ApplicationDeleteTxn(
-            sender=closer.getAddress(),
-            index=appID,
-            accounts=accounts,
-            foreign_assets=[nftID],
-            sp=client.suggested_params(),
-        )
-        signedDeleteTxn = deleteTxn.sign(closer.getPrivateKey())
-
-        client.send_transaction(signedDeleteTxn)
-
-        waitForTransaction(client, signedDeleteTxn.get_txid())
-
 if __name__ == "__main__":
 
-    def setup():
+    def setup(testnet=False):
+
+        load_dotenv()
+
         algo_address = "http://localhost:4001"
         algo_token = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 
         client = AlgodClient(algod_address=algo_address, algod_token=algo_token)
 
-        gov_address = add_standalone_account()
-        reporter = add_standalone_account()
-        tipper = add_standalone_account()
+        tipper = Account.FromMnemonic(os.getenv("MNEMONIC"))
 
+        if testnet == False:
+            gov_address = add_standalone_account()
+            reporter = add_standalone_account()
+            tipper = add_standalone_account()            
 
-        fund_account(gov_address)
-        fund_account(tipper)
-        fund_account(reporter)
+            fund_account(gov_address)
+            fund_account(tipper)
+            fund_account(reporter)
 
         print("gov", gov_address.getAddress())
         print("tipper", tipper.getAddress())
@@ -261,10 +230,12 @@ if __name__ == "__main__":
 
         return s
 
-    s = setup()
+    s = setup(testnet=False)
     app_id = s.deploy_tellor_flex(
         query_id="hi",
         query_data="hi",
     )
+
+    print("App deployed. App id: ", app_id)
 
     s.stake()
