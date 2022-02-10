@@ -10,7 +10,7 @@ from algosdk import account, encoding
 from algosdk.logic import get_application_address
 
 from tellorflex.methods import create, stake, vote, report, withdraw
-from scripts.deploy import Scripts
+from scripts.scripts import Scripts
 from utils.helpers import _algod_client
 from utils.util import  getBalances, getAppGlobalState, getLastBlockTimestamp
 from utils.testing.resources import getTemporaryAccount, optInToAsset, createDummyAsset

@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from pyteal import Balance
 import pytest
-from scripts.deploy import Scripts
+from scripts.scripts import Scripts
 from utils.helpers import _algod_client, call_sandbox_command
 from utils.helpers import add_standalone_account
 from utils.testing.resources import getTemporaryAccount
@@ -87,16 +87,41 @@ def test_stake(client, scripts, accounts, deployed_contract):
 
     scripts.stake()
 
-    fee = client.fee
-
-
     state = getAppGlobalState(client, deployed_contract.id)
 
     assert state[b'staking_status'] == 1
     assert state[b'reporter_address'] == encoding.decode_address(accounts.reporter.getAddress())
 
     reporter_algo_balance_after = client.account_info(accounts.reporter.getAddress()).get("amount")
-    assert reporter_algo_balance_after == reporter_algo_balance_before - stake_amount - fee
+    assert reporter_algo_balance_after == reporter_algo_balance_before - stake_amount - client.fee*2
+
+def test_report(client, scripts, accounts, deployed_contract):
+
+    scripts.stake()
+
+    state = getAppGlobalState(client, deployed_contract.id)
+    assert state[b'num_reports'] == 0
+
+    query_id = b"1"
+    value = b"the data I put on-chain 1234"
+    scripts.report(query_id, value)
+
+    state = getAppGlobalState(client, deployed_contract.id)
+    assert state[b'num_reports'] == 1
+    assert state[b'value'] == value
+
+    scripts.report(query_id, value)
+
+    state = getAppGlobalState(client, deployed_contract.id)
+    assert state[b'num_reports'] == 2
+    assert state[b'value'] == value
+
+
+def test_withdraw():
+    pass
+
+def test_vote():
+    pass
 
 def test_not_staked_report_attempt(scripts, accounts, deployed_contract):
     '''Accounts should not be permitted to report
@@ -106,12 +131,10 @@ def test_not_staked_report_attempt(scripts, accounts, deployed_contract):
     assert deployed_contract.state[b'reporter_address'] == b''
 
     with pytest.raises(AlgodHTTPError):
-        scripts.report("the data I put on-chain 1234") #expect failure/reversion
+        scripts.report(query_id=b"1", value=b"the data I put on-chain 1234") #expect failure/reversion
 
-
-def test_withdraw():
-    pass
-
-def test_vote():
-    pass
-
+def test_report_wrong_query_id(scripts, deployed_contract):
+    '''Reporter should not be able to report to the wrong
+       query_id. the transaction should revert if they pass in
+       to report() a different query_id than the one specified
+       in the contract by the tipper'''

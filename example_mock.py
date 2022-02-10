@@ -3,7 +3,7 @@ from time import time, sleep
 from algosdk import account, encoding
 from algosdk.logic import get_application_address
 from pyteal import Txn
-from scripts.deploy import Scripts
+from scripts.scripts import Scripts
 from utils.util import (
     getBalances,
     getAppGlobalState,

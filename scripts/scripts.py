@@ -68,7 +68,7 @@ class Scripts:
         """
         approval, clear = self.get_contracts(self.client)
 
-        globalSchema = transaction.StateSchema(num_uints=7, num_byte_slices=5)
+        globalSchema = transaction.StateSchema(num_uints=7, num_byte_slices=6)
         localSchema = transaction.StateSchema(num_uints=0, num_byte_slices=0)
 
         app_args = [
@@ -142,13 +142,13 @@ class Scripts:
 
         waitForTransaction(self.client, stakeInTx.get_txid())
 
-    def report(self,value: str):
-        value = value.encode('utf-8')
+    def report(self,query_id: bytes, value: bytes):
+        # value = value.encode('utf-8')
 
         submitValueTxn = transaction.ApplicationNoOpTxn(
             sender=self.reporter.getAddress(),
             index=self.app_id,
-            app_args=[b'report',value],
+            app_args=[b'report',query_id, value],
             sp=self.client.suggested_params()
         )
 
