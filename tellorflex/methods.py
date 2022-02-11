@@ -86,7 +86,6 @@ def report():
             )
         ),
         App.globalPut(value, Txn.application_args[2]),
-        App.globalPut(num_reports, App.globalGet(num_reports) + Int(1)),
         Approve(),
     ])
 
@@ -144,7 +143,7 @@ def vote():
         return Seq([
             Assert(is_governance),
             Cond(
-                [Or(
+                [And(
                     Btoi(Txn.application_args[1]) != Int(0),
                     Btoi(Txn.application_args[1]) != Int(1)
                 ), 

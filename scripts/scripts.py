@@ -72,7 +72,7 @@ class Scripts:
         localSchema = transaction.StateSchema(num_uints=0, num_byte_slices=0)
 
         app_args = [
-            encoding.decode_address(self.governance_address),
+            encoding.decode_address(self.governance_address.getAddress()),
             query_id.encode("utf-8"),
             query_data.encode("utf-8"),
         ]
@@ -160,19 +160,19 @@ class Scripts:
         waitForTransaction(self.client, signedSubmitValueTxn.get_txid())
 
     
-    def vote(self, vote: int):
-        if not(vote == 0 or vote == 1):
-            raise ValueError
+    def vote(self, gov_vote: int):
+        # if not(vote == 0 or vote == 1):
+        #     raise ValueError
 
         txn = transaction.ApplicationNoOpTxn(
-            sender=self.governance_address,
+            sender=self.governance_address.getAddress(),
             index=self.app_id,
-            app_args=[b'vote',vote],
+            app_args=[b'vote',gov_vote],
             sp=self.client.suggested_params(),
         )
         signedTxn = txn.sign(self.governance_address.getPrivateKey())
         self.client.send_transaction(signedTxn)
-        response = waitForTransaction(self.client, signedTxn.get_txid())
+        waitForTransaction(self.client, signedTxn.get_txid())
         
 
     def withdraw(self):
@@ -181,27 +181,25 @@ class Scripts:
         txn = transaction.ApplicationNoOpTxn(
             sender=self.reporter.getAddress(),
             index=self.app_id,
-            on_complete=transaction.OnComplete.NoOpOC,
             app_args=[b'withdraw'],
             sp=self.client.suggested_params(),
         )
-        signedTxn = txn.sign(self.app_address.getPrivateKey())
+        signedTxn = txn.sign(self.reporter.getPrivateKey())
         self.client.send_transaction(signedTxn)
         waitForTransaction(self.client, signedTxn.get_txid())
-        assert appGlobalState[b'staking_status'] == 0
 
-    def close(self):
+    # def close(self):
 
-        closeOutTxn = transaction.ApplicationCloseOutTxn(
-            sender=self.governance_address(),
-            index=self.app_id,
-            app_args=['close'],
-            sp=self.client.suggested_params(),
-        )
+    #     closeOutTxn = transaction.ApplicationCloseOutTxn(
+    #         sender=self.governance_address(),
+    #         index=self.app_id,
+    #         app_args=['close'],
+    #         sp=self.client.suggested_params(),
+    #     )
         
-        signedcloseOutTxn = closeOutTxn.sign(self.governance_address().getPrivateKey())
-        self.client.send_transaction(signedcloseOutTxn)
-        waitForTransaction(self.client, signedcloseOutTxn.get_txid())
+    #     signedcloseOutTxn = closeOutTxn.sign(self.governance_address().getPrivateKey())
+    #     self.client.send_transaction(signedcloseOutTxn)
+    #     waitForTransaction(self.client, signedcloseOutTxn.get_txid())
 
 if __name__ == "__main__":
 
