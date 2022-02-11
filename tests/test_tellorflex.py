@@ -107,21 +107,53 @@ def test_report(client, scripts, accounts, deployed_contract):
     scripts.report(query_id, value)
 
     state = getAppGlobalState(client, deployed_contract.id)
-    assert state[b'num_reports'] == 1
+    assert state[b'num_reports'] == 0 # number of reports shouldn't change. to avoid spamming governance needs to validate it by voting
     assert state[b'value'] == value
 
     scripts.report(query_id, value)
 
     state = getAppGlobalState(client, deployed_contract.id)
-    assert state[b'num_reports'] == 2
+    assert state[b'num_reports'] == 0
     assert state[b'value'] == value
 
 
-def test_withdraw():
-    pass
+def test_withdraw(client, scripts, accounts, deployed_contract):
+    
+    reporter_algo_balance_before = client.account_info(accounts.reporter.getAddress()).get("amount")
+    state = getAppGlobalState(client, deployed_contract.id)
 
-def test_vote():
-    pass
+    assert state[b'staking_status'] == 0
+
+    scripts.stake()
+    state = getAppGlobalState(client, deployed_contract.id)
+
+    assert state[b'staking_status'] == 1
+
+    tx_fee = 2000
+    scripts.withdraw()
+    state = getAppGlobalState(client, deployed_contract.id)
+
+    reporter_algo_balance_after = client.account_info(accounts.reporter.getAddress()).get("amount")
+    
+    assert state[b'staking_status'] == 0
+    assert reporter_algo_balance_after == reporter_algo_balance_before - tx_fee*2
+
+def test_vote(client, scripts, accounts, deployed_contract):
+    scripts.stake()
+    state = getAppGlobalState(client, deployed_contract.id)
+    num_reports = state[b'num_reports']
+    scripts.vote(1)
+
+    state = getAppGlobalState(client, deployed_contract.id)
+    num_reports+=1 #number of reports increases by 1
+    assert state[b'num_reports'] == num_reports
+    assert state[b'staking_status'] == 1
+
+    scripts.vote(0)
+    state = getAppGlobalState(client, deployed_contract.id)
+    assert state[b'num_reports'] == num_reports #number of reports doesn't increase nor decrease after slashing
+    assert state[b'staking_status'] == 0
+
 
 def test_not_staked_report_attempt(scripts, accounts, deployed_contract):
     '''Accounts should not be permitted to report
@@ -138,3 +170,60 @@ def test_report_wrong_query_id(scripts, deployed_contract):
        query_id. the transaction should revert if they pass in
        to report() a different query_id than the one specified
        in the contract by the tipper'''
+
+def test_second_withdraw_attempt(scripts, client, deployed_contract):
+    '''Shouldn't be able to withdraw stake from contract more than once'''
+    scripts.stake()
+    state = getAppGlobalState(client, deployed_contract.id)
+    assert state[b'staking_status'] == 1
+    
+    scripts.withdraw()
+    
+    with pytest.raises(AlgodHTTPError):
+        scripts.withdraw()
+
+def test_staking_after_withdrawing(scripts, client, deployed_contract):
+    '''contract needs to be redeployed to be open for staking again'''
+    scripts.stake()
+    state = getAppGlobalState(client, deployed_contract.id)
+    assert state[b'staking_status'] == 1
+    
+    scripts.withdraw()
+    with pytest.raises(AlgodHTTPError):
+        scripts.stake() 
+
+def test_reporting_after_withdrawing(scripts, client, deployed_contract):
+    '''Reporter can't report once stake has been withdrawn'''
+
+    scripts.stake()
+    scripts.withdraw()
+    state = getAppGlobalState(client, deployed_contract.id)
+
+    assert state[b'staking_status'] == 0
+    query_id = b"1"
+    value = b"the data I put on-chain 1234"
+    with pytest.raises(AlgodHTTPError):
+        scripts.report(query_id, value)
+
+def test_withdrawing_without_staking(scripts, deployed_contract):
+    '''Shouldn't be able to withdraw without staking'''
+    assert deployed_contract.state[b'staking_status'] == 0
+    assert deployed_contract.state[b'reporter_address'] == b''
+
+    with pytest.raises(AlgodHTTPError):
+        scripts.withdraw()
+
+def test_wrong_vote_input(scripts):
+    '''checks other vote input other than 0 and 1'''
+    with pytest.raises(AlgodHTTPError):
+        scripts.vote(5)
+
+def test_withdraw_after_slashing(scripts, client, deployed_contract):
+    '''Reporter shouldn't be able to withdraw stake after being slashed'''
+    scripts.stake()
+    state = getAppGlobalState(client, deployed_contract.id)
+    assert state[b'staking_status'] == 1
+    scripts.vote(0) #0 means reporter slashed
+    
+    with pytest.raises(AlgodHTTPError):
+        scripts.withdraw()
