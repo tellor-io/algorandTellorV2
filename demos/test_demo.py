@@ -1,12 +1,30 @@
 import pytest
+from utils.accounts import Accounts
+from scripts.scripts import Scripts
+from utils.helpers import _algod_client
 from utils.testing.resources import getTemporaryAccount
 from utils.util import getAppGlobalState
 from algosdk import encoding
 from algosdk.error import AlgodHTTPError
 
-from conftest import *
+def client():
+    client = _algod_client()
+    client.flat_fee = True
+    client.fee =1000
+    return client
 
-def test_demo(client, scripts):
+def accounts(client):
+    return Accounts(client)
+
+def scripts(client, accounts):
+
+    return Scripts(client=client,
+                    tipper=accounts.tipper,
+                    reporter=accounts.reporter,
+                    governance_address=accounts.governance,
+                )
+
+def demo(client, scripts):
 
     print("TELLOR APPLICATION WALKTHROUGH")
 
@@ -65,14 +83,11 @@ def test_demo(client, scripts):
     #governance takes away submission privileges from reporter
     print("governance takes away my stake and right to report")
     scripts.vote(0)
+    print("contract closed!")
 
-    #another reporter reopens feed
-    scripts.reporter = getTemporaryAccount()
-    scripts.stake()
+if __name__ == "__main__":
+    c = client()
+    a = accounts(c)
+    s = scripts(c, a)
 
-    state = getAppGlobalState(client, appID=app_id)
-    reporter = encoding.decode_address(state[b'reporter_address'])
-    print("new reporter address: ", reporter)
-
-
-    scripts.report(query_id=query_id, value=value)
+    demo(c, s)

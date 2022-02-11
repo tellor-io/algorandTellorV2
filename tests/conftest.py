@@ -1,18 +1,10 @@
 import pytest
 from scripts.scripts import Scripts
+from utils.account import Account
 from utils.helpers import _algod_client, call_sandbox_command
 from utils.testing.resources import getTemporaryAccount
 from utils.util import getAppGlobalState
 from algosdk import encoding
-
-
-class Accounts:
-
-    def __init__(self, client) -> None:
-        self.tipper = getTemporaryAccount(client)
-        self.reporter = getTemporaryAccount(client)
-        self.governance = getTemporaryAccount(client)
-        self.bad_actor = getTemporaryAccount(client)
 
 class App:
 
@@ -34,7 +26,7 @@ def client():
 
 @pytest.fixture(autouse=True)
 def accounts(client):
-    return Accounts(client)
+    return Account(client)
 
 @pytest.fixture(autouse=True)
 def scripts(client, accounts):
