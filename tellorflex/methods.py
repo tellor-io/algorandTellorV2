@@ -80,7 +80,6 @@ def report():
     return Seq([
         Assert(
             And(
-                #TODO assert that the reporter is tx.sender()
                 App.globalGet(reporter) == Txn.sender(),
                 App.globalGet(staking_status) == Int(1),
                 App.globalGet(query_id) == Txn.application_args[1]

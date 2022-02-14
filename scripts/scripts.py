@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 
 
 from pyteal import compileTeal, Mode, Keccak256
-from tellorflex.methods import report
+from tellorflex.methods import report, stake
 
 from utils.account import Account
 from tellorflex.contracts import approval_program, clear_state_program
@@ -98,7 +98,7 @@ class Scripts:
         self.app_address = get_application_address(self.app_id)
         return self.app_id
 
-    def stake(self) -> None:
+    def stake(self, stake_amount=None) -> None:
         """Place a bid on an active auction.
         Args:
             client: An Algod client.
@@ -117,12 +117,15 @@ class Scripts:
         # add args [b"stake"]'''
         # stake_amount = 100000 #200 dollars of ALGO
 
+        if stake_amount is None:
+            stake_amount = appGlobalState[b'stake_amount']
+
         suggestedParams = self.client.suggested_params()
 
         payTxn = transaction.PaymentTxn(
             sender=self.reporter.getAddress(),
             receiver=self.app_address,
-            amt=appGlobalState[b'stake_amount'],
+            amt=stake_amount,
             sp=suggestedParams,
         )
 
