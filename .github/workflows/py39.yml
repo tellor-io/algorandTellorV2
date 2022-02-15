@@ -28,7 +28,7 @@ jobs:
       - name: "launch algorand local node"
         run: ./sandbox/sandbox up
       - name: "print ls"
-        rn: ls
+        run: ls
       - uses: "actions/checkout@v2"
       - uses: "actions/setup-python@v2"
         with:
