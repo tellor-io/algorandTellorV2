@@ -1,9 +1,9 @@
 import pytest
-from scripts.scripts import Scripts
-from utils.accounts import Accounts
-from utils.helpers import _algod_client, call_sandbox_command
-from utils.testing.resources import getTemporaryAccount
-from utils.util import getAppGlobalState
+from src.scripts.scripts import Scripts
+from src.utils.accounts import Accounts
+from src.utils.helpers import _algod_client, call_sandbox_command
+from src.utils.testing.resources import getTemporaryAccount
+from src.utils.util import getAppGlobalState
 from algosdk import encoding
 
 class App:
@@ -12,9 +12,9 @@ class App:
         self.id = id
         self.state = state
 
-def setup_module(module):
-    """Ensure Algorand Sandbox is up prior to running tests from this module."""
-    call_sandbox_command("up")
+# def setup_module(module):
+#     """Ensure Algorand Sandbox is up prior to running tests from this module."""
+#     call_sandbox_command("up")
 
 @pytest.fixture
 def client():

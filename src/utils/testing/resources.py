@@ -5,8 +5,8 @@ from algosdk.v2client.algod import AlgodClient
 from algosdk.future import transaction
 from algosdk import account
 
-from utils.account import Account
-from utils.util import PendingTxnResponse, waitForTransaction
+from src.utils.account import Account
+from src.utils.util import PendingTxnResponse, waitForTransaction
 from .setup import getGenesisAccounts
 
 

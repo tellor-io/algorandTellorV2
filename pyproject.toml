@@ -1,0 +1,14 @@
+[build-system]
+requires = [
+    "setuptools >= 56.0",
+    "setuptools_scm >= 2.0.0, <3",
+    "wheel"
+]
+build-backend = "setuptools.build_meta"
+
+# Pytest Live Logs breaks some CliRunner tests.
+#   - https://github.com/pallets/click/issues/2156
+#   - https://github.com/pallets/click/issues/824
+# [tool.pytest.ini_options]
+# log_cli = true
+# log_cli_level = "INFO"

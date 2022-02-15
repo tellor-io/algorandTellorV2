@@ -1,5 +1,5 @@
 import os
-from typing import Tuple, List
+from typing import Tuple
 
 from algosdk.v2client.algod import AlgodClient
 from algosdk.future import transaction
@@ -7,10 +7,10 @@ from algosdk.logic import get_application_address
 from algosdk import encoding
 from dotenv import load_dotenv
 
-from utils.account import Account
-from tellorflex.contracts import approval_program, clear_state_program
-from utils.helpers import add_standalone_account, fund_account
-from utils.util import (
+from src.utils.account import Account
+from src.contracts.contracts import approval_program, clear_state_program
+from src.utils.helpers import add_standalone_account, fund_account
+from src.utils.util import (
     waitForTransaction,
     fullyCompileContract,
     getAppGlobalState,
