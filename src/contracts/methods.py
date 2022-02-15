@@ -15,8 +15,9 @@ reporter = Bytes("reporter_address")
 currently_staked = Bytes("currently_staked")
 value = Bytes("value")
 
-# currently staked vs staking status???
-
+'''
+functions listed in alphabetical order
+'''
 
 
 def create():
@@ -44,29 +45,6 @@ def create():
             Approve(),
         ])
 
-def stake():
-
-        on_stake_tx_index = Txn.group_index() - Int(1)
-
-        reporter_algo_balance = Balance(
-            Gtxn[on_stake_tx_index].sender()
-        )
-
-        #TODO two part Gtxn: 1) send token to contract, 2) stake
-        return Seq([
-            Assert(
-                And(
-                    App.globalGet(reporter) == Bytes(""),
-                    Gtxn[on_stake_tx_index].sender() == Txn.sender(),
-                    Gtxn[on_stake_tx_index].receiver() == Global.current_application_address(),
-                    Gtxn[on_stake_tx_index].amount() == App.globalGet(stake_amount),
-                    Gtxn[on_stake_tx_index].type_enum() == TxnType.Payment,
-                ),
-            ),
-            App.globalPut(staking_status, Int(1)),
-            App.globalPut(reporter, Gtxn[on_stake_tx_index].sender()),
-            Approve(),
-        ])
 
 def report():
     '''
@@ -93,6 +71,9 @@ def withdraw():
     #TODO finish withdraw
     '''
     corresponds to withdrawStake()
+
+    Txn args:
+    0) will always equal "withdraw"
 
     '''
     return Seq([
@@ -155,14 +136,35 @@ def vote():
             Approve(),
         ])
 
+def stake():
+
+        on_stake_tx_index = Txn.group_index() - Int(1)
+
+        #enforced two part Gtxn: 1) send token to contract, 2) stake
+        return Seq([
+            Assert(
+                And(
+                    App.globalGet(reporter) == Bytes(""),
+                    Gtxn[on_stake_tx_index].sender() == Txn.sender(),
+                    Gtxn[on_stake_tx_index].receiver() == Global.current_application_address(),
+                    Gtxn[on_stake_tx_index].amount() == App.globalGet(stake_amount),
+                    Gtxn[on_stake_tx_index].type_enum() == TxnType.Payment,
+                ),
+            ),
+            App.globalPut(staking_status, Int(1)),
+            App.globalPut(reporter, Gtxn[on_stake_tx_index].sender()),
+            Approve(),
+        ])
+
 def handle_method():
-        contract_method = Txn.application_args[0]
-        return Cond(
-            [contract_method == Bytes("stake"), stake()],
-            [contract_method == Bytes("report"), report()],
-            [contract_method == Bytes("vote"), vote()],
-            [contract_method == Bytes("withdraw"), withdraw()],
-        )
+    '''calls the appropriate contract method based on first NoOp transaction arg'''
+    contract_method = Txn.application_args[0]
+    return Cond(
+        [contract_method == Bytes("stake"), stake()],
+        [contract_method == Bytes("report"), report()],
+        [contract_method == Bytes("vote"), vote()],
+        [contract_method == Bytes("withdraw"), withdraw()],
+    )
 
 # def close():
 #     return Seq([
