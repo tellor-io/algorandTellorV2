@@ -4,12 +4,8 @@ from typing import Tuple, List
 from algosdk.v2client.algod import AlgodClient
 from algosdk.future import transaction
 from algosdk.logic import get_application_address
-from algosdk import account, encoding
+from algosdk import encoding
 from dotenv import load_dotenv
-
-
-from pyteal import compileTeal, Mode, Keccak256
-from tellorflex.methods import report, stake
 
 from utils.account import Account
 from tellorflex.contracts import approval_program, clear_state_program

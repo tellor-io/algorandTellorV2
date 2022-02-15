@@ -1,6 +1,6 @@
 import pytest
 from scripts.scripts import Scripts
-from utils.account import Account
+from utils.accounts import Accounts
 from utils.helpers import _algod_client, call_sandbox_command
 from utils.testing.resources import getTemporaryAccount
 from utils.util import getAppGlobalState
@@ -26,7 +26,7 @@ def client():
 
 @pytest.fixture(autouse=True)
 def accounts(client):
-    return Account(client)
+    return Accounts(client)
 
 @pytest.fixture(autouse=True)
 def scripts(client, accounts):
