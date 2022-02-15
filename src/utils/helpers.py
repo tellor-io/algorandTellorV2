@@ -15,7 +15,7 @@ from algosdk.error import IndexerHTTPError
 from algosdk.future.transaction import LogicSig, LogicSigTransaction, PaymentTxn
 from algosdk.v2client import algod, indexer
 
-from utils.account import Account
+from src.utils.account import Account
 
 INDEXER_TIMEOUT = 10  # 61 for devMode
 

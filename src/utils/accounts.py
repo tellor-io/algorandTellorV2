@@ -1,4 +1,4 @@
-from utils.testing.resources import getTemporaryAccount
+from src.utils.testing.resources import getTemporaryAccount
 
 
 class Accounts:
