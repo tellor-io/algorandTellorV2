@@ -1,10 +1,12 @@
 import base64
 
-from algosdk.v2client.algod import AlgodClient
-from algosdk.kmd import KMDClient
 from algosdk import encoding
+from algosdk.kmd import KMDClient
+from algosdk.v2client.algod import AlgodClient
 
-from .setup import getAlgodClient, getKmdClient, getGenesisAccounts
+from .setup import getAlgodClient
+from .setup import getGenesisAccounts
+from .setup import getKmdClient
 
 
 def test_getAlgodClient():
@@ -29,6 +31,4 @@ def test_getGenesisAccounts():
 
     assert len(accounts) == 3
     assert all(encoding.is_valid_address(account.getAddress()) for account in accounts)
-    assert all(
-        len(base64.b64decode(account.getPrivateKey())) == 64 for account in accounts
-    )
+    assert all(len(base64.b64decode(account.getPrivateKey())) == 64 for account in accounts)

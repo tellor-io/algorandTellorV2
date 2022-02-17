@@ -1,9 +1,11 @@
 from pyteal import *
+
 from .methods import *
+
 
 def approval_program():
 
-    '''
+    """
     - tipper creates contract
     - tipper initializes stake amount
     - tipper deploys
@@ -13,8 +15,7 @@ def approval_program():
     - tipper (ideally governance?) approves or rejects report
     - contract sends reward to reporter
     - governance can slash a reporter/report
-    '''
-
+    """
 
     program = Cond(
         [Txn.application_id() == Int(0), create()],
@@ -25,6 +26,7 @@ def approval_program():
     )
 
     return program
+
 
 def clear_state_program():
     return Approve()
