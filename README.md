@@ -5,7 +5,7 @@ TellorFlex adapted for Algorand/AVM
 This repository is maintained by the [Tellor team](https://github.com/orgs/tellor-io/people)
 
 
-## How to Contribute<a name="how2contribute"> </a>  
+## How to Contribute<a name="how2contribute"> </a>
 Join our Discord or Telegram:
 [<img src="./public/telegram.png" width="24" height="24">](https://t.me/tellor)
 [<img src="./public/discord.png" width="24" height="24">](https://discord.gg/g99vE5Hb)

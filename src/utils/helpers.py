@@ -2,7 +2,6 @@
 Module containing helper functions for accessing Algorand blockchain.
 Forked from https://github.com/ipaleka/algorand-contracts-testing
 """
-
 import base64
 import os
 import pty
@@ -10,10 +9,14 @@ import subprocess
 import time
 from pathlib import Path
 
-from algosdk import account, mnemonic
+from algosdk import account
+from algosdk import mnemonic
 from algosdk.error import IndexerHTTPError
-from algosdk.future.transaction import LogicSig, LogicSigTransaction, PaymentTxn
-from algosdk.v2client import algod, indexer
+from algosdk.future.transaction import LogicSig
+from algosdk.future.transaction import LogicSigTransaction
+from algosdk.future.transaction import PaymentTxn
+from algosdk.v2client import algod
+from algosdk.v2client import indexer
 
 from src.utils.account import Account
 
@@ -34,8 +37,7 @@ def _cli_passphrase_for_account(address):
         passphrase = parts[1]
     if passphrase == "":
         raise ValueError(
-            "Can't retrieve passphrase from the address: %s\nOutput: %s"
-            % (address, process.stdout.decode("utf8"))
+            "Can't retrieve passphrase from the address: %s\nOutput: %s" % (address, process.stdout.decode("utf8"))
         )
     return passphrase
 
@@ -47,9 +49,7 @@ def _sandbox_directory():
     environment variable or if it's not set then the location of sandbox directory
     is implied to be the sibling of this Django project in the directory tree.
     """
-    return os.environ.get("SANDBOX_DIR") or str(
-        Path(__file__).resolve().parent.parent.parent / "sandbox"
-    )
+    return os.environ.get("SANDBOX_DIR") or str(Path(__file__).resolve().parent.parent.parent / "sandbox")
 
 
 def _sandbox_executable():
@@ -59,9 +59,7 @@ def _sandbox_executable():
 
 def call_sandbox_command(*args):
     """Call and return sandbox command composed from provided arguments."""
-    return subprocess.run(
-        [_sandbox_executable(), *args], stdin=pty.openpty()[1], capture_output=True
-    )
+    return subprocess.run([_sandbox_executable(), *args], stdin=pty.openpty()[1], capture_output=True)
 
 
 ## CLIENTS
@@ -121,9 +119,7 @@ def _wait_for_confirmation(client, transaction_id, timeout):
             raise Exception("pool error: {}".format(pending_txn["pool-error"]))
         client.status_after_block(current_round)
         current_round += 1
-    raise Exception(
-        "pending tx not found in timeout rounds, timeout value = : {}".format(timeout)
-    )
+    raise Exception("pending tx not found in timeout rounds, timeout value = : {}".format(timeout))
 
 
 def create_payment_transaction(escrow_address, params, receiver, amount):
@@ -160,7 +156,7 @@ def add_standalone_account():
     return Account(privateKey=private_key)
 
 
-def fund_account(address:Account, initial_funds=1000000000):
+def fund_account(address: Account, initial_funds=1000000000):
     """Fund provided `address` with `initial_funds` amount of microAlgos."""
     initial_funds_address = _initial_funds_address()
     if initial_funds_address is None:
@@ -185,8 +181,7 @@ def _initial_funds_address():
         (
             account.get("address")
             for account in _indexer_client().accounts().get("accounts", [{}, {}])
-            if account.get("created-at-round") == 0
-            and account.get("status") == "Offline"  # "Online" for devMode
+            if account.get("created-at-round") == 0 and account.get("status") == "Offline"  # "Online" for devMode
         ),
         None,
     )
@@ -209,9 +204,7 @@ def transaction_info(transaction_id):
             time.sleep(1)
             timeout += 1
     else:
-        raise TimeoutError(
-            "Timeout reached waiting for transaction to be available in indexer"
-        )
+        raise TimeoutError("Timeout reached waiting for transaction to be available in indexer")
 
     return transaction
 

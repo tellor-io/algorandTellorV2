@@ -1,4 +1,5 @@
-from algosdk import account, mnemonic
+from algosdk import account
+from algosdk import mnemonic
 
 
 class Account:

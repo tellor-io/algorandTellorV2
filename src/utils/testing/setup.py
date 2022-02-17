@@ -1,7 +1,8 @@
-from typing import Optional, List
+from typing import List
+from typing import Optional
 
-from algosdk.v2client.algod import AlgodClient
 from algosdk.kmd import KMDClient
+from algosdk.v2client.algod import AlgodClient
 
 from src.utils.account import Account
 
@@ -47,10 +48,7 @@ def getGenesisAccounts() -> List[Account]:
 
         try:
             addresses = kmd.list_keys(walletHandle)
-            privateKeys = [
-                kmd.export_key(walletHandle, KMD_WALLET_PASSWORD, addr)
-                for addr in addresses
-            ]
+            privateKeys = [kmd.export_key(walletHandle, KMD_WALLET_PASSWORD, addr) for addr in addresses]
             kmdAccounts = [Account(sk) for sk in privateKeys]
         finally:
             kmd.release_wallet_handle(walletHandle)

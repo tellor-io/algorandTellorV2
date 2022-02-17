@@ -1,12 +1,16 @@
-from typing import List, Tuple, Dict, Any, Optional, Union
 from base64 import b64decode
-
-from algosdk.v2client.algod import AlgodClient
-from algosdk import encoding
-
-from pyteal import compileTeal, Mode, Expr
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Tuple
+from typing import Union
 
 from algosdk.kmd import KMDClient
+from algosdk.v2client.algod import AlgodClient
+from pyteal import compileTeal
+from pyteal import Expr
+from pyteal import Mode
 
 
 class PendingTxnResponse:
@@ -28,9 +32,7 @@ class PendingTxnResponse:
         self.logs: List[bytes] = [b64decode(l) for l in response.get("logs", [])]
 
 
-def waitForTransaction(
-    client: AlgodClient, txID: str, timeout: int = 10
-) -> PendingTxnResponse:
+def waitForTransaction(client: AlgodClient, txID: str, timeout: int = 10) -> PendingTxnResponse:
     lastStatus = client.status()
     lastRound = lastStatus["last-round"]
     startRound = lastRound
@@ -48,9 +50,7 @@ def waitForTransaction(
 
         lastRound += 1
 
-    raise Exception(
-        "Transaction {} not confirmed after {} rounds".format(txID, timeout)
-    )
+    raise Exception("Transaction {} not confirmed after {} rounds".format(txID, timeout))
 
 
 def fullyCompileContract(client: AlgodClient, contract: Expr) -> bytes:
@@ -82,9 +82,7 @@ def decodeState(stateArray: List[Any]) -> Dict[bytes, Union[int, bytes]]:
     return state
 
 
-def getAppGlobalState(
-    client: AlgodClient, appID: int
-) -> Dict[bytes, Union[int, bytes]]:
+def getAppGlobalState(client: AlgodClient, appID: int) -> Dict[bytes, Union[int, bytes]]:
     appInfo = client.application_info(appID)
     return decodeState(appInfo["params"]["global-state"])
 
@@ -132,10 +130,7 @@ def get_accounts(kmd_token, kmd_address, kmd_wallet_name, kmd_wallet_password):
 
     try:
         addresses = kmd.list_keys(walletHandle)
-        privateKeys = [
-            kmd.export_key(walletHandle, kmd_wallet_password, addr)
-            for addr in addresses
-        ]
+        privateKeys = [kmd.export_key(walletHandle, kmd_wallet_password, addr) for addr in addresses]
         kmdAccounts = [(addresses[i], privateKeys[i]) for i in range(len(privateKeys))]
     finally:
         kmd.release_wallet_handle(walletHandle)

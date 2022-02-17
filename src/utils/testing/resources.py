@@ -1,18 +1,18 @@
+from random import choice
+from random import randint
 from typing import List
-from random import choice, randint
 
-from algosdk.v2client.algod import AlgodClient
-from algosdk.future import transaction
 from algosdk import account
+from algosdk.future import transaction
+from algosdk.v2client.algod import AlgodClient
 
-from src.utils.account import Account
-from src.utils.util import PendingTxnResponse, waitForTransaction
 from .setup import getGenesisAccounts
+from src.utils.account import Account
+from src.utils.util import PendingTxnResponse
+from src.utils.util import waitForTransaction
 
 
-def payAccount(
-    client: AlgodClient, sender: Account, to: str, amount: int
-) -> PendingTxnResponse:
+def payAccount(client: AlgodClient, sender: Account, to: str, amount: int) -> PendingTxnResponse:
     txn = transaction.PaymentTxn(
         sender=sender.getAddress(),
         receiver=to,
@@ -28,9 +28,7 @@ def payAccount(
 FUNDING_AMOUNT = 100_000_000
 
 
-def fundAccount(
-    client: AlgodClient, address: str, amount: int = FUNDING_AMOUNT
-) -> PendingTxnResponse:
+def fundAccount(client: AlgodClient, address: str, amount: int = FUNDING_AMOUNT) -> PendingTxnResponse:
     fundingAccount = choice(getGenesisAccounts())
     return payAccount(client, fundingAccount, address, amount)
 
@@ -61,10 +59,7 @@ def getTemporaryAccount(client: AlgodClient) -> Account:
             )
 
         txns = transaction.assign_group_id(txns)
-        signedTxns = [
-            txn.sign(genesisAccounts[i % len(genesisAccounts)].getPrivateKey())
-            for i, txn in enumerate(txns)
-        ]
+        signedTxns = [txn.sign(genesisAccounts[i % len(genesisAccounts)].getPrivateKey()) for i, txn in enumerate(txns)]
 
         client.send_transactions(signedTxns)
 
@@ -73,9 +68,7 @@ def getTemporaryAccount(client: AlgodClient) -> Account:
     return accountList.pop()
 
 
-def optInToAsset(
-    client: AlgodClient, assetID: int, account: Account
-) -> PendingTxnResponse:
+def optInToAsset(client: AlgodClient, assetID: int, account: Account) -> PendingTxnResponse:
     txn = transaction.AssetOptInTxn(
         sender=account.getAddress(),
         index=assetID,
