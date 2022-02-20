@@ -140,3 +140,7 @@ def test_withdraw_after_slashing(scripts, client, deployed_contract):
 
     with pytest.raises(AlgodHTTPError):
         scripts.withdraw()
+
+def test_overflow_in_create(scripts, client):
+    '''Contract deployment should revert if
+     bytes inputs are longer than 128 bytes'''
