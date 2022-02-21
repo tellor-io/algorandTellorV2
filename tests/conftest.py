@@ -69,7 +69,7 @@ def deployed_contract(accounts, client, scripts):
         b"query_id": query_id.encode("utf-8"),
         b"query_data": query_data.encode("utf-8"),
         b"num_reports": 0,
-        b"stake_amount": 100000,
+        b"stake_amount": 200000,
         b"staking_status": 0,
         b"reporter_address": b"",
         b"tipper": encoding.decode_address(accounts.tipper.getAddress()),
