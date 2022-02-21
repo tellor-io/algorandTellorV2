@@ -29,7 +29,7 @@ jobs:
       - name: "pwd"
         run: pwd
       - name: "launch algorand local node"
-        run: ./sandbox/sandbox up
+        run: ./sandbox up
       - uses: "actions/checkout@v2"
       - uses: "actions/setup-python@v2"
         with:
