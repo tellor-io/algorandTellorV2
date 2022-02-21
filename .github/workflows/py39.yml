@@ -24,10 +24,10 @@ jobs:
         with:
           repository: algorand/sandbox
           path: ~/sandbox
-      - name: "launch algorand local node"
-        run: ~/sandbox/sandbox up
       - name: "print ls"
         run: ls
+      - name: "launch algorand local node"
+        run: ~/sandbox/sandbox up
       - uses: "actions/checkout@v2"
       - uses: "actions/setup-python@v2"
         with:
