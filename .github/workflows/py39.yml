@@ -30,8 +30,8 @@ jobs:
         run: pwd
       - name: "launch algorand local node"
         run: |
-        cd sandbox
-        script -e -c "./sandbox up -v"
+          cd sandbox
+          script -e -c "./sandbox up -v"
       - uses: "actions/checkout@v2"
       - uses: "actions/setup-python@v2"
         with:
