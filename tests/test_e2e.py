@@ -141,6 +141,13 @@ def test_withdraw_after_slashing(scripts, client, deployed_contract):
     with pytest.raises(AlgodHTTPError):
         scripts.withdraw()
 
+
 def test_overflow_in_create(scripts, client):
-    '''Contract deployment should revert if
-     bytes inputs are longer than 128 bytes'''
+    """Contract deployment should revert if
+    bytes inputs are longer than 128 bytes"""
+
+    too_long_query_id = "a" * 129
+    query_data = "my query_id is invalid because it is >128 bytes in length"
+
+    with pytest.raises(AlgodHTTPError):
+        scripts.deploy_tellor_flex(query_id=too_long_query_id, query_data=query_data)

@@ -30,7 +30,7 @@ def test_report(client, scripts, accounts, deployed_contract):
 def test_stake(client, scripts, accounts, deployed_contract):
     """Test stake() method on contract"""
 
-    stake_amount = 100000
+    stake_amount = 200000
 
     reporter_algo_balance_before = client.account_info(accounts.reporter.getAddress()).get("amount")
     state = getAppGlobalState(client, deployed_contract.id)

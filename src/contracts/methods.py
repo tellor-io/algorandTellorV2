@@ -41,7 +41,6 @@ def create():
         [
             App.globalPut(tipper, Txn.sender()),
             # TODO assert application args length is correct
-            Assert(Txn.application_args.length() == Int(3)),
             App.globalPut(governance_address, Txn.application_args[0]),
             App.globalPut(query_id, Txn.application_args[1]),
             App.globalPut(query_data, Txn.application_args[2]),  # TODO perhaps parse from ipfs
@@ -49,7 +48,7 @@ def create():
             App.globalPut(reporter, Bytes("")),
             App.globalPut(staking_status, Int(0)),
             App.globalPut(num_reports, Int(0)),
-            App.globalPut(stake_amount, Int(100000)),  # 200 dollars of ALGO
+            App.globalPut(stake_amount, Int(200000)),  # 200 dollars of ALGO
             Approve(),
         ]
     )
