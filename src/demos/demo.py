@@ -1,18 +1,18 @@
-from scripts.scripts import Scripts
-from utils.accounts import Accounts
-from utils.helpers import _algod_client
-from utils.testing.resources import getTemporaryAccount
-from utils.util import getAppGlobalState
+from src.scripts.scripts import Scripts
+from src.utils.accounts import Accounts
+from src.utils.helpers import _algod_client
+from src.utils.testing.resources import getTemporaryAccount
+from src.utils.util import getAppGlobalState
 
 client = _algod_client()
 accounts = Accounts(client)
-scripts = Scripts(client, accounts.tipper, accounts.reporter, accounts.governance_address)
+scripts = Scripts(client, accounts.tipper, accounts.reporter, accounts.governance)
 
 print("TELLOR APPLICATION WALKTHROUGH")
 
 print("deployment...")
 # deploy contract
-app_id = scripts.deploy_tellor_flex(query_id="1", query_data="this is my description of query_id 1")
+app_id = scripts.deploy_tellor_flex(query_id="btc/usd", query_data="this is my description of query_id `btc/usd")
 
 print("contract deployed! application id: ", app_id)
 
@@ -63,12 +63,12 @@ print("I'm a bad actor and I'm reporting ", query_id, " at", bad_value)
 print("governance takes away my stake and right to report")
 scripts.vote(0)
 
-# another reporter reopens feed
-scripts.reporter = getTemporaryAccount()
-scripts.stake()
+# # another reporter reopens feed
+# scripts.reporter = getTemporaryAccount(client)
+# scripts.stake()
 
-state = getAppGlobalState(client, appID=app_id)
-print("new reporter address: ", state[b"reporter_address"])
+# state = getAppGlobalState(client, appID=app_id)
+# print("new reporter address: ", state[b"reporter_address"])
 
 
-scripts.report(query_id=query_id, value=value)
+# scripts.report(query_id=query_id, value=value)

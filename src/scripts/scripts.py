@@ -227,10 +227,10 @@ if __name__ == "__main__":
         client = AlgodClient(algod_address=algo_address, algod_token=algo_token)
 
         tipper = Account.FromMnemonic(os.getenv("MNEMONIC"))
+        gov_address = add_standalone_account()
+        reporter = add_standalone_account()
 
         if testnet is False:
-            gov_address = add_standalone_account()
-            reporter = add_standalone_account()
             tipper = add_standalone_account()
 
             fund_account(gov_address)
@@ -245,7 +245,7 @@ if __name__ == "__main__":
 
         return s
 
-    s = setup(testnet=False)
+    s = setup(testnet=True)
     app_id = s.deploy_tellor_flex(
         query_id="hi",
         query_data="hi",
@@ -253,4 +253,4 @@ if __name__ == "__main__":
 
     print("App deployed. App id: ", app_id)
 
-    s.stake()
+    # s.stake()
