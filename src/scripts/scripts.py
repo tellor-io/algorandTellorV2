@@ -1,4 +1,5 @@
 import os
+from typing import Optional
 from typing import Tuple
 
 from algosdk import encoding
@@ -32,7 +33,14 @@ class Scripts:
 
     """
 
-    def __init__(self, client: AlgodClient, tipper: Account, reporter: Account, governance_address: Account) -> None:
+    def __init__(
+        self,
+        client: AlgodClient,
+        tipper: Account,
+        reporter: Account,
+        governance_address: Account,
+        app_id: Optional[int] = None,
+    ) -> None:
         """
         - connects to algorand node
         - initializes some dummy accounts used for contract testing
@@ -49,6 +57,9 @@ class Scripts:
         self.tipper = tipper
         self.reporter = reporter
         self.governance_address = governance_address
+        self.app_id = app_id
+        if self.app_id is not None:
+            self.app_address = get_application_address(self.app_id)
 
     def get_contracts(self, client: AlgodClient) -> Tuple[bytes, bytes]:
         """
@@ -247,8 +258,8 @@ if __name__ == "__main__":
 
     s = setup(testnet=True)
     app_id = s.deploy_tellor_flex(
-        query_id="hi",
-        query_data="hi",
+        query_id="BTCUSD",
+        query_data="the spot price of bitcoin in us dollars",
     )
 
     print("App deployed. App id: ", app_id)

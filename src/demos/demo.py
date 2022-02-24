@@ -1,7 +1,6 @@
 from src.scripts.scripts import Scripts
 from src.utils.accounts import Accounts
 from src.utils.helpers import _algod_client
-from src.utils.testing.resources import getTemporaryAccount
 from src.utils.util import getAppGlobalState
 
 client = _algod_client()
