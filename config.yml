@@ -1,0 +1,202 @@
+# default settings for mesosphere_signer
+network: testnet
+error_waittime: 20
+receipt_timeout: 60
+
+#request IDs, their repsective price pairs/feeds/labels, and the networks they're live on
+feeds:
+  ETHDAI:
+    requestId: 1
+    networks:
+      - testnet
+      - mainnet
+  INTUSD:
+    requestId: 2
+    networks:
+      - testnet
+  BTCUSD:
+    requestId: 3
+    networks:
+      - testnet
+  random_int:
+    requestId: 4
+    networks:
+      - testnet
+  MKRUSD:
+    requestId: 5
+    networks:
+      - testnet
+  MATICUSD:
+    requestId: 6
+    networks:
+      - testnet
+  WBTCUSD:
+    requestId: 60
+    networks:
+      - testnet
+
+# price data apis from centralized exchanges
+# a url to get price data and a list of keywords used to parse the received json
+apis:
+  BTCUSD:
+    coinbase:
+      url: https://api.pro.coinbase.com/products/BTC-USD/ticker
+      keywords:
+        - price
+    coingecko:
+      url: https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd
+      keywords:
+        - bitcoin
+        - usd
+    bittrex:
+      url: https://api.bittrex.com/api/v1.1/public/getticker?market=USD-BTC
+      keywords:
+        - result
+        - Last
+    gemini:
+      url: https://api.gemini.com/v1/pubticker/btcusd
+      keywords:
+        - last
+    kraken:
+      url: https://api.kraken.com/0/public/Ticker?pair=TBTCUSD
+      keywords:
+        - result
+        - TBTCUSD
+        - c
+        - 0
+  WBTCUSD:
+    coinbase:
+      url: https://api.pro.coinbase.com/products/WBTC-USD/ticker
+      keywords:
+        - price
+    coingecko:
+      url: https://api.coingecko.com/api/v3/simple/price?ids=wrapped-bitcoin&vs_currencies=usd
+      keywords:
+        - wrapped-bitcoin
+        - usd
+    bittrex:
+      url: https://api.bittrex.com/api/v1.1/public/getticker?market=USDT-WBTC
+      keywords:
+        - result
+        - Last
+    kraken:
+      url: https://api.kraken.com/0/public/Ticker?pair=WBTCUSD
+      keywords:
+        - result
+        - WBTCUSD
+        - c
+        - 0
+  ETHUSD:
+    coinbase:
+      url: https://api.pro.coinbase.com/products/ETH-USD/ticker
+      keywords:
+        - price
+    coingecko:
+      url: https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd
+      keywords:
+        - ethereum
+        - usd
+    bittrex:
+      url: https://api.bittrex.com/api/v1.1/public/getticker?market=USD-ETH
+      keywords:
+        - result
+        - Last
+    gemini:
+      url: https://api.gemini.com/v1/pubticker/ethusd
+      keywords:
+        - last
+    kraken:
+      url: https://api.kraken.com/0/public/Ticker?pair=ETHUSDC
+      keywords:
+        - result
+        - ETHUSDC
+        - c
+        - 0
+  DAIUSD:
+    coinbase:
+      url: https://api.pro.coinbase.com/products/DAI-USD/ticker
+      keywords:
+        - price
+    coingecko:
+      url: https://api.coingecko.com/api/v3/simple/price?ids=dai&vs_currencies=usd
+      keywords:
+        - dai
+        - usd
+    bittrex:
+      url: https://api.bittrex.com/api/v1.1/public/getticker?market=USD-DAI
+      keywords:
+        - result
+        - Last
+    gemini:
+      url: https://api.gemini.com/v1/pubticker/daiusd
+      keywords:
+        - last
+    kraken:
+      url: https://api.kraken.com/0/public/Ticker?pair=DAIUSD
+      keywords:
+        - result
+        - DAIUSD
+        - c
+        - 0
+  MKRUSD:
+    coinbase:
+      url: https://api.pro.coinbase.com/products/MKR-USD/ticker
+      keywords:
+        - price
+    coingecko:
+      url: https://api.coingecko.com/api/v3/simple/price?ids=maker&vs_currencies=usd
+      keywords:
+        - maker
+        - usd
+    bittrex:
+      url: https://api.bittrex.com/api/v1.1/public/getticker?market=USDT-MKR
+      keywords:
+        - result
+        - Last
+    gemini:
+      url: https://api.gemini.com/v1/pubticker/mkrusd
+      keywords:
+        - last
+    kraken:
+      url: https://api.kraken.com/0/public/Ticker?pair=MKRUSD
+      keywords:
+        - result
+        - MKRUSD
+        - c
+        - 0
+  MATICUSD:
+    coinbase:
+      url: https://api.pro.coinbase.com/products/MATIC-USD/ticker
+      keywords:
+        - price
+    coingecko:
+      url: https://api.coingecko.com/api/v3/simple/price?ids=matic-network&vs_currencies=usd
+      keywords:
+        - matic-network
+        - usd
+    bittrex:
+      url: https://api.bittrex.com/api/v1.1/public/getticker?market=USD-MATIC
+      keywords:
+        - result
+        - Last
+    gemini:
+      url: https://api.gemini.com/v1/pubticker/maticusd
+      keywords:
+        - last
+    kraken:
+      url: https://api.kraken.com/0/public/Ticker?pair=MATICUSD
+      keywords:
+        - result
+        - MATICUSD
+        - c
+        - 0
+  INTUSD:
+    coingecko:
+      url: https://api.coingecko.com/api/v3/simple/price?ids=internet-node-token&vs_currencies=usd
+      keywords:
+        - internet-node-token
+        - usd
+
+# tellor contract
+app_id:
+  testnet: 75017040
