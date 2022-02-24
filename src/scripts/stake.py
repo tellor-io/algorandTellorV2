@@ -6,8 +6,8 @@ from dotenv import load_dotenv
 
 from src.scripts.scripts import Scripts
 from src.utils.account import Account
-from src.utils.util import getBalances
 from src.utils.configs import get_configs
+from src.utils.util import getBalances
 
 
 def stake(app_id: int):
@@ -24,6 +24,7 @@ def stake(app_id: int):
 
     s = Scripts(client=client, reporter=reporter, governance_address=None, tipper=None, app_id=app_id)
     s.stake()
+
 
 config = get_configs(sys.argv[1:])
 stake(config.app_id.testnet)

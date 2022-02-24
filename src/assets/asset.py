@@ -1,17 +1,18 @@
-'''
+"""
 Asset class
-'''
+"""
 import time
 from typing import Dict
-from urllib import response
+
 import requests
+
 
 class Asset:
     def __init__(self, query_id, sources: Dict):
-        '''
+        """
         Inputs:
             asset (str): name of asset as represe
-        '''
+        """
         self.query_id = (query_id,)
         self.price = (0,)
         self.string_price = ("0",)
@@ -35,9 +36,7 @@ class Asset:
         final_results = []
 
         if not self.sources:
-            raise ValueError(
-                "Cannot medianize prices with data sources. No APIs added for asset."
-            )
+            raise ValueError("Cannot medianize prices with data sources. No APIs added for asset.")
 
         for source in self.sources.keys():
             price = self.fetch_price_from_sources(self.sources[source])
@@ -63,7 +62,6 @@ class Asset:
 
         # return price (last remaining element of the json)
         return int(float(rsp))
-    
 
     def __str__(self):
         return f"""Asset: {self.name} query_id: {self.query_id} price: {self.price} timestamp: {self.timestamp}"""

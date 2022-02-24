@@ -1,25 +1,22 @@
 import os
 import sys
 from typing import Dict
-from box import Box
+
+from algosdk.v2client.algod import AlgodClient
 from dotenv import load_dotenv
+
 from src.assets.asset import Asset
 from src.scripts.scripts import Scripts
-from algosdk.v2client.algod import AlgodClient
 from src.utils.account import Account
-
-from src.utils.util import getBalances
 from src.utils.configs import get_configs
+from src.utils.util import getBalances
 
 
 def report(app_id: int, query_id: str, sources: Dict):
     load_dotenv()
 
-    #create data feed
-    asset = Asset(
-        query_id=query_id,
-        sources = sources
-    )
+    # create data feed
+    asset = Asset(query_id=query_id, sources=sources)
 
     asset.update_price()
     value = asset.price
@@ -37,6 +34,7 @@ def report(app_id: int, query_id: str, sources: Dict):
     s.report(query_id=query_id, value=value)
     print(f"submitted {value} to query id '{query_id}'")
     # print(f"algo explorer link: {}")
+
 
 config = get_configs(sys.argv[1:])
 print(config.app_id)

@@ -1,7 +1,7 @@
 import argparse
 from typing import List
-import yaml
 
+import yaml
 from box import Box
 
 
@@ -36,7 +36,7 @@ def get_configs(args: List[str]) -> Box:
 
     # overwrite any configs from yaml file also given by user via cli
     for flag, arg in cli_cfg.items():
-        if arg != None:
+        if arg is not None:
             config[flag] = arg[0]
 
     # enable dot notation for accessing configs

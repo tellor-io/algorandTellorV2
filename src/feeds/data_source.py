@@ -1,7 +1,8 @@
-'''DataSource class'''
-
+"""DataSource class"""
 from typing import Dict
+
 import requests
+
 
 class DataSource:
     def __init__(self, query_id, request_url, request_parsers, subgraph=False):
