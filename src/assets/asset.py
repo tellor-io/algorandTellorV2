@@ -31,7 +31,7 @@ class Asset:
 
     def medianize(self):
         """
-        Medianizes price of an asset from a selection of centralized price APIs
+        Medianizes price of an asset from a selection of centralized exchange APIs
         """
         final_results = []
 
@@ -40,7 +40,7 @@ class Asset:
 
         for source in self.sources.keys():
             price = self.fetch_price_from_sources(self.sources[source])
-            final_results.append(price * self.precision)
+            final_results.append(price)
 
         # sort final results
         final_results.sort()
@@ -49,7 +49,7 @@ class Asset:
     def fetch_price_from_sources(self, source: Dict) -> int:
         """
         Fetches price data from centralized public web API endpoints
-        Returns: (str) ticker price from public exchange web APIs
+        Returns: (str) ticker price from public exchange web APIs (decimals rounded down)
         Input: (list of str) public api endpoint with any necessary json parsing keywords
         """
 
