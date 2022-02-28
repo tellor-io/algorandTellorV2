@@ -12,7 +12,7 @@ from src.utils.configs import get_configs
 from src.utils.util import getBalances
 
 
-def report(app_id: int, query_id: str, sources: Dict):
+def report(app_id: int, query_id: str, network: str, sources: Dict):
     load_dotenv()
 
     # create data feed
@@ -25,10 +25,14 @@ def report(app_id: int, query_id: str, sources: Dict):
     algo_token = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 
     client = AlgodClient(algod_address=algo_address, algod_token=algo_token)
+
+    print("current network: ", network)
     reporter = Account.FromMnemonic(os.getenv("REPORTER_MNEMONIC"))
 
     print("reporter address:", reporter.addr)
     print("reporter's microAGLO balance:", getBalances(client, reporter.addr)[0])
+
+    print(f"reporting value '{value}' to query id '{query_id}'")
 
     s = Scripts(client=client, reporter=reporter, governance_address=None, tipper=None, app_id=app_id)
     s.report(query_id=query_id, value=value)
@@ -37,5 +41,6 @@ def report(app_id: int, query_id: str, sources: Dict):
 
 
 config = get_configs(sys.argv[1:])
-print("app id: ", config.app_id.testnet)
-report(config.app_id.testnet, query_id=config.query_id, sources=config.apis[config.query_id])
+print("app id: ", config.app_id[config.network])
+
+report(app_id=config.app_id[config.network], query_id=config.query_id, network=config.network, sources=config.apis[config.query_id])

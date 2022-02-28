@@ -199,4 +199,5 @@ apis:
 
 # tellor contract
 app_id:
+  devnet: 184
   testnet: 75017040
