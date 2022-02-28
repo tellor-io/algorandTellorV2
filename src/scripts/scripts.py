@@ -16,6 +16,7 @@ from src.utils.helpers import fund_account
 from src.utils.util import fullyCompileContract
 from src.utils.util import getAppGlobalState
 from src.utils.util import waitForTransaction
+from src.utils.testing.resources import fundAccount, getTemporaryAccount
 
 APPROVAL_PROGRAM = b""
 CLEAR_STATE_PROGRAM = b""
@@ -218,50 +219,3 @@ class Scripts:
         signedTxn = txn.sign(self.reporter.getPrivateKey())
         self.client.send_transaction(signedTxn)
         waitForTransaction(self.client, signedTxn.get_txid())
-
-
-if __name__ == "__main__":
-    """
-    quick deployment scheme, works on:
-     - local private network
-     - algorand public testnet
-    """
-
-    def setup(testnet=False):
-        """helper function to setup deployment"""
-
-        load_dotenv()
-
-        algo_address = "http://localhost:4001"
-        algo_token = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-
-        client = AlgodClient(algod_address=algo_address, algod_token=algo_token)
-
-        tipper = Account.FromMnemonic(os.getenv("MNEMONIC"))
-        gov_address = add_standalone_account()
-        reporter = add_standalone_account()
-
-        if testnet is False:
-            tipper = add_standalone_account()
-
-            fund_account(gov_address)
-            fund_account(tipper)
-            fund_account(reporter)
-
-        print("gov", gov_address.getAddress())
-        print("tipper", tipper.getAddress())
-        print("reporter", reporter.getAddress())
-
-        s = Scripts(client=client, tipper=tipper, reporter=reporter, governance_address=gov_address)
-
-        return s
-
-    s = setup(testnet=True)
-    app_id = s.deploy_tellor_flex(
-        query_id="BTCUSD",
-        query_data="the spot price of bitcoin in us dollars",
-    )
-
-    print("App deployed. App id: ", app_id)
-
-    # s.stake()
