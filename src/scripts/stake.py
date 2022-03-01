@@ -11,7 +11,6 @@ from src.utils.configs import get_configs
 from src.utils.util import getBalances
 
 
-
 def stake(app_id: Optional[int], network: str):
     load_dotenv()
 
@@ -26,7 +25,7 @@ def stake(app_id: Optional[int], network: str):
     print("staker balance", getBalances(client, reporter.addr))
     print("staking at reporter address: ", reporter.addr)
 
-    s = Scripts(client=client, reporter=reporter, governance_address=None, tipper=None, app_id=app_id) 
+    s = Scripts(client=client, reporter=reporter, governance_address=None, tipper=None, app_id=app_id)
     s.stake()
 
     print(f"account at {reporter.addr} is now a tellor {network} reporter on app id {app_id}")

@@ -43,4 +43,9 @@ def report(app_id: int, query_id: str, network: str, sources: Dict):
 config = get_configs(sys.argv[1:])
 print("app id: ", config.app_id[config.network])
 
-report(app_id=config.app_id[config.network], query_id=config.query_id, network=config.network, sources=config.apis[config.query_id])
+report(
+    app_id=config.app_id[config.network],
+    query_id=config.query_id,
+    network=config.network,
+    sources=config.apis[config.query_id],
+)

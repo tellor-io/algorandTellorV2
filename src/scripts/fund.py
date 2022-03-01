@@ -1,15 +1,17 @@
 import os
+
 from algosdk.v2client.algod import AlgodClient
 from dotenv import load_dotenv
 
 from src.utils.account import Account
 from src.utils.testing.resources import fundAccount
 
+
 def fund_devnet_accounts():
-    '''
+    """
     Funds accounts listed in .env file
     ONLY WORKS ON DEVNET
-    '''
+    """
     load_dotenv()
 
     algo_address = "http://localhost:4001"

@@ -32,12 +32,7 @@ def get_configs(args: List[str]) -> Box:
     )
 
     parser.add_argument(
-        "-qd",
-        "--query-data",
-        nargs=1,
-        required=False,
-        type=str,
-        help="a description of the query_id (max 128 bytes)"
+        "-qd", "--query-data", nargs=1, required=False, type=str, help="a description of the query_id (max 128 bytes)"
     )
 
     # get dict of parsed args

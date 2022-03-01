@@ -1,4 +1,3 @@
-import os
 from typing import Optional
 from typing import Tuple
 
@@ -6,17 +5,13 @@ from algosdk import encoding
 from algosdk.future import transaction
 from algosdk.logic import get_application_address
 from algosdk.v2client.algod import AlgodClient
-from dotenv import load_dotenv
 
 from src.contracts.contracts import approval_program
 from src.contracts.contracts import clear_state_program
 from src.utils.account import Account
-from src.utils.helpers import add_standalone_account
-from src.utils.helpers import fund_account
 from src.utils.util import fullyCompileContract
 from src.utils.util import getAppGlobalState
 from src.utils.util import waitForTransaction
-from src.utils.testing.resources import fundAccount, getTemporaryAccount
 
 APPROVAL_PROGRAM = b""
 CLEAR_STATE_PROGRAM = b""

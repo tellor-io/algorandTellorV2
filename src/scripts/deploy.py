@@ -1,19 +1,20 @@
-'''
+"""
 deployment script for testnet or devnet
-'''
-
+"""
 import os
 import sys
-from dotenv import load_dotenv
-from src.scripts.scripts import Scripts
-from src.utils.account import Account
 
 from algosdk.v2client.algod import AlgodClient
-from src.utils.testing.resources import fundAccount, getTemporaryAccount
+from dotenv import load_dotenv
+
+from src.scripts.scripts import Scripts
+from src.utils.account import Account
 from src.utils.configs import get_configs
+from src.utils.testing.resources import fundAccount
+from src.utils.testing.resources import getTemporaryAccount
 
 
-def deploy(query_id:str, query_data: str, network: str):
+def deploy(query_id: str, query_data: str, network: str):
     """
     quick deployment scheme, works on:
     - local private network
@@ -34,7 +35,7 @@ def deploy(query_id:str, query_data: str, network: str):
         tipper = getTemporaryAccount(client)
         reporter = getTemporaryAccount(client)
         governance = getTemporaryAccount(client)
-        
+
         fundAccount(client, reporter.addr)
         fundAccount(client, reporter.addr)
         fundAccount(client, reporter.addr)
@@ -49,7 +50,8 @@ def deploy(query_id:str, query_data: str, network: str):
     )
 
     print(f"App deployed on {network}. App id: ", app_id)
-    print(f"please update config.yaml with new app_id.")
+    print("please update config.yaml with new app_id.")
+
 
 config = get_configs(sys.argv[1:])
 deploy(query_id=config.query_id, query_data=config.query_data, network=config.network)
