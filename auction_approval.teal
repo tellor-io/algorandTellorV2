@@ -6,163 +6,188 @@ bnz main_l23
 txn OnCompletion
 int NoOp
 ==
-bnz main_l11
-txn OnCompletion
-int OptIn
-==
-bnz main_l10
+bnz main_l7
 txn OnCompletion
 int DeleteApplication
 ==
-bnz main_l9
+bnz main_l6
 txn OnCompletion
 int UpdateApplication
 ==
-bnz main_l8
-txn OnCompletion
-int CloseOut
-==
-bnz main_l7
+bnz main_l5
 err
+main_l5:
+txn Sender
+byte "governance_address"
+app_global_get
+==
+return
+main_l6:
+txn Sender
+byte "governance_address"
+app_global_get
+==
+return
 main_l7:
-byte "curently_staked"
-int 0
-app_global_put
-itxn_begin
-int pay
-itxn_field TypeEnum
-byte "stake_amount"
-app_global_get
-itxn_field Amount
-byte "reporter_address"
-app_global_get
-itxn_field Receiver
-itxn_submit
-int 1
-return
-main_l8:
-txn Sender
-byte "tipper"
-app_global_get
-==
-return
-main_l9:
-txn Sender
-byte "tipper"
-app_global_get
-==
-return
-main_l10:
-gtxn 0 Sender
-balance
-byte "stake_amount"
-app_global_get
->
-assert
-byte "currently_staked"
-int 1
-app_global_put
-byte "reporter_address"
-gtxn 0 Sender
-app_global_put
-int 1
-return
-main_l11:
 txna ApplicationArgs 0
-byte "report"
+byte "stake"
 ==
 bnz main_l22
 txna ApplicationArgs 0
+byte "report"
+==
+bnz main_l21
+txna ApplicationArgs 0
 byte "vote"
 ==
-bnz main_l16
+bnz main_l13
 txna ApplicationArgs 0
 byte "withdraw"
 ==
-bnz main_l15
+bnz main_l12
 err
-main_l15:
-byte "currently_staked"
-app_global_get
-int 1
-==
-assert
-byte "currently_staked"
-int 0
-app_global_put
-itxn_begin
-int pay
-itxn_field TypeEnum
-byte "stake_amount"
-app_global_get
-itxn_field Amount
+main_l12:
+txn Sender
 byte "reporter_address"
 app_global_get
-itxn_field Receiver
+==
+byte "staking_status"
+app_global_get
+int 1
+==
+&&
+assert
+byte "staking_status"
+int 0
+app_global_put
+itxn_begin
+int pay
+itxn_field TypeEnum
+byte "reporter_address"
+app_global_get
+itxn_field CloseRemainderTo
 itxn_submit
 int 1
 return
-main_l16:
+main_l13:
 txn Sender
-byte "tipper"
+byte "governance_address"
 app_global_get
 ==
 assert
 txna ApplicationArgs 1
 btoi
+int 0
+!=
+txna ApplicationArgs 1
+btoi
+int 1
+!=
+&&
+bnz main_l20
+txna ApplicationArgs 1
+btoi
 int 1
 ==
-bnz main_l21
+bnz main_l19
 txna ApplicationArgs 1
 btoi
 int 0
 ==
-bnz main_l19
+bnz main_l17
 err
-main_l19:
+main_l17:
 itxn_begin
 int pay
 itxn_field TypeEnum
-byte "stake_amount"
-app_global_get
-itxn_field Amount
 byte "governance_address"
 app_global_get
-itxn_field Receiver
+itxn_field CloseRemainderTo
 itxn_submit
-byte "currently_staked"
-int 1
+byte "staking_status"
+int 0
 app_global_put
-main_l20:
+main_l18:
 int 1
 return
-main_l21:
+main_l19:
 byte "num_reports"
 byte "num_reports"
 app_global_get
 int 1
 +
 app_global_put
-b main_l20
-main_l22:
-byte "currently_staked"
+b main_l18
+main_l20:
+int 0
+return
+main_l21:
+byte "reporter_address"
+app_global_get
+txn Sender
+==
+byte "staking_status"
 app_global_get
 int 1
 ==
+&&
 byte "query_id"
 app_global_get
 txna ApplicationArgs 1
 ==
 &&
 assert
-byte "query_id"
-txna ApplicationArgs 1
-app_global_put
-byte "query_data"
+byte "value"
 txna ApplicationArgs 2
 app_global_put
-byte "value"
-txna ApplicationArgs 3
+byte "timestamp"
+int 1646751609
+app_global_put
+int 1
+return
+main_l22:
+byte "reporter_address"
+app_global_get
+byte ""
+==
+txn GroupIndex
+int 1
+-
+gtxns Sender
+txn Sender
+==
+&&
+txn GroupIndex
+int 1
+-
+gtxns Receiver
+global CurrentApplicationAddress
+==
+&&
+txn GroupIndex
+int 1
+-
+gtxns Amount
+byte "stake_amount"
+app_global_get
+==
+&&
+txn GroupIndex
+int 1
+-
+gtxns TypeEnum
+int pay
+==
+&&
+assert
+byte "staking_status"
+int 1
+app_global_put
+byte "reporter_address"
+txn GroupIndex
+int 1
+-
+gtxns Sender
 app_global_put
 int 1
 return
@@ -170,10 +195,6 @@ main_l23:
 byte "tipper"
 txn Sender
 app_global_put
-txn NumAppArgs
-int 3
-==
-assert
 byte "governance_address"
 txna ApplicationArgs 0
 app_global_put
@@ -182,6 +203,9 @@ txna ApplicationArgs 1
 app_global_put
 byte "query_data"
 txna ApplicationArgs 2
+app_global_put
+byte "reporter_address"
+byte ""
 app_global_put
 byte "staking_status"
 int 0
@@ -190,7 +214,7 @@ byte "num_reports"
 int 0
 app_global_put
 byte "stake_amount"
-int 18050000
+int 200000
 app_global_put
 int 1
 return
