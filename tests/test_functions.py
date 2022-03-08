@@ -1,6 +1,8 @@
+import time
 from algosdk import encoding
+import pytest
 
-from utils.util import getAppGlobalState
+from src.utils.util import getAppGlobalState
 
 
 def test_report(client, scripts, accounts, deployed_contract):
@@ -18,6 +20,7 @@ def test_report(client, scripts, accounts, deployed_contract):
     state = getAppGlobalState(client, deployed_contract.id)
     assert state[b"num_reports"] == 0  # won't increment until approved by governance
     assert state[b"value"] == value
+    assert pytest.approx(state[b"timestamp"], 100) == int(time.time())
 
     new_value = b"a new data value 4567"
     scripts.report(query_id, new_value)
@@ -25,6 +28,8 @@ def test_report(client, scripts, accounts, deployed_contract):
     state = getAppGlobalState(client, deployed_contract.id)
     assert state[b"num_reports"] == 0  # won't increment until approved by governance
     assert state[b"value"] == new_value
+    assert pytest.approx(state[b"timestamp"], 100) == int(time.time())
+
 
 
 def test_stake(client, scripts, accounts, deployed_contract):
