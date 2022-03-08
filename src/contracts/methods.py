@@ -1,3 +1,4 @@
+import time
 from pyteal import *
 
 staking_token_id = App.globalGet(Bytes("staking_token_id"))
@@ -12,6 +13,7 @@ staking_status = Bytes("staking_status")
 tipper = Bytes("tipper")
 reporter = Bytes("reporter_address")
 currently_staked = Bytes("currently_staked")
+timestamp = Bytes("timestamp")
 value = Bytes("value")
 
 """
@@ -74,6 +76,7 @@ def report():
                 )
             ),
             App.globalPut(value, Txn.application_args[2]),
+            App.globalPut(timestamp, Int(int(time.time()))),
             Approve(),
         ]
     )
