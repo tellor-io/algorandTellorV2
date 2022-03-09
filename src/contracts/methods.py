@@ -79,6 +79,45 @@ def report():
             ),
             App.globalPut(value, Txn.application_args[2]),
             App.globalPut(timestamp, Int(int(time.time()))),
+
+            InnerTxnBuilder.Begin(),
+            InnerTxnBuilder.SetFields({
+                TxnField.type_enum: TxnType.Payment,
+                TxnField.amount: App.globalGet(tip_amount),
+                TxnField.receiver: Txn.sender()
+            }),
+            InnerTxnBuilder.Submit(),
+
+            Approve(),
+        ]
+    )
+
+def stake():
+    """
+    gives permission to reporter to report values
+    changes permission when the contract
+    receives the reporter's stake
+
+    Args:
+    0) will always be equal to "stake"
+    """
+
+    on_stake_tx_index = Txn.group_index() - Int(1)
+
+    # enforced two part Gtxn: 1) send token to contract, 2) stake
+    return Seq(
+        [
+            Assert(
+                And(
+                    App.globalGet(reporter) == Bytes(""),
+                    Gtxn[on_stake_tx_index].sender() == Txn.sender(),
+                    Gtxn[on_stake_tx_index].receiver() == Global.current_application_address(),
+                    Gtxn[on_stake_tx_index].amount() == App.globalGet(stake_amount),
+                    Gtxn[on_stake_tx_index].type_enum() == TxnType.Payment,
+                ),
+            ),
+            App.globalPut(staking_status, Int(1)),
+            App.globalPut(reporter, Gtxn[on_stake_tx_index].sender()),
             Approve(),
         ]
     )
@@ -95,7 +134,7 @@ def tip():
     return Seq([
         Assert(
             And(
-                Txn.sender() == App.globalGet(tipper),
+                Txn.sender() == App.globalGet(tipper), #maybe remove this
                 Gtxn[on_stake_tx_index].sender() == Txn.sender(),
                 Gtxn[on_stake_tx_index].receiver() == Global.current_application_address(),
                 Gtxn[on_stake_tx_index].type_enum() == TxnType.Payment,
@@ -191,38 +230,6 @@ def vote():
             Approve(),
         ]
     )
-
-
-def stake():
-    """
-    gives permission to reporter to report values
-    changes permission when the contract
-    receives the reporter's stake
-
-    Args:
-    0) will always be equal to "stake"
-    """
-
-    on_stake_tx_index = Txn.group_index() - Int(1)
-
-    # enforced two part Gtxn: 1) send token to contract, 2) stake
-    return Seq(
-        [
-            Assert(
-                And(
-                    App.globalGet(reporter) == Bytes(""),
-                    Gtxn[on_stake_tx_index].sender() == Txn.sender(),
-                    Gtxn[on_stake_tx_index].receiver() == Global.current_application_address(),
-                    Gtxn[on_stake_tx_index].amount() == App.globalGet(stake_amount),
-                    Gtxn[on_stake_tx_index].type_enum() == TxnType.Payment,
-                ),
-            ),
-            App.globalPut(staking_status, Int(1)),
-            App.globalPut(reporter, Gtxn[on_stake_tx_index].sender()),
-            Approve(),
-        ]
-    )
-
 
 def handle_method():
     """
