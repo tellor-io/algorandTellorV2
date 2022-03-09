@@ -137,11 +137,11 @@ txna ApplicationArgs 1
 ==
 &&
 assert
-byte "value"
+byte "values"
 txna ApplicationArgs 2
 app_global_put
-byte "timestamp"
-int 1646751609
+byte "timestamps"
+global LatestTimestamp
 app_global_put
 int 1
 return
@@ -212,6 +212,12 @@ int 0
 app_global_put
 byte "num_reports"
 int 0
+app_global_put
+byte "values"
+byte ""
+app_global_put
+byte "timestamps"
+byte ""
 app_global_put
 byte "stake_amount"
 int 200000
