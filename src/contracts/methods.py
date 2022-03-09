@@ -134,7 +134,6 @@ def tip():
     return Seq([
         Assert(
             And(
-                Txn.sender() == App.globalGet(tipper), #maybe remove this
                 Gtxn[on_stake_tx_index].sender() == Txn.sender(),
                 Gtxn[on_stake_tx_index].receiver() == Global.current_application_address(),
                 Gtxn[on_stake_tx_index].type_enum() == TxnType.Payment,
