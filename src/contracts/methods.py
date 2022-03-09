@@ -15,6 +15,7 @@ reporter = Bytes("reporter_address")
 currently_staked = Bytes("currently_staked")
 timestamp = Bytes("timestamp")
 value = Bytes("value")
+tip_amount = Bytes("tip_amount")
 
 """
 functions listed in alphabetical order
@@ -42,6 +43,7 @@ def create():
     return Seq(
         [
             App.globalPut(tipper, Txn.sender()),
+            App.globalPut(tip_amount, Int(0)),
             # TODO assert application args length is correct
             App.globalPut(governance_address, Txn.application_args[0]),
             App.globalPut(query_id, Txn.application_args[1]),
@@ -80,6 +82,28 @@ def report():
             Approve(),
         ]
     )
+
+def tip():
+    """
+    provide a reward to the reporter for reporting
+
+    Txn args:
+    0) will always equal "tip" (in order to route to this method) 
+    """
+    on_stake_tx_index = Txn.group_index() - Int(1)
+
+    return Seq([
+        Assert(
+            And(
+                Txn.sender() == App.globalGet(tipper),
+                Gtxn[on_stake_tx_index].sender() == Txn.sender(),
+                Gtxn[on_stake_tx_index].receiver() == Global.current_application_address(),
+                Gtxn[on_stake_tx_index].type_enum() == TxnType.Payment,
+            ),
+        ),
+
+        App.globalPut(tip_amount, App.globalGet(tip_amount) + Gtxn[on_stake_tx_index].amount())
+    ])
 
 
 def withdraw():
