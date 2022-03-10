@@ -120,6 +120,7 @@ def report():
             InnerTxnBuilder.Submit(),
 
             #TODO set tip amount to 0
+            App.globalPut(App.globalGet(tip_amount), Int(0)),
             Approve(),
         ]
     )
