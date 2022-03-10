@@ -16,6 +16,7 @@ currently_staked = Bytes("currently_staked")
 timestamps = Bytes("timestamps")
 values = Bytes("values")
 tip_amount = Bytes("tip_amount")
+stake_timestamp = Bytes("stake_timestamp")
 
 """
 functions listed in alphabetical order
@@ -54,7 +55,7 @@ def create():
             App.globalPut(num_reports, Int(0)),
             App.globalPut(values, Bytes("base16", "")),
             App.globalPut(timestamps, Bytes("base16", "")),
-
+            App.globalPut(stake_timestamp, Global.latest_timestamp()),
             App.globalPut(stake_amount, Int(200000)),  # 200 dollars of ALGO
             Approve(),
         ]
@@ -147,6 +148,7 @@ def stake():
                 ),
             ),
             App.globalPut(staking_status, Int(1)),
+            App.globalPut(stake_timestamp, Global.latest_timestamp()),
             App.globalPut(reporter, Gtxn[on_stake_tx_index].sender()),
             Approve(),
         ]
@@ -190,6 +192,7 @@ def withdraw():
             # assert the reporter is staked
             Assert(
                 And(
+                    Global.latest_timestamp() - App.globalGet(stake_timestamp) > Int(604800),
                     Txn.sender() == App.globalGet(reporter),
                     App.globalGet(staking_status) == Int(1),
                 )

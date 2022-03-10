@@ -47,10 +47,17 @@ byte "withdraw"
 bnz main_l12
 err
 main_l12:
+global LatestTimestamp
+byte "stake_timestamp"
+app_global_get
+-
+int 604800
+>
 txn Sender
 byte "reporter_address"
 app_global_get
 ==
+&&
 byte "staking_status"
 app_global_get
 int 1
@@ -252,6 +259,9 @@ assert
 byte "staking_status"
 int 1
 app_global_put
+byte "stake_timestamp"
+global LatestTimestamp
+app_global_put
 byte "reporter_address"
 txn GroupIndex
 int 1
@@ -290,6 +300,9 @@ byte 0x
 app_global_put
 byte "timestamps"
 byte 0x
+app_global_put
+byte "stake_timestamp"
+global LatestTimestamp
 app_global_put
 byte "stake_amount"
 int 200000
