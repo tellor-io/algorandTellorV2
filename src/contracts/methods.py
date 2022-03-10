@@ -15,6 +15,7 @@ reporter = Bytes("reporter_address")
 currently_staked = Bytes("currently_staked")
 timestamps = Bytes("timestamps")
 values = Bytes("values")
+tip_amount = Bytes("tip_amount")
 
 """
 functions listed in alphabetical order
@@ -42,6 +43,7 @@ def create():
     return Seq(
         [
             App.globalPut(tipper, Txn.sender()),
+            App.globalPut(tip_amount, Int(0)),
             # TODO assert application args length is correct
             App.globalPut(governance_address, Txn.application_args[0]),
             App.globalPut(query_id, Txn.application_args[1]),
@@ -50,8 +52,8 @@ def create():
             App.globalPut(reporter, Bytes("")),
             App.globalPut(staking_status, Int(0)),
             App.globalPut(num_reports, Int(0)),
-            App.globalPut(values, Bytes("")),
-            App.globalPut(timestamps, Bytes("")),
+            App.globalPut(values, Bytes("base16", "")),
+            App.globalPut(timestamps, Bytes("base16", "")),
 
             App.globalPut(stake_amount, Int(200000)),  # 200 dollars of ALGO
             Approve(),
@@ -68,6 +70,7 @@ def report():
     0) will always equal "report" (in order to route to this method)
     1) query_id -- the ID of the data requested to be put on chain
     2) value -- the data submitted to the query
+    3) timestamp -- the timestamp of the data submission
     """
 
     def add_value():
@@ -83,13 +86,13 @@ def report():
         ])
     def add_timestamp():
         return Seq([
-        Assert(Len(Bytes(Global.latest_timestamp())) == Int(8)),
+        Assert(Len(Txn.application_args[3]) == Int(8)),
         If(Len(App.globalGet(timestamps)) == Int(128),
         Seq([
-            App.globalPut(timestamps, Substring(App.globalGet(timestamps), 8, 128)),
-            App.globalPut(timestamps, Concat(App.globalGet(timestamps), Bytes("base16", Global.latest_timestamp()))),
+            App.globalPut(timestamps, Substring(App.globalGet(timestamps), Int(8), Int(128))),
+            App.globalPut(timestamps, Concat(App.globalGet(timestamps), Txn.application_args[3])),
         ]),
-        App.globalPut(timestamps, Concat(App.globalGet(timestamps), Bytes("base16", Global.latest_timestamp())))
+        App.globalPut(timestamps, Concat(App.globalGet(timestamps), Txn.application_args[3]))
         )
         ])
     return Seq(
@@ -101,13 +104,74 @@ def report():
                     App.globalGet(query_id) == Txn.application_args[1],
                 )
             ),
-            App.globalPut(values, Txn.application_args[2]),
-            App.globalPut(timestamps, Global.latest_timestamp()),
-            # add_value(),
-            # add_timestamp(),
+            # App.globalPut(values, Txn.application_args[2]),
+            # App.globalPut(timestamps, Int(int(time.time()))),
+
+            add_value(),
+            add_timestamp(),
+
+            InnerTxnBuilder.Begin(),
+            InnerTxnBuilder.SetFields({
+                TxnField.type_enum: TxnType.Payment,
+                TxnField.amount: App.globalGet(tip_amount),
+                TxnField.receiver: Txn.sender()
+            }),
+            InnerTxnBuilder.Submit(),
+
             Approve(),
         ]
     )
+
+def stake():
+    """
+    gives permission to reporter to report values
+    changes permission when the contract
+    receives the reporter's stake
+
+    Args:
+    0) will always be equal to "stake"
+    """
+
+    on_stake_tx_index = Txn.group_index() - Int(1)
+
+    # enforced two part Gtxn: 1) send token to contract, 2) stake
+    return Seq(
+        [
+            Assert(
+                And(
+                    App.globalGet(reporter) == Bytes(""),
+                    Gtxn[on_stake_tx_index].sender() == Txn.sender(),
+                    Gtxn[on_stake_tx_index].receiver() == Global.current_application_address(),
+                    Gtxn[on_stake_tx_index].amount() == App.globalGet(stake_amount),
+                    Gtxn[on_stake_tx_index].type_enum() == TxnType.Payment,
+                ),
+            ),
+            App.globalPut(staking_status, Int(1)),
+            App.globalPut(reporter, Gtxn[on_stake_tx_index].sender()),
+            Approve(),
+        ]
+    )
+
+def tip():
+    """
+    provide a reward to the reporter for reporting
+
+    Txn args:
+    0) will always equal "tip" (in order to route to this method) 
+    """
+    on_stake_tx_index = Txn.group_index() - Int(1)
+
+    return Seq([
+        Assert(
+            And(
+                Gtxn[on_stake_tx_index].sender() == Txn.sender(),
+                Gtxn[on_stake_tx_index].receiver() == Global.current_application_address(),
+                Gtxn[on_stake_tx_index].type_enum() == TxnType.Payment,
+            ),
+        ),
+
+        App.globalPut(tip_amount, App.globalGet(tip_amount) + Gtxn[on_stake_tx_index].amount())
+    ])
 
 
 def withdraw():
@@ -195,38 +259,6 @@ def vote():
             Approve(),
         ]
     )
-
-
-def stake():
-    """
-    gives permission to reporter to report values
-    changes permission when the contract
-    receives the reporter's stake
-
-    Args:
-    0) will always be equal to "stake"
-    """
-
-    on_stake_tx_index = Txn.group_index() - Int(1)
-
-    # enforced two part Gtxn: 1) send token to contract, 2) stake
-    return Seq(
-        [
-            Assert(
-                And(
-                    App.globalGet(reporter) == Bytes(""),
-                    Gtxn[on_stake_tx_index].sender() == Txn.sender(),
-                    Gtxn[on_stake_tx_index].receiver() == Global.current_application_address(),
-                    Gtxn[on_stake_tx_index].amount() == App.globalGet(stake_amount),
-                    Gtxn[on_stake_tx_index].type_enum() == TxnType.Payment,
-                ),
-            ),
-            App.globalPut(staking_status, Int(1)),
-            App.globalPut(reporter, Gtxn[on_stake_tx_index].sender()),
-            Approve(),
-        ]
-    )
-
 
 def handle_method():
     """

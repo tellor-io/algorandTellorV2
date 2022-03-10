@@ -2,7 +2,7 @@
 txn ApplicationID
 int 0
 ==
-bnz main_l23
+bnz main_l29
 txn OnCompletion
 int NoOp
 ==
@@ -32,7 +32,7 @@ main_l7:
 txna ApplicationArgs 0
 byte "stake"
 ==
-bnz main_l22
+bnz main_l28
 txna ApplicationArgs 0
 byte "report"
 ==
@@ -137,15 +137,84 @@ txna ApplicationArgs 1
 ==
 &&
 assert
-byte "values"
 txna ApplicationArgs 2
+len
+int 8
+==
+assert
+byte "values"
+app_global_get
+len
+int 128
+==
+bnz main_l27
+byte "values"
+byte "values"
+app_global_get
+txna ApplicationArgs 2
+concat
 app_global_put
+main_l23:
+txna ApplicationArgs 3
+len
+int 8
+==
+assert
 byte "timestamps"
-global LatestTimestamp
+app_global_get
+len
+int 128
+==
+bnz main_l26
+byte "timestamps"
+byte "timestamps"
+app_global_get
+txna ApplicationArgs 3
+concat
 app_global_put
+main_l25:
+itxn_begin
+int pay
+itxn_field TypeEnum
+byte "tip_amount"
+app_global_get
+itxn_field Amount
+txn Sender
+itxn_field Receiver
+itxn_submit
 int 1
 return
-main_l22:
+main_l26:
+byte "timestamps"
+byte "timestamps"
+app_global_get
+int 8
+int 128
+substring3
+app_global_put
+byte "timestamps"
+byte "timestamps"
+app_global_get
+txna ApplicationArgs 3
+concat
+app_global_put
+b main_l25
+main_l27:
+byte "values"
+byte "values"
+app_global_get
+int 8
+int 128
+substring3
+app_global_put
+byte "values"
+byte "values"
+app_global_get
+txna ApplicationArgs 2
+concat
+app_global_put
+b main_l23
+main_l28:
 byte "reporter_address"
 app_global_get
 byte ""
@@ -191,9 +260,12 @@ gtxns Sender
 app_global_put
 int 1
 return
-main_l23:
+main_l29:
 byte "tipper"
 txn Sender
+app_global_put
+byte "tip_amount"
+int 0
 app_global_put
 byte "governance_address"
 txna ApplicationArgs 0
@@ -214,10 +286,10 @@ byte "num_reports"
 int 0
 app_global_put
 byte "values"
-byte ""
+byte 0x
 app_global_put
 byte "timestamps"
-byte ""
+byte 0x
 app_global_put
 byte "stake_amount"
 int 200000
