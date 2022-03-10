@@ -53,8 +53,8 @@ def create():
             App.globalPut(reporter, Bytes("")),
             App.globalPut(staking_status, Int(0)),
             App.globalPut(num_reports, Int(0)),
-            App.globalPut(values, Bytes("base16", "")),
-            App.globalPut(timestamps, Bytes("base16", "")),
+            App.globalPut(values, Bytes("base64", "")),
+            App.globalPut(timestamps, Bytes("base64", "")),
             App.globalPut(stake_timestamp, Global.latest_timestamp()),
             App.globalPut(stake_amount, Int(200000)),  # 200 dollars of ALGO
             Approve(),
@@ -76,8 +76,8 @@ def report():
 
     def add_value():
         return Seq([
-            Assert(Len(Txn.application_args[2]) == Int(8)),
-            If(Len(App.globalGet(values)) == Int(128),
+            Assert(Len(Txn.application_args[2]) == Int(4)),
+            If(Len(App.globalGet(values)) + Int(4) >= Int(128) - Len(timestamps),
             Seq([
                 App.globalPut(values, Substring(App.globalGet(values), Int(8), Int(128))),
                 App.globalPut(values, Concat(App.globalGet(values), Txn.application_args[2])),
@@ -87,8 +87,8 @@ def report():
         ])
     def add_timestamp():
         return Seq([
-        Assert(Len(Txn.application_args[3]) == Int(8)),
-        If(Len(App.globalGet(timestamps)) == Int(128),
+        Assert(Len(Txn.application_args[3]) == Int(4)),
+        If(Len(App.globalGet(timestamps)) + Int(4) >= Int(128) - Len(timestamps),
         Seq([
             App.globalPut(timestamps, Substring(App.globalGet(timestamps), Int(8), Int(128))),
             App.globalPut(timestamps, Concat(App.globalGet(timestamps), Txn.application_args[3])),
@@ -119,6 +119,7 @@ def report():
             }),
             InnerTxnBuilder.Submit(),
 
+            #TODO set tip amount to 0
             Approve(),
         ]
     )
