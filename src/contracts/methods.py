@@ -13,8 +13,8 @@ staking_status = Bytes("staking_status")
 tipper = Bytes("tipper")
 reporter = Bytes("reporter_address")
 currently_staked = Bytes("currently_staked")
-timestamp = Bytes("timestamp")
-value = Bytes("value")
+timestamps = Bytes("timestamps")
+values = Bytes("values")
 tip_amount = Bytes("tip_amount")
 
 """
@@ -52,6 +52,9 @@ def create():
             App.globalPut(reporter, Bytes("")),
             App.globalPut(staking_status, Int(0)),
             App.globalPut(num_reports, Int(0)),
+            App.globalPut(values, Bytes("base16", "")),
+            App.globalPut(timestamps, Bytes("base16", "")),
+
             App.globalPut(stake_amount, Int(200000)),  # 200 dollars of ALGO
             Approve(),
         ]
@@ -67,7 +70,31 @@ def report():
     0) will always equal "report" (in order to route to this method)
     1) query_id -- the ID of the data requested to be put on chain
     2) value -- the data submitted to the query
+    3) timestamp -- the timestamp of the data submission
     """
+
+    def add_value():
+        return Seq([
+            Assert(Len(Txn.application_args[2]) == Int(8)),
+            If(Len(App.globalGet(values)) == Int(128),
+            Seq([
+                App.globalPut(values, Substring(App.globalGet(values), Int(8), Int(128))),
+                App.globalPut(values, Concat(App.globalGet(values), Txn.application_args[2])),
+            ]),
+            App.globalPut(values, Concat(App.globalGet(values), Txn.application_args[2])),
+            )
+        ])
+    def add_timestamp():
+        return Seq([
+        Assert(Len(Txn.application_args[3]) == Int(8)),
+        If(Len(App.globalGet(timestamps)) == Int(128),
+        Seq([
+            App.globalPut(timestamps, Substring(App.globalGet(timestamps), Int(8), Int(128))),
+            App.globalPut(timestamps, Concat(App.globalGet(timestamps), Txn.application_args[3])),
+        ]),
+        App.globalPut(timestamps, Concat(App.globalGet(timestamps), Txn.application_args[3]))
+        )
+        ])
     return Seq(
         [
             Assert(
@@ -77,8 +104,11 @@ def report():
                     App.globalGet(query_id) == Txn.application_args[1],
                 )
             ),
-            App.globalPut(value, Txn.application_args[2]),
-            App.globalPut(timestamp, Int(int(time.time()))),
+            # App.globalPut(values, Txn.application_args[2]),
+            # App.globalPut(timestamps, Int(int(time.time()))),
+
+            add_value(),
+            add_timestamp(),
 
             InnerTxnBuilder.Begin(),
             InnerTxnBuilder.SetFields({
