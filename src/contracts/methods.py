@@ -55,12 +55,31 @@ def create():
             App.globalPut(num_reports, Int(0)),
             App.globalPut(values, Bytes("base64", "")),
             App.globalPut(timestamps, Bytes("base64", "")),
-            App.globalPut(stake_timestamp, Global.latest_timestamp()),
+            App.globalPut(stake_timestamp, Int(0)),
             App.globalPut(stake_amount, Int(200000)),  # 200 dollars of ALGO
             Approve(),
         ]
     )
 
+def change_governance():
+    """
+    changes governance address
+    
+    Txn args:
+    0) will always equal "change_governance" (in order to route to this method)
+    1) address -- new governance address
+    """
+
+    return Seq([
+        Assert(
+            And(
+                is_governance, 
+                Txn.application_args.length() == Int(2),
+            )
+        ),
+        App.globalPut(governance_address, Txn.application_args[1]),
+        Approve(),
+    ])
 
 def report():
     """
@@ -150,7 +169,7 @@ def stake():
                 ),
             ),
             App.globalPut(staking_status, Int(1)),
-            App.globalPut(stake_timestamp, Global.latest_timestamp()),
+            # App.globalPut(stake_timestamp, Global.latest_timestamp()),
             App.globalPut(reporter, Gtxn[on_stake_tx_index].sender()),
             Approve(),
         ]
@@ -174,7 +193,8 @@ def tip():
             ),
         ),
 
-        App.globalPut(tip_amount, App.globalGet(tip_amount) + Gtxn[on_stake_tx_index].amount())
+        App.globalPut(tip_amount, App.globalGet(tip_amount) + Gtxn[on_stake_tx_index].amount()),
+        Approve()
     ])
 
 
@@ -187,20 +207,36 @@ def withdraw():
 
     Txn args:
     0) will always equal "withdraw"
+    1) 1 is request_withdraw, 2 is withdraw now
 
     """
-    return Seq(
-        [
-            # assert the reporter is staked
+    def request_withdraw():
+        return Seq([
+            Assert(
+                And(
+                    App.globalGet(staking_status) == Int(1), # is staked
+                    App.globalGet(stake_timestamp) == Int(0),# first time requesting to withdraw
+                )
+            ),
+
+            App.globalPut(stake_timestamp, Global.latest_timestamp()),# start staking time interval
+            App.globalPut(staking_status, Int(2)),# status = 2 means your stake is in a locked state for 7 days 
+        ]
+        )
+
+    def clear_to_withdraw():
+        return Seq(
+            [
+            # assert the reporter's stake has been locked for 7 days since withdrawal request
             Assert(
                 And(
                     Global.latest_timestamp() - App.globalGet(stake_timestamp) > Int(604800),
-                    Txn.sender() == App.globalGet(reporter),
-                    App.globalGet(staking_status) == Int(1),
+                    App.globalGet(staking_status) == Int(2),
                 )
             ),
             # change staking status to unstaked
             App.globalPut(staking_status, Int(0)),
+            App.globalPut(stake_timestamp, Int(0)),
             # send funds back to reporter (the sender) w/ inner tx
             InnerTxnBuilder.Begin(),
             InnerTxnBuilder.SetFields(
@@ -211,6 +247,20 @@ def withdraw():
                 }
             ),
             InnerTxnBuilder.Submit(),
+            Approve(),
+        ]
+    )
+    return Seq(
+        [
+            # argument 1 is a request to withdraw
+            # argument 2 is withdraw now
+            # this could be done without requiring an argument like just using a condition
+            Assert(Txn.sender() == App.globalGet(reporter)),
+            Cond(
+                [And(Btoi(Txn.application_args[1]) != Int(1), Btoi(Txn.application_args[1]) != Int(2)), Reject()],
+                [Btoi(Txn.application_args[1]) == Int(1), request_withdraw()],
+                [Btoi(Txn.application_args[1]) == Int(2), clear_to_withdraw()],
+            ),
             Approve(),
         ]
     )
@@ -272,7 +322,9 @@ def handle_method():
     """
     contract_method = Txn.application_args[0]
     return Cond(
+        [contract_method == Bytes("change_governance"), change_governance()],
         [contract_method == Bytes("stake"), stake()],
+        [contract_method == Bytes("tip"), tip()],
         [contract_method == Bytes("report"), report()],
         [contract_method == Bytes("vote"), vote()],
         [contract_method == Bytes("withdraw"), withdraw()],
