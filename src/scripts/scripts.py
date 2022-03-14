@@ -96,7 +96,7 @@ class Scripts:
         localSchema = transaction.StateSchema(num_uints=0, num_byte_slices=0)
 
         app_args = [
-            encoding.decode_address(self.governance_address.getAddress()),
+            self.governance_address.getAddress(),
             query_id.encode("utf-8"),
             query_data.encode("utf-8"),
         ]

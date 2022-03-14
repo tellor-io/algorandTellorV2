@@ -3,7 +3,6 @@ from pyteal import *
 
 staking_token_id = App.globalGet(Bytes("staking_token_id"))
 
-is_governance = Txn.sender() == App.globalGet(Bytes("governance_address"))
 num_reports = Bytes("num_reports")
 stake_amount = Bytes("stake_amount")
 governance_address = Bytes("governance_address")
@@ -17,6 +16,8 @@ timestamps = Bytes("timestamps")
 values = Bytes("values")
 tip_amount = Bytes("tip_amount")
 stake_timestamp = Bytes("stake_timestamp")
+is_governance = Txn.sender() == App.globalGet(governance_address)
+is_reporter = Txn.sender() == App.globalGet(reporter)
 
 """
 functions listed in alphabetical order
@@ -55,12 +56,31 @@ def create():
             App.globalPut(num_reports, Int(0)),
             App.globalPut(values, Bytes("base64", "")),
             App.globalPut(timestamps, Bytes("base64", "")),
-            App.globalPut(stake_timestamp, Global.latest_timestamp()),
+            App.globalPut(stake_timestamp, Int(0)),
             App.globalPut(stake_amount, Int(200000)),  # 200 dollars of ALGO
             Approve(),
         ]
     )
 
+def change_governance():
+    """
+    changes governance address
+    
+    Txn args:
+    0) will always equal "change_governance" (in order to route to this method)
+    1) address -- new governance address
+    """
+
+    return Seq([
+        Assert(
+            And(
+                is_governance, 
+                Txn.application_args.length() == Int(2),
+            )
+        ),
+        App.globalPut(governance_address, Txn.application_args[1]),
+        Approve(),
+    ])
 
 def report():
     """
@@ -150,7 +170,7 @@ def stake():
                 ),
             ),
             App.globalPut(staking_status, Int(1)),
-            App.globalPut(stake_timestamp, Global.latest_timestamp()),
+            # App.globalPut(stake_timestamp, Global.latest_timestamp()),
             App.globalPut(reporter, Gtxn[on_stake_tx_index].sender()),
             Approve(),
         ]
@@ -174,9 +194,9 @@ def tip():
             ),
         ),
 
-        App.globalPut(tip_amount, App.globalGet(tip_amount) + Gtxn[on_stake_tx_index].amount())
+        App.globalPut(tip_amount, App.globalGet(tip_amount) + Gtxn[on_stake_tx_index].amount()),
+        Approve()
     ])
-
 
 def withdraw():
     """
@@ -190,17 +210,17 @@ def withdraw():
 
     """
     return Seq(
-        [
-            # assert the reporter is staked
+            [
             Assert(
                 And(
-                    Global.latest_timestamp() - App.globalGet(stake_timestamp) > Int(604800),
-                    Txn.sender() == App.globalGet(reporter),
-                    App.globalGet(staking_status) == Int(1),
+                    is_reporter,
+                    Global.latest_timestamp() - App.globalGet(stake_timestamp) > Int(604800), # assert the reporter's stake has been locked for 7 days since withdrawal request
+                    App.globalGet(staking_status) == Int(2), 
                 )
             ),
-            # change staking status to unstaked
+            # change locked status to unstaked
             App.globalPut(staking_status, Int(0)),
+            App.globalPut(stake_timestamp, Int(0)),
             # send funds back to reporter (the sender) w/ inner tx
             InnerTxnBuilder.Begin(),
             InnerTxnBuilder.SetFields(
@@ -213,6 +233,31 @@ def withdraw():
             InnerTxnBuilder.Submit(),
             Approve(),
         ]
+    )
+
+def withdraw_request():
+    """
+    reporter has to request withdrawal and 
+    lock their balance for 7 days
+    before they can withdraw their stake
+
+    Txn args:
+    0) will always equal "withdraw_request"
+
+    """
+    return Seq([
+        Assert(
+            And(
+                is_reporter,
+                App.globalGet(staking_status) == Int(1), # is staked
+                App.globalGet(stake_timestamp) == Int(0),# first time requesting to withdraw
+            )
+        ),
+
+        App.globalPut(stake_timestamp, Global.latest_timestamp()),# start staking time interval
+        App.globalPut(staking_status, Int(2)),# status = 2 means your stake is in a locked state for 7 days
+        Approve(),
+    ]
     )
 
 
@@ -272,8 +317,11 @@ def handle_method():
     """
     contract_method = Txn.application_args[0]
     return Cond(
+        [contract_method == Bytes("change_governance"), change_governance()],
         [contract_method == Bytes("stake"), stake()],
+        [contract_method == Bytes("tip"), tip()],
         [contract_method == Bytes("report"), report()],
         [contract_method == Bytes("vote"), vote()],
         [contract_method == Bytes("withdraw"), withdraw()],
+        [contract_method == Bytes("withdraw_request"), withdraw_request()],
     )

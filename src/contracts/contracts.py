@@ -1,6 +1,6 @@
 from pyteal import *
 
-from .methods import *
+from methods import *
 
 
 def approval_program():

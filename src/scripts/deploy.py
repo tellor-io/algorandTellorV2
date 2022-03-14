@@ -30,6 +30,8 @@ def deploy(query_id: str, query_data: str, network: str):
 
     print("current network: ", network)
     if network == "testnet":
+        tipper = Account.FromMnemonic(os.getenv("TIPPER_MNEMONIC"))
+        governance = Account.FromMnemonic(os.getenv("GOVERNANCE_ADDR"))
         reporter = Account.FromMnemonic(os.getenv("REPORTER_MNEMONIC"))
     elif network == "devnet":
         tipper = getTemporaryAccount(client)
