@@ -3,7 +3,6 @@ from pyteal import *
 
 staking_token_id = App.globalGet(Bytes("staking_token_id"))
 
-is_governance = Txn.sender() == App.globalGet(Bytes("governance_address"))
 num_reports = Bytes("num_reports")
 stake_amount = Bytes("stake_amount")
 governance_address = Bytes("governance_address")
@@ -17,6 +16,8 @@ timestamps = Bytes("timestamps")
 values = Bytes("values")
 tip_amount = Bytes("tip_amount")
 stake_timestamp = Bytes("stake_timestamp")
+is_governance = Txn.sender() == App.globalGet(governance_address)
+is_reporter = Txn.sender() == App.globalGet(reporter)
 
 """
 functions listed in alphabetical order
@@ -197,7 +198,6 @@ def tip():
         Approve()
     ])
 
-
 def withdraw():
     """
     sends the reporter's stake back to their address
@@ -207,34 +207,18 @@ def withdraw():
 
     Txn args:
     0) will always equal "withdraw"
-    1) 1 is request_withdraw, 2 is withdraw now
 
     """
-    def request_withdraw():
-        return Seq([
-            Assert(
-                And(
-                    App.globalGet(staking_status) == Int(1), # is staked
-                    App.globalGet(stake_timestamp) == Int(0),# first time requesting to withdraw
-                )
-            ),
-
-            App.globalPut(stake_timestamp, Global.latest_timestamp()),# start staking time interval
-            App.globalPut(staking_status, Int(2)),# status = 2 means your stake is in a locked state for 7 days 
-        ]
-        )
-
-    def clear_to_withdraw():
-        return Seq(
+    return Seq(
             [
-            # assert the reporter's stake has been locked for 7 days since withdrawal request
             Assert(
                 And(
-                    Global.latest_timestamp() - App.globalGet(stake_timestamp) > Int(604800),
-                    App.globalGet(staking_status) == Int(2),
+                    is_reporter,
+                    Global.latest_timestamp() - App.globalGet(stake_timestamp) > Int(604800), # assert the reporter's stake has been locked for 7 days since withdrawal request
+                    App.globalGet(staking_status) == Int(2), 
                 )
             ),
-            # change staking status to unstaked
+            # change locked status to unstaked
             App.globalPut(staking_status, Int(0)),
             App.globalPut(stake_timestamp, Int(0)),
             # send funds back to reporter (the sender) w/ inner tx
@@ -250,19 +234,30 @@ def withdraw():
             Approve(),
         ]
     )
-    return Seq(
-        [
-            # argument 1 is a request to withdraw
-            # argument 2 is withdraw now
-            # this could be done without requiring an argument like just using a condition
-            Assert(Txn.sender() == App.globalGet(reporter)),
-            Cond(
-                [And(Btoi(Txn.application_args[1]) != Int(1), Btoi(Txn.application_args[1]) != Int(2)), Reject()],
-                [Btoi(Txn.application_args[1]) == Int(1), request_withdraw()],
-                [Btoi(Txn.application_args[1]) == Int(2), clear_to_withdraw()],
-            ),
-            Approve(),
-        ]
+
+def withdraw_request():
+    """
+    reporter has to request withdrawal and 
+    lock their balance for 7 days
+    before they can withdraw their stake
+
+    Txn args:
+    0) will always equal "withdraw_request"
+
+    """
+    return Seq([
+        Assert(
+            And(
+                is_reporter,
+                App.globalGet(staking_status) == Int(1), # is staked
+                App.globalGet(stake_timestamp) == Int(0),# first time requesting to withdraw
+            )
+        ),
+
+        App.globalPut(stake_timestamp, Global.latest_timestamp()),# start staking time interval
+        App.globalPut(staking_status, Int(2)),# status = 2 means your stake is in a locked state for 7 days
+        Approve(),
+    ]
     )
 
 
@@ -328,4 +323,5 @@ def handle_method():
         [contract_method == Bytes("report"), report()],
         [contract_method == Bytes("vote"), vote()],
         [contract_method == Bytes("withdraw"), withdraw()],
+        [contract_method == Bytes("withdraw_request"), withdraw_request()],
     )
