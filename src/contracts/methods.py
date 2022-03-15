@@ -53,7 +53,6 @@ def create():
             # 0-not Staked, 1=Staked
             App.globalPut(reporter, Bytes("")),
             App.globalPut(staking_status, Int(0)),
-            App.globalPut(num_reports, Int(0)),
             App.globalPut(values, Bytes("base64", "")),
             App.globalPut(timestamps, Bytes("base64", "")),
             App.globalPut(stake_timestamp, Int(0)),
@@ -303,7 +302,7 @@ def vote():
             Assert(is_governance),
             Cond(
                 [And(Btoi(Txn.application_args[1]) != Int(0), Btoi(Txn.application_args[1]) != Int(1)), Reject()],
-                [Btoi(Txn.application_args[1]) == Int(1), reward_reporter()],
+                # [Btoi(Txn.application_args[1]) == Int(1), reward_reporter()],
                 [Btoi(Txn.application_args[1]) == Int(0), slash_reporter()],
             ),
             Approve(),
