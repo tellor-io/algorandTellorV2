@@ -52,7 +52,6 @@ def create():
             # 0-not Staked, 1=Staked
             App.globalPut(reporter, Bytes("")),
             App.globalPut(staking_status, Int(0)),
-            App.globalPut(num_reports, Int(0)),
             App.globalPut(values, Bytes("base64", "")),
             App.globalPut(timestamps, Bytes("base64", "")),
             App.globalPut(stake_timestamp, Int(0)),
