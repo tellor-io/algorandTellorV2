@@ -2,7 +2,7 @@
 txn ApplicationID
 int 0
 ==
-bnz main_l35
+bnz main_l36
 txn OnCompletion
 int NoOp
 ==
@@ -32,19 +32,19 @@ main_l7:
 txna ApplicationArgs 0
 byte "change_governance"
 ==
-bnz main_l34
+bnz main_l35
 txna ApplicationArgs 0
 byte "stake"
 ==
-bnz main_l33
+bnz main_l34
 txna ApplicationArgs 0
 byte "tip"
 ==
-bnz main_l32
+bnz main_l33
 txna ApplicationArgs 0
 byte "report"
 ==
-bnz main_l25
+bnz main_l23
 txna ApplicationArgs 0
 byte "vote"
 ==
@@ -130,19 +130,14 @@ btoi
 int 1
 !=
 &&
-bnz main_l24
-txna ApplicationArgs 1
-btoi
-int 1
-==
-bnz main_l23
+bnz main_l22
 txna ApplicationArgs 1
 btoi
 int 0
 ==
-bnz main_l21
+bnz main_l20
 err
-main_l21:
+main_l20:
 itxn_begin
 int pay
 itxn_field TypeEnum
@@ -153,21 +148,12 @@ itxn_submit
 byte "staking_status"
 int 0
 app_global_put
-main_l22:
 int 1
 return
-main_l23:
-byte "num_reports"
-byte "num_reports"
-app_global_get
-int 1
-+
-app_global_put
-b main_l22
-main_l24:
+main_l22:
 int 0
 return
-main_l25:
+main_l23:
 byte "reporter_address"
 app_global_get
 txn Sender
@@ -182,6 +168,32 @@ app_global_get
 txna ApplicationArgs 1
 ==
 &&
+assert
+byte "timestamps"
+app_global_get
+byte ""
+==
+bnz main_l32
+byte "timestamps"
+app_global_get
+byte "timestamps"
+app_global_get
+len
+int 4
+-
+byte "timestamps"
+app_global_get
+len
+substring3
+store 0
+main_l25:
+global LatestTimestamp
+load 0
+btoi
+-
+byte "reporter_lock"
+app_global_get
+<
 assert
 txna ApplicationArgs 2
 len
@@ -248,7 +260,7 @@ main_l30:
 byte "timestamps"
 byte "timestamps"
 app_global_get
-int 8
+int 4
 int 128
 substring3
 app_global_put
@@ -263,7 +275,7 @@ main_l31:
 byte "values"
 byte "values"
 app_global_get
-int 8
+int 4
 int 128
 substring3
 app_global_put
@@ -275,6 +287,10 @@ concat
 app_global_put
 b main_l27
 main_l32:
+byte "0"
+store 0
+b main_l25
+main_l33:
 txn GroupIndex
 int 1
 -
@@ -307,7 +323,7 @@ gtxns Amount
 app_global_put
 int 1
 return
-main_l33:
+main_l34:
 byte "reporter_address"
 app_global_get
 byte ""
@@ -353,7 +369,7 @@ gtxns Sender
 app_global_put
 int 1
 return
-main_l34:
+main_l35:
 txn Sender
 byte "governance_address"
 app_global_get
@@ -368,7 +384,7 @@ txna ApplicationArgs 1
 app_global_put
 int 1
 return
-main_l35:
+main_l36:
 byte "tipper"
 txn Sender
 app_global_put
@@ -384,13 +400,13 @@ app_global_put
 byte "query_data"
 txna ApplicationArgs 2
 app_global_put
+byte "reporter_lock"
+txna ApplicationArgs 3
+app_global_put
 byte "reporter_address"
 byte ""
 app_global_put
 byte "staking_status"
-int 0
-app_global_put
-byte "num_reports"
 int 0
 app_global_put
 byte "values"
