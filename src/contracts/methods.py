@@ -1,9 +1,9 @@
-import time
 from pyteal import *
 
 staking_token_id = App.globalGet(Bytes("staking_token_id"))
 
 num_reports = Bytes("num_reports")
+reporter_lock = Bytes("reporter_lock")
 stake_amount = Bytes("stake_amount")
 governance_address = Bytes("governance_address")
 query_id = Bytes("query_id")
@@ -40,6 +40,7 @@ def create():
     0) governance address
     1) query id
     2) query data
+    3) reporter lock
 
     """
     return Seq(
@@ -49,7 +50,8 @@ def create():
             # TODO assert application args length is correct
             App.globalPut(governance_address, Txn.application_args[0]),
             App.globalPut(query_id, Txn.application_args[1]),
-            App.globalPut(query_data, Txn.application_args[2]),  # TODO perhaps parse from ipfs
+            App.globalPut(query_data, Txn.application_args[2]),
+            App.globalPut(reporter_lock, Txn.application_args[3]),
             # 0-not Staked, 1=Staked
             App.globalPut(reporter, Bytes("")),
             App.globalPut(staking_status, Int(0)),
@@ -93,12 +95,14 @@ def report():
     3) timestamp -- the timestamp of the data submission
     """
 
+    last_timestamp = ScratchVar(TealType.bytes)
+
     def add_value():
         return Seq([
             Assert(Len(Txn.application_args[2]) == Int(4)),
             If(Len(App.globalGet(values)) + Int(4) >= Int(128) - Len(timestamps),
             Seq([
-                App.globalPut(values, Substring(App.globalGet(values), Int(8), Int(128))),
+                App.globalPut(values, Substring(App.globalGet(values), Int(4), Int(128))),
                 App.globalPut(values, Concat(App.globalGet(values), Txn.application_args[2])),
             ]),
             App.globalPut(values, Concat(App.globalGet(values), Txn.application_args[2])),
@@ -109,11 +113,26 @@ def report():
         Assert(Len(Txn.application_args[3]) == Int(4)),
         If(Len(App.globalGet(timestamps)) + Int(4) >= Int(128) - Len(timestamps),
         Seq([
-            App.globalPut(timestamps, Substring(App.globalGet(timestamps), Int(8), Int(128))),
+            App.globalPut(timestamps, Substring(App.globalGet(timestamps), Int(4), Int(128))),
             App.globalPut(timestamps, Concat(App.globalGet(timestamps), Txn.application_args[3])),
         ]),
         App.globalPut(timestamps, Concat(App.globalGet(timestamps), Txn.application_args[3]))
         )
+        ])
+
+    def get_last_timestamp():
+        return Seq([
+            If(
+                App.globalGet(timestamps) == Bytes(""),
+                last_timestamp.store(Bytes("0")),
+                last_timestamp.store(
+                    Substring(
+                        App.globalGet(timestamps),
+                        Len(App.globalGet(timestamps)) - Int(4),
+                        Len(App.globalGet(timestamps))
+                    )
+                )
+            )
         ])
     return Seq(
         [
@@ -124,6 +143,10 @@ def report():
                     App.globalGet(query_id) == Txn.application_args[1],
                 )
             ),
+
+            get_last_timestamp(),
+
+            Assert(Global.latest_timestamp() - Btoi(last_timestamp.load()) < App.globalGet(reporter_lock)),
             # App.globalPut(values, Txn.application_args[2]),
             # App.globalPut(timestamps, Int(int(time.time()))),
 
