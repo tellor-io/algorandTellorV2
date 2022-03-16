@@ -26,7 +26,8 @@ def setup_multisig(network: str):
 
     print("current network: ", network)
     if network == "testnet":
-        reporter = Account.FromMnemonic(os.getenv("REPORTER_MNEMONIC"))
+        # reporter = Account.FromMnemonic(os.getenv("REPORTER_MNEMONIC"))
+        raise NotImplementedError()
     elif network == "devnet":
         tipper = getTemporaryAccount(client)
         reporter = getTemporaryAccount(client)
