@@ -283,7 +283,7 @@ def withdraw_request():
     )
 
 
-def vote():
+def slash_reporter():
     """
     allows the governance contract to approve or deny a new value
     if governance approves, the num_votes counter increases by 1
@@ -293,17 +293,12 @@ def vote():
     solidity equivalent: slashMiner()
 
     Args:
-    0) will always be equal to "vote"
-    1) decision -- 1 is approval, 0 is rejection
+    0) will always be equal to "slash_reporter"
     """
 
-    def slash_reporter():
-        """
-        - transfers reporter's stake to governance contract
-        - removes their permission to submit data (reporting)
-        """
-        return Seq(
+    return Seq(
             [
+                Assert(is_governance),
                 InnerTxnBuilder.Begin(),
                 InnerTxnBuilder.SetFields(
                     {
@@ -313,24 +308,9 @@ def vote():
                 ),
                 InnerTxnBuilder.Submit(),
                 App.globalPut(staking_status, Int(0)),
+                Approve()
             ]
         )
-
-    def reward_reporter():
-        """increase reporter's number of recorded reports"""
-        return App.globalPut(num_reports, App.globalGet(num_reports) + Int(1))
-
-    return Seq(
-        [
-            Assert(is_governance),
-            Cond(
-                [And(Btoi(Txn.application_args[1]) != Int(0), Btoi(Txn.application_args[1]) != Int(1)), Reject()],
-                # [Btoi(Txn.application_args[1]) == Int(1), reward_reporter()],
-                [Btoi(Txn.application_args[1]) == Int(0), slash_reporter()],
-            ),
-            Approve(),
-        ]
-    )
 
 def handle_method():
     """
@@ -343,7 +323,7 @@ def handle_method():
         [contract_method == Bytes("stake"), stake()],
         [contract_method == Bytes("tip"), tip()],
         [contract_method == Bytes("report"), report()],
-        [contract_method == Bytes("vote"), vote()],
+        [contract_method == Bytes("slash_reporter"), slash_reporter()],
         [contract_method == Bytes("withdraw"), withdraw()],
         [contract_method == Bytes("withdraw_request"), withdraw_request()],
     )

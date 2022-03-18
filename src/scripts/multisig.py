@@ -1,40 +1,84 @@
-"""
-deployment script for creating a Tellor multisig on Algorand
-"""
-import os
-import sys
-
+import json
 from algosdk.v2client.algod import AlgodClient
-from dotenv import load_dotenv
+from algosdk import account, encoding, mnemonic
+import base64
+import os
+from algosdk.future.transaction import *
 
-from src.scripts.scripts import Scripts
-from src.utils.account import Account
-from src.utils.configs import get_configs
-from src.utils.testing.resources import fundAccount
-from src.utils.testing.resources import getTemporaryAccount
+# Change these values with mnemonics
+mnemonic1 = os.getenv("MNEMONIC1")
+mnemonic2 = os.getenv("MNEMONIC2")
+mnemonic3 = os.getenv("MNEMONIC3")
+mnemonic4 = os.getenv("MNEMONIC4")
+# never use mnemonics in production code, replace for demo purposes only
 
-def setup_multisig(network: str):
-    '''setup and deploy a multisig for Tellor'''
+# For ease of reference, add account public and private keys to
+# an accounts dict.
 
-    load_dotenv()
+private_key_1 = mnemonic.to_private_key(mnemonic1)
+account_1 = mnemonic.to_public_key(mnemonic1)
 
-    algo_address = "http://localhost:4001"
-    algo_token = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+private_key_2 = mnemonic.to_private_key(mnemonic2)
+account_2 = mnemonic.to_public_key(mnemonic2)
 
-    client = AlgodClient(algod_address=algo_address, algod_token=algo_token)
+private_key_3 = mnemonic.to_private_key(mnemonic3)
+account_3 = mnemonic.to_public_key(mnemonic3)
+
+private_key_4 = mnemonic.to_private_key(mnemonic4)
+account_4 = mnemonic.to_public_key(mnemonic4)
+
+# create a multisig account
+version = 1  # multisig version
+threshold = 3  # how many signatures are necessary
+msig = Multisig(version, threshold, [account_1, account_2, account_3])
+
+print("Multisig Address: ", msig.address())
+print('Go to the below link to fund the created account using testnet faucet: \n https://dispenser.testnet.aws.algodev.network/?account={}'.format(msig.address())) 
+
+input("Press Enter to continue...")
+
+# sandbox
+algod_address = "http://localhost:4001"
+algod_token = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+
+# Initialize an algod client
+algod_client = AlgodClient(algod_token, algod_address)
+
+# get suggested parameters
+params = algod_client.suggested_params()
+# comment out the next two (2) lines to use suggested fees
+# params.flat_fee = True
+# params.fee = 1000
+
+# create a transaction
+sender = msig.address()
+recipient = account_4
+amount = 10000
+note = "Team Multisig".encode()
+txn = PaymentTxn(sender, params, recipient, amount, None, note, None)
+
+# create a SignedTransaction object
+mtx = MultisigTransaction(txn, msig)
+
+# sign the transaction
+mtx.sign(private_key_1)
+mtx.sign(private_key_2)
+mtx.sign(private_key_3)
+# print encoded transaction
+# print(encoding.msgpack_encode(mtx))
 
 
-    print("current network: ", network)
-    if network == "testnet":
-        # reporter = Account.FromMnemonic(os.getenv("REPORTER_MNEMONIC"))
-        raise NotImplementedError()
-    elif network == "devnet":
-        tipper = getTemporaryAccount(client)
-        reporter = getTemporaryAccount(client)
-        governance = getTemporaryAccount(client)
-
-        fundAccount(client, reporter.addr)
-        fundAccount(client, reporter.addr)
-        fundAccount(client, reporter.addr)
-    else:
-        raise Exception("invalid network selected")
+    # wait for confirmation 
+try:
+# send the transaction
+    txid = algod_client.send_raw_transaction(
+    encoding.msgpack_encode(mtx))    
+    print("TXID: ", txid)   
+    confirmed_txn = wait_for_confirmation(algod_client, txid, 6)  
+    print("Result confirmed in round: {}".format(confirmed_txn['confirmed-round']))
+    print("Transaction information: {}".format(
+        json.dumps(confirmed_txn, indent=4)))
+    print("Decoded note: {}".format(base64.b64decode(
+        confirmed_txn["txn"]["txn"]["note"]).decode()))
+except Exception as err:
+    print(err)
