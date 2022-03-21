@@ -199,6 +199,7 @@ def report():
                 TxnField.application_id: App.globalGet(medianizer),
                 TxnField.application_args: [Bytes("calculate_median")]
             }),
+            InnerTxnBuilder.Submit(),
 
             InnerTxnBuilder.Begin(),
             InnerTxnBuilder.SetFields({
