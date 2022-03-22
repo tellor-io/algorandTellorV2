@@ -9,12 +9,15 @@ from algosdk.future.transaction import *
 
 load_dotenv()
 
-multis_mnemonic = os.getenv("MULTIS_MNEMONIC").replace(",", "")
+multis_mnemonic = os.getenv("MNEMONIC1").replace(",", "")
 recipient_mnemonic = os.getenv("MNEMONIC4").replace(",", "")
 
 acc = Account.FromMnemonic(multis_mnemonic)
-msig = Multisig.get_multisig_account("M2GCDVDLWSXFQMPJDD52MLHCR52XFTEFMRX5T2PRUYURE5LW4LNYWXG6ZU")
 
+with open("multisig.json", "r") as f:
+    data = json.load(f)
+    msig = Multisig.undictify(data)
+    
 # sandbox
 algod_address = "http://localhost:4001"
 algod_token = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
@@ -27,7 +30,9 @@ params = algod_client.suggested_params()
 recipient = Account.FromMnemonic(recipient_mnemonic)
 amount = 10000
 note = "Team Multisig".encode()
-txn = PaymentTxn(msig, params, recipient.addr, amount, None, note, None)
+print(type(msig.address()))
+print(type(recipient.addr))
+txn = PaymentTxn(msig.address(), params, recipient.addr, amount, None, note, None)
 
 # create a SignedTransaction object
 mtx = MultisigTransaction(txn, msig)

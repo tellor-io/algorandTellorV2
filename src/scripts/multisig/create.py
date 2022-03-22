@@ -24,6 +24,9 @@ version = 1  # multisig version
 threshold = 3  # how many signatures are necessary
 msig = Multisig(version, threshold, [acc_1.addr, acc_2.addr, acc_3.addr])
 
+with open("multisig.json", "w") as f:
+    json.dump(msig.json_dictify(), f)
+
 print("Multisig Address: ", msig.address())
 print('Go to the below link to fund the created account using testnet faucet: \n https://dispenser.testnet.aws.algodev.network/?account={}'.format(msig.address())) 
 
