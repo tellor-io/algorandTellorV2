@@ -1,11 +1,14 @@
-import json
-from algosdk.v2client.algod import AlgodClient
-from algosdk import encoding, mnemonic
-from dotenv import load_dotenv
-from src.utils.account import Account
 import base64
+import json
 import os
+
+from algosdk import encoding
+from algosdk import mnemonic
 from algosdk.future.transaction import *
+from algosdk.v2client.algod import AlgodClient
+from dotenv import load_dotenv
+
+from src.utils.account import Account
 
 load_dotenv()
 
@@ -28,5 +31,8 @@ with open("multisig.json", "w") as f:
     json.dump(msig.json_dictify(), f)
 
 print("Multisig Address: ", msig.address())
-print('Go to the below link to fund the created account using testnet faucet: \n https://dispenser.testnet.aws.algodev.network/?account={}'.format(msig.address())) 
-
+print(
+    "Go to the below link to fund the created account using testnet faucet: \n https://dispenser.testnet.aws.algodev.network/?account={}".format(
+        msig.address()
+    )
+)
