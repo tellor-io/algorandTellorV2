@@ -1,7 +1,5 @@
 from pyteal import *
 
-staking_token_id = App.globalGet(Bytes("staking_token_id"))
-
 num_reports = Bytes("num_reports")
 reporter_lock = Bytes("reporter_lock")
 stake_amount = Bytes("stake_amount")
@@ -122,10 +120,15 @@ def report():
 
     def add_value():
         return Seq([
-            Assert(Len(Txn.application_args[2]) == Int(4)),
-            If(Len(App.globalGet(values)) + Int(4) >= Int(128) - Len(values),
+            last_value.store(Txn.application_args[2]),
+            While(Len(last_value.load()) < Int(10)).Do(
+                Seq([
+                    last_value.store(Concat(Bytes("0"), last_value.load()))
+                ])
+            ),
+            If(Len(App.globalGet(values)) + Int(10) >= Int(128) - Len(values),
             Seq([
-                App.globalPut(values, Substring(App.globalGet(values), Int(4), Int(128))),
+                App.globalPut(values, Substring(App.globalGet(values), Int(10), Int(128))),
                 App.globalPut(values, Concat(App.globalGet(values), Txn.application_args[2])),
             ]),
             App.globalPut(values, Concat(App.globalGet(values), Txn.application_args[2])),
@@ -133,14 +136,20 @@ def report():
         ])
     def add_timestamp():
         return Seq([
-        Assert(Len(Txn.application_args[3]) == Int(4)),
-        If(Len(App.globalGet(timestamps)) + Int(4) >= Int(128) - Len(timestamps),
-        Seq([
-            App.globalPut(timestamps, Substring(App.globalGet(timestamps), Int(4), Int(128))),
-            App.globalPut(timestamps, Concat(App.globalGet(timestamps), Txn.application_args[3])),
-        ]),
-        App.globalPut(timestamps, Concat(App.globalGet(timestamps), Txn.application_args[3]))
-        )
+            last_timestamp.store(Txn.application_args[3]),
+            While(Len(last_timestamp.load()) < Int(10)).Do(
+                Seq([
+                    last_timestamp.store(Concat(Bytes("0"), last_timestamp.load()))
+                ])
+            ),
+            Assert(Len(Txn.application_args[3]) == Int(10)),
+            If(Len(App.globalGet(timestamps)) + Int(10) >= Int(128) - Len(timestamps),
+            Seq([
+                App.globalPut(timestamps, Substring(App.globalGet(timestamps), Int(10), Int(128))),
+                App.globalPut(timestamps, Concat(App.globalGet(timestamps), Txn.application_args[3])),
+            ]),
+            App.globalPut(timestamps, Concat(App.globalGet(timestamps), Txn.application_args[3]))
+            )
         ])
 
     def get_last_timestamp():
@@ -193,11 +202,13 @@ def report():
             add_value(),
             add_timestamp(),
 
+            App.globalPut(Bytes("last_value"), Concat(last_timestamp.load(), last_value.load())),
+
             InnerTxnBuilder.Begin(),
             InnerTxnBuilder.SetFields({
                 TxnField.type_enum: TxnType.ApplicationCall,
                 TxnField.application_id: App.globalGet(medianizer),
-                TxnField.application_args: [Bytes("calculate_median")]
+                TxnField.application_args: [Bytes("get_values")]
             }),
             InnerTxnBuilder.Submit(),
 
