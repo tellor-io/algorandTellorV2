@@ -1,9 +1,8 @@
-
 import os
 
 from algosdk import mnemonic
-from algosdk.future.transaction import *
 from algosdk.algod import AlgodClient
+from algosdk.future.transaction import *
 
 # Change these values with mnemonics
 mnemonic1 = os.getenv("MNEMONIC1")

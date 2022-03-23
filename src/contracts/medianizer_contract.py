@@ -28,7 +28,6 @@ is_valid_feed = Btoi(Txn.sender()) == Or(
 )
 
 
-
 def create():
     """
     constructor for medianizer contract
