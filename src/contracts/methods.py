@@ -63,45 +63,52 @@ def create():
         ]
     )
 
+
 def change_governance():
     """
     changes governance application id
-    
+
     Txn args:
     0) will always equal "change_governance" (in order to route to this method)
     1) application id -- new governance application id
     """
 
-    return Seq([
-        Assert(
-            And(
-                is_governance, 
-                Txn.application_args.length() == Int(2),
-            )
-        ),
-        App.globalPut(governance_address, Txn.application_args[1]),
-        Approve(),
-    ])
+    return Seq(
+        [
+            Assert(
+                And(
+                    is_governance,
+                    Txn.application_args.length() == Int(2),
+                )
+            ),
+            App.globalPut(governance_address, Txn.application_args[1]),
+            Approve(),
+        ]
+    )
+
 
 def change_medianizer():
-    '''
+    """
     changes medianizer application id
 
     Txn args:
     0) will always equal "change_medianizer" (in order to route to this method)
     1) application id -- new medianizer application id
-    
-    '''
-    return Seq([
-        Assert(
-            And(
-                is_governance, 
-                Txn.application_args.length() == Int(2),
-            )
-        ),
-        App.globalPut(medianizer, Txn.application_args[1]),
-        Approve(),
-    ])
+
+    """
+    return Seq(
+        [
+            Assert(
+                And(
+                    is_governance,
+                    Txn.application_args.length() == Int(2),
+                )
+            ),
+            App.globalPut(medianizer, Txn.application_args[1]),
+            Approve(),
+        ]
+    )
+
 
 def report():
     """
@@ -119,67 +126,77 @@ def report():
     last_value = ScratchVar(TealType.bytes)
 
     def add_value():
-        return Seq([
-            last_value.store(Txn.application_args[2]),
-            While(Len(last_value.load()) < Int(10)).Do(
-                Seq([
-                    last_value.store(Concat(Bytes("0"), last_value.load()))
-                ])
-            ),
-            If(Len(App.globalGet(values)) + Int(10) >= Int(128) - Len(values),
-            Seq([
-                App.globalPut(values, Substring(App.globalGet(values), Int(10), Int(128))),
-                App.globalPut(values, Concat(App.globalGet(values), Txn.application_args[2])),
-            ]),
-            App.globalPut(values, Concat(App.globalGet(values), Txn.application_args[2])),
-            )
-        ])
+        return Seq(
+            [
+                last_value.store(Txn.application_args[2]),
+                While(Len(last_value.load()) < Int(10)).Do(
+                    Seq([last_value.store(Concat(Bytes("0"), last_value.load()))])
+                ),
+                If(
+                    Len(App.globalGet(values)) + Int(10) >= Int(128) - Len(values),
+                    Seq(
+                        [
+                            App.globalPut(values, Substring(App.globalGet(values), Int(10), Int(128))),
+                            App.globalPut(values, Concat(App.globalGet(values), Txn.application_args[2])),
+                        ]
+                    ),
+                    App.globalPut(values, Concat(App.globalGet(values), Txn.application_args[2])),
+                ),
+            ]
+        )
+
     def add_timestamp():
-        return Seq([
-            last_timestamp.store(Txn.application_args[3]),
-            While(Len(last_timestamp.load()) < Int(10)).Do(
-                Seq([
-                    last_timestamp.store(Concat(Bytes("0"), last_timestamp.load()))
-                ])
-            ),
-            Assert(Len(Txn.application_args[3]) == Int(10)),
-            If(Len(App.globalGet(timestamps)) + Int(10) >= Int(128) - Len(timestamps),
-            Seq([
-                App.globalPut(timestamps, Substring(App.globalGet(timestamps), Int(10), Int(128))),
-                App.globalPut(timestamps, Concat(App.globalGet(timestamps), Txn.application_args[3])),
-            ]),
-            App.globalPut(timestamps, Concat(App.globalGet(timestamps), Txn.application_args[3]))
-            )
-        ])
+        return Seq(
+            [
+                last_timestamp.store(Txn.application_args[3]),
+                While(Len(last_timestamp.load()) < Int(10)).Do(
+                    Seq([last_timestamp.store(Concat(Bytes("0"), last_timestamp.load()))])
+                ),
+                Assert(Len(Txn.application_args[3]) == Int(10)),
+                If(
+                    Len(App.globalGet(timestamps)) + Int(10) >= Int(128) - Len(timestamps),
+                    Seq(
+                        [
+                            App.globalPut(timestamps, Substring(App.globalGet(timestamps), Int(10), Int(128))),
+                            App.globalPut(timestamps, Concat(App.globalGet(timestamps), Txn.application_args[3])),
+                        ]
+                    ),
+                    App.globalPut(timestamps, Concat(App.globalGet(timestamps), Txn.application_args[3])),
+                ),
+            ]
+        )
 
     def get_last_timestamp():
-        return Seq([
-            If(
-                App.globalGet(timestamps) == Bytes(""),
-                last_timestamp.store(Bytes("0")),
-                last_timestamp.store(
-                    Substring(
-                        App.globalGet(timestamps),
-                        Len(App.globalGet(timestamps)) - Int(4),
-                        Len(App.globalGet(timestamps))
-                    )
+        return Seq(
+            [
+                If(
+                    App.globalGet(timestamps) == Bytes(""),
+                    last_timestamp.store(Bytes("0")),
+                    last_timestamp.store(
+                        Substring(
+                            App.globalGet(timestamps),
+                            Len(App.globalGet(timestamps)) - Int(4),
+                            Len(App.globalGet(timestamps)),
+                        )
+                    ),
                 )
-            )
-        ])
+            ]
+        )
+
     def get_last_value():
-        return Seq([
-            If(
-                App.globalGet(values) == Bytes(""),
-                last_value.store(Bytes("0")),
-                last_value.store(
-                    Substring(
-                        App.globalGet(values),
-                        Len(App.globalGet(values)) - Int(4),
-                        Len(App.globalGet(values))
-                    )
+        return Seq(
+            [
+                If(
+                    App.globalGet(values) == Bytes(""),
+                    last_value.store(Bytes("0")),
+                    last_value.store(
+                        Substring(
+                            App.globalGet(values), Len(App.globalGet(values)) - Int(4), Len(App.globalGet(values))
+                        )
+                    ),
                 )
-            )
-        ])
+            ]
+        )
 
     medianizer_query_id = App.globalGetEx(Int(1), query_id)
 
@@ -196,39 +213,37 @@ def report():
                     App.globalGet(query_id) == Txn.application_args[1],
                 )
             ),
-
             get_last_timestamp(),
-
             Assert(Global.latest_timestamp() - Btoi(last_timestamp.load()) < App.globalGet(reporter_lock)),
             # App.globalPut(values, Txn.application_args[2]),
             # App.globalPut(timestamps, Int(int(time.time()))),
-
             add_value(),
             add_timestamp(),
-
             App.globalPut(Bytes("last_value"), Concat(last_timestamp.load(), last_value.load())),
-
             InnerTxnBuilder.Begin(),
-            InnerTxnBuilder.SetFields({
-                TxnField.type_enum: TxnType.ApplicationCall,
-                TxnField.application_id: App.globalGet(medianizer),
-                TxnField.application_args: [Bytes("get_values")]
-            }),
+            InnerTxnBuilder.SetFields(
+                {
+                    TxnField.type_enum: TxnType.ApplicationCall,
+                    TxnField.application_id: App.globalGet(medianizer),
+                    TxnField.application_args: [Bytes("get_values")],
+                }
+            ),
             InnerTxnBuilder.Submit(),
-
             InnerTxnBuilder.Begin(),
-            InnerTxnBuilder.SetFields({
-                TxnField.type_enum: TxnType.Payment,
-                TxnField.amount: App.globalGet(tip_amount),
-                TxnField.receiver: Txn.sender()
-            }),
+            InnerTxnBuilder.SetFields(
+                {
+                    TxnField.type_enum: TxnType.Payment,
+                    TxnField.amount: App.globalGet(tip_amount),
+                    TxnField.receiver: Txn.sender(),
+                }
+            ),
             InnerTxnBuilder.Submit(),
-
-            #TODO set tip amount to 0
+            # TODO set tip amount to 0
             App.globalPut(App.globalGet(tip_amount), Int(0)),
             Approve(),
         ]
     )
+
 
 def stake():
     """
@@ -261,27 +276,30 @@ def stake():
         ]
     )
 
+
 def tip():
     """
     provide a reward to the reporter for reporting
 
     Txn args:
-    0) will always equal "tip" (in order to route to this method) 
+    0) will always equal "tip" (in order to route to this method)
     """
     on_stake_tx_index = Txn.group_index() - Int(1)
 
-    return Seq([
-        Assert(
-            And(
-                Gtxn[on_stake_tx_index].sender() == Txn.sender(),
-                Gtxn[on_stake_tx_index].receiver() == Global.current_application_address(),
-                Gtxn[on_stake_tx_index].type_enum() == TxnType.Payment,
+    return Seq(
+        [
+            Assert(
+                And(
+                    Gtxn[on_stake_tx_index].sender() == Txn.sender(),
+                    Gtxn[on_stake_tx_index].receiver() == Global.current_application_address(),
+                    Gtxn[on_stake_tx_index].type_enum() == TxnType.Payment,
+                ),
             ),
-        ),
+            App.globalPut(tip_amount, App.globalGet(tip_amount) + Gtxn[on_stake_tx_index].amount()),
+            Approve(),
+        ]
+    )
 
-        App.globalPut(tip_amount, App.globalGet(tip_amount) + Gtxn[on_stake_tx_index].amount()),
-        Approve()
-    ])
 
 def withdraw():
     """
@@ -295,12 +313,13 @@ def withdraw():
 
     """
     return Seq(
-            [
+        [
             Assert(
                 And(
                     is_reporter,
-                    Global.latest_timestamp() - App.globalGet(stake_timestamp) > Int(604800), # assert the reporter's stake has been locked for 7 days since withdrawal request
-                    App.globalGet(staking_status) == Int(2), 
+                    Global.latest_timestamp() - App.globalGet(stake_timestamp)
+                    > Int(604800),  # assert the reporter's stake has been locked for 7 days since withdrawal request
+                    App.globalGet(staking_status) == Int(2),
                 )
             ),
             # change locked status to unstaked
@@ -320,9 +339,10 @@ def withdraw():
         ]
     )
 
+
 def withdraw_request():
     """
-    reporter has to request withdrawal and 
+    reporter has to request withdrawal and
     lock their balance for 7 days
     before they can withdraw their stake
 
@@ -330,19 +350,19 @@ def withdraw_request():
     0) will always equal "withdraw_request"
 
     """
-    return Seq([
-        Assert(
-            And(
-                is_reporter,
-                App.globalGet(staking_status) == Int(1), # is staked
-                App.globalGet(stake_timestamp) == Int(0),# first time requesting to withdraw
-            )
-        ),
-
-        App.globalPut(stake_timestamp, Global.latest_timestamp()),# start staking time interval
-        App.globalPut(staking_status, Int(2)),# status = 2 means your stake is in a locked state for 7 days
-        Approve(),
-    ]
+    return Seq(
+        [
+            Assert(
+                And(
+                    is_reporter,
+                    App.globalGet(staking_status) == Int(1),  # is staked
+                    App.globalGet(stake_timestamp) == Int(0),  # first time requesting to withdraw
+                )
+            ),
+            App.globalPut(stake_timestamp, Global.latest_timestamp()),  # start staking time interval
+            App.globalPut(staking_status, Int(2)),  # status = 2 means your stake is in a locked state for 7 days
+            Approve(),
+        ]
     )
 
 
@@ -360,20 +380,21 @@ def slash_reporter():
     """
 
     return Seq(
-            [
-                Assert(is_governance),
-                InnerTxnBuilder.Begin(),
-                InnerTxnBuilder.SetFields(
-                    {
-                        TxnField.type_enum: TxnType.Payment,
-                        TxnField.close_remainder_to: App.globalGet(governance_address),
-                    }
-                ),
-                InnerTxnBuilder.Submit(),
-                App.globalPut(staking_status, Int(0)),
-                Approve()
-            ]
-        )
+        [
+            Assert(is_governance),
+            InnerTxnBuilder.Begin(),
+            InnerTxnBuilder.SetFields(
+                {
+                    TxnField.type_enum: TxnType.Payment,
+                    TxnField.close_remainder_to: App.globalGet(governance_address),
+                }
+            ),
+            InnerTxnBuilder.Submit(),
+            App.globalPut(staking_status, Int(0)),
+            Approve(),
+        ]
+    )
+
 
 def handle_method():
     """
@@ -390,5 +411,3 @@ def handle_method():
         [contract_method == Bytes("withdraw"), withdraw()],
         [contract_method == Bytes("withdraw_request"), withdraw_request()],
     )
-
-
