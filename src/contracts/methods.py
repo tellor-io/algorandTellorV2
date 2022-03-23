@@ -180,13 +180,17 @@ def report():
                 )
             )
         ])
+
+    medianizer_query_id = App.globalGetEx(Int(1), query_id)
+
     return Seq(
         [
+            medianizer_query_id,
             Assert(
                 And(
                     Txn.applications[1] == App.globalGet(medianizer),
-                    App.globalGetEx(Txn.applications[1], query_id).hasValue(),
-                    App.globalGet(query_id) == App.globalGetEx(Txn.applications[1], query_id).value(),
+                    medianizer_query_id.hasValue(),
+                    App.globalGet(query_id) == medianizer_query_id.value(),
                     App.globalGet(reporter) == Txn.sender(),
                     App.globalGet(staking_status) == Int(1),
                     App.globalGet(query_id) == Txn.application_args[1],
@@ -386,3 +390,5 @@ def handle_method():
         [contract_method == Bytes("withdraw"), withdraw()],
         [contract_method == Bytes("withdraw_request"), withdraw_request()],
     )
+
+
