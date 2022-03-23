@@ -1,12 +1,9 @@
-import base64
-import json
+
 import os
 
-from algosdk import account
-from algosdk import encoding
 from algosdk import mnemonic
 from algosdk.future.transaction import *
-from algosdk.v2client.algod import AlgodClient
+from algosdk.algod import AlgodClient
 
 # Change these values with mnemonics
 mnemonic1 = os.getenv("MNEMONIC1")
@@ -37,7 +34,8 @@ msig = Multisig(version, threshold, [account_1, account_2, account_3])
 
 print("Multisig Address: ", msig.address())
 print(
-    "Go to the below link to fund the created account using testnet faucet: \n https://dispenser.testnet.aws.algodev.network/?account={}".format(
+    "Go to the below link to fund the created account using testnet faucet: \
+    \n https://dispenser.testnet.aws.algodev.network/?account={}".format(
         msig.address()
     )
 )
