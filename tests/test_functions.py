@@ -1,6 +1,7 @@
 import time
-from algosdk import encoding
+
 import pytest
+from algosdk import encoding
 
 from src.utils.util import getAppGlobalState
 
@@ -29,7 +30,6 @@ def test_report(client, scripts, accounts, deployed_contract):
     assert state[b"num_reports"] == 0  # won't increment until approved by governance
     assert state[b"value"] == new_value
     assert pytest.approx(state[b"timestamp"], 100) == int(time.time())
-
 
 
 def test_stake(client, scripts, accounts, deployed_contract):
