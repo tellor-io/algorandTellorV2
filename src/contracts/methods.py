@@ -332,6 +332,7 @@ def withdraw():
                     TxnField.type_enum: TxnType.Payment,
                     # TxnField.amount: App.globalGet(stake_amount),
                     TxnField.close_remainder_to: App.globalGet(reporter),
+                    TxnField.applications: Txn.applications
                 }
             ),
             InnerTxnBuilder.Submit(),
