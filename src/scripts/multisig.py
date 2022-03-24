@@ -1,11 +1,8 @@
-import base64
-import json
 import os
 
-from algosdk import encoding
 from algosdk import mnemonic
+from algosdk.algod import AlgodClient
 from algosdk.future.transaction import *
-from algosdk.v2client.algod import AlgodClient
 
 # Change these values with mnemonics
 mnemonic1 = os.getenv("MNEMONIC1")

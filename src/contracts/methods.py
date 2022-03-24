@@ -1,7 +1,5 @@
 from pyteal import *
 
-staking_token_id = App.globalGet(Bytes("staking_token_id"))
-
 num_reports = Bytes("num_reports")
 reporter_lock = Bytes("reporter_lock")
 stake_amount = Bytes("stake_amount")
@@ -16,6 +14,7 @@ timestamps = Bytes("timestamps")
 values = Bytes("values")
 tip_amount = Bytes("tip_amount")
 stake_timestamp = Bytes("stake_timestamp")
+medianizer = Bytes("medianizer")
 is_governance = Txn.sender() == App.globalGet(governance_address)
 is_reporter = Txn.sender() == App.globalGet(reporter)
 
@@ -41,17 +40,18 @@ def create():
     1) query id
     2) query data
     3) reporter lock
+    4) medianizer application address
 
     """
     return Seq(
         [
             App.globalPut(tipper, Txn.sender()),
             App.globalPut(tip_amount, Int(0)),
-            # TODO assert application args length is correct
             App.globalPut(governance_address, Txn.application_args[0]),
             App.globalPut(query_id, Txn.application_args[1]),
             App.globalPut(query_data, Txn.application_args[2]),
             App.globalPut(reporter_lock, Txn.application_args[3]),
+            App.globalPut(medianizer, Txn.application_args[4]),
             # 0-not Staked, 1=Staked
             App.globalPut(reporter, Bytes("")),
             App.globalPut(staking_status, Int(0)),
@@ -66,11 +66,11 @@ def create():
 
 def change_governance():
     """
-    changes governance address
+    changes governance application id
 
     Txn args:
     0) will always equal "change_governance" (in order to route to this method)
-    1) address -- new governance address
+    1) application id -- new governance application id
     """
 
     return Seq(
@@ -82,6 +82,29 @@ def change_governance():
                 )
             ),
             App.globalPut(governance_address, Txn.application_args[1]),
+            Approve(),
+        ]
+    )
+
+
+def change_medianizer():
+    """
+    changes medianizer application id
+
+    Txn args:
+    0) will always equal "change_medianizer" (in order to route to this method)
+    1) application id -- new medianizer application id
+
+    """
+    return Seq(
+        [
+            Assert(
+                And(
+                    is_governance,
+                    Txn.application_args.length() == Int(2),
+                )
+            ),
+            App.globalPut(medianizer, Txn.application_args[1]),
             Approve(),
         ]
     )
@@ -100,16 +123,20 @@ def report():
     """
 
     last_timestamp = ScratchVar(TealType.bytes)
+    last_value = ScratchVar(TealType.bytes)
 
     def add_value():
         return Seq(
             [
-                Assert(Len(Txn.application_args[2]) == Int(4)),
+                last_value.store(Txn.application_args[2]),
+                While(Len(last_value.load()) < Int(10)).Do(
+                    Seq([last_value.store(Concat(Bytes("0"), last_value.load()))])
+                ),
                 If(
-                    Len(App.globalGet(values)) + Int(4) >= Int(128) - Len(timestamps),
+                    Len(App.globalGet(values)) + Int(10) >= Int(128) - Len(values),
                     Seq(
                         [
-                            App.globalPut(values, Substring(App.globalGet(values), Int(4), Int(128))),
+                            App.globalPut(values, Substring(App.globalGet(values), Int(10), Int(128))),
                             App.globalPut(values, Concat(App.globalGet(values), Txn.application_args[2])),
                         ]
                     ),
@@ -121,12 +148,16 @@ def report():
     def add_timestamp():
         return Seq(
             [
-                Assert(Len(Txn.application_args[3]) == Int(4)),
+                last_timestamp.store(Txn.application_args[3]),
+                While(Len(last_timestamp.load()) < Int(10)).Do(
+                    Seq([last_timestamp.store(Concat(Bytes("0"), last_timestamp.load()))])
+                ),
+                Assert(Len(Txn.application_args[3]) == Int(10)),
                 If(
-                    Len(App.globalGet(timestamps)) + Int(4) >= Int(128) - Len(timestamps),
+                    Len(App.globalGet(timestamps)) + Int(10) >= Int(128) - Len(timestamps),
                     Seq(
                         [
-                            App.globalPut(timestamps, Substring(App.globalGet(timestamps), Int(4), Int(128))),
+                            App.globalPut(timestamps, Substring(App.globalGet(timestamps), Int(10), Int(128))),
                             App.globalPut(timestamps, Concat(App.globalGet(timestamps), Txn.application_args[3])),
                         ]
                     ),
@@ -152,10 +183,31 @@ def report():
             ]
         )
 
+    def get_last_value():
+        return Seq(
+            [
+                If(
+                    App.globalGet(values) == Bytes(""),
+                    last_value.store(Bytes("0")),
+                    last_value.store(
+                        Substring(
+                            App.globalGet(values), Len(App.globalGet(values)) - Int(4), Len(App.globalGet(values))
+                        )
+                    ),
+                )
+            ]
+        )
+
+    medianizer_query_id = App.globalGetEx(Int(1), query_id)
+
     return Seq(
         [
+            medianizer_query_id,
             Assert(
                 And(
+                    Txn.applications[1] == App.globalGet(medianizer),
+                    medianizer_query_id.hasValue(),
+                    App.globalGet(query_id) == medianizer_query_id.value(),
                     App.globalGet(reporter) == Txn.sender(),
                     App.globalGet(staking_status) == Int(1),
                     App.globalGet(query_id) == Txn.application_args[1],
@@ -167,6 +219,16 @@ def report():
             # App.globalPut(timestamps, Int(int(time.time()))),
             add_value(),
             add_timestamp(),
+            App.globalPut(Bytes("last_value"), Concat(last_timestamp.load(), last_value.load())),
+            InnerTxnBuilder.Begin(),
+            InnerTxnBuilder.SetFields(
+                {
+                    TxnField.type_enum: TxnType.ApplicationCall,
+                    TxnField.application_id: App.globalGet(medianizer),
+                    TxnField.application_args: [Bytes("get_values")],
+                }
+            ),
+            InnerTxnBuilder.Submit(),
             InnerTxnBuilder.Begin(),
             InnerTxnBuilder.SetFields(
                 {

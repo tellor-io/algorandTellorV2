@@ -1,8 +1,8 @@
-#pragma version 5
+#pragma version 6
 txn ApplicationID
 int 0
 ==
-bnz main_l36
+bnz main_l37
 txn OnCompletion
 int NoOp
 ==
@@ -32,21 +32,21 @@ main_l7:
 txna ApplicationArgs 0
 byte "change_governance"
 ==
-bnz main_l35
+bnz main_l36
 txna ApplicationArgs 0
 byte "stake"
 ==
-bnz main_l34
+bnz main_l35
 txna ApplicationArgs 0
 byte "tip"
 ==
-bnz main_l33
+bnz main_l34
 txna ApplicationArgs 0
 byte "report"
 ==
-bnz main_l23
+bnz main_l18
 txna ApplicationArgs 0
-byte "vote"
+byte "slash_reporter"
 ==
 bnz main_l17
 txna ApplicationArgs 0
@@ -121,23 +121,6 @@ byte "governance_address"
 app_global_get
 ==
 assert
-txna ApplicationArgs 1
-btoi
-int 0
-!=
-txna ApplicationArgs 1
-btoi
-int 1
-!=
-&&
-bnz main_l22
-txna ApplicationArgs 1
-btoi
-int 0
-==
-bnz main_l20
-err
-main_l20:
 itxn_begin
 int pay
 itxn_field TypeEnum
@@ -150,14 +133,28 @@ int 0
 app_global_put
 int 1
 return
-main_l22:
-int 0
-return
-main_l23:
+main_l18:
+int 1
+byte "query_id"
+app_global_get_ex
+store 3
+store 2
+txna Applications 1
+byte "medianizer"
+app_global_get
+==
+load 3
+&&
+byte "query_id"
+app_global_get
+load 2
+==
+&&
 byte "reporter_address"
 app_global_get
 txn Sender
 ==
+&&
 byte "staking_status"
 app_global_get
 int 1
@@ -173,7 +170,7 @@ byte "timestamps"
 app_global_get
 byte ""
 ==
-bnz main_l32
+bnz main_l33
 byte "timestamps"
 app_global_get
 byte "timestamps"
@@ -186,7 +183,7 @@ app_global_get
 len
 substring3
 store 0
-main_l25:
+main_l20:
 global LatestTimestamp
 load 0
 btoi
@@ -196,17 +193,20 @@ app_global_get
 <
 assert
 txna ApplicationArgs 2
+store 1
+main_l21:
+load 1
 len
-int 4
-==
-assert
+int 10
+<
+bnz main_l32
 byte "values"
 app_global_get
 len
-int 4
+int 10
 +
 int 128
-byte "timestamps"
+byte "values"
 len
 -
 >=
@@ -217,30 +217,52 @@ app_global_get
 txna ApplicationArgs 2
 concat
 app_global_put
-main_l27:
+main_l24:
+txna ApplicationArgs 3
+store 0
+main_l25:
+load 0
+len
+int 10
+<
+bnz main_l30
 txna ApplicationArgs 3
 len
-int 4
+int 10
 ==
 assert
 byte "timestamps"
 app_global_get
 len
-int 4
+int 10
 +
 int 128
 byte "timestamps"
 len
 -
 >=
-bnz main_l30
+bnz main_l29
 byte "timestamps"
 byte "timestamps"
 app_global_get
 txna ApplicationArgs 3
 concat
 app_global_put
-main_l29:
+main_l28:
+byte "last_value"
+load 0
+load 1
+concat
+app_global_put
+itxn_begin
+int appl
+itxn_field TypeEnum
+byte "medianizer"
+app_global_get
+itxn_field ApplicationID
+byte "get_values"
+itxn_field ApplicationArgs
+itxn_submit
 itxn_begin
 int pay
 itxn_field TypeEnum
@@ -256,13 +278,11 @@ int 0
 app_global_put
 int 1
 return
-main_l30:
+main_l29:
 byte "timestamps"
 byte "timestamps"
 app_global_get
-int 4
-int 128
-substring3
+extract 10 118
 app_global_put
 byte "timestamps"
 byte "timestamps"
@@ -270,14 +290,18 @@ app_global_get
 txna ApplicationArgs 3
 concat
 app_global_put
-b main_l29
+b main_l28
+main_l30:
+byte "0"
+load 0
+concat
+store 0
+b main_l25
 main_l31:
 byte "values"
 byte "values"
 app_global_get
-int 4
-int 128
-substring3
+extract 10 118
 app_global_put
 byte "values"
 byte "values"
@@ -285,12 +309,18 @@ app_global_get
 txna ApplicationArgs 2
 concat
 app_global_put
-b main_l27
+b main_l24
 main_l32:
 byte "0"
-store 0
-b main_l25
+load 1
+concat
+store 1
+b main_l21
 main_l33:
+byte "0"
+store 0
+b main_l20
+main_l34:
 txn GroupIndex
 int 1
 -
@@ -323,7 +353,7 @@ gtxns Amount
 app_global_put
 int 1
 return
-main_l34:
+main_l35:
 byte "reporter_address"
 app_global_get
 byte ""
@@ -369,7 +399,7 @@ gtxns Sender
 app_global_put
 int 1
 return
-main_l35:
+main_l36:
 txn Sender
 byte "governance_address"
 app_global_get
@@ -384,7 +414,7 @@ txna ApplicationArgs 1
 app_global_put
 int 1
 return
-main_l36:
+main_l37:
 byte "tipper"
 txn Sender
 app_global_put
@@ -402,6 +432,9 @@ txna ApplicationArgs 2
 app_global_put
 byte "reporter_lock"
 txna ApplicationArgs 3
+app_global_put
+byte "medianizer"
+txna ApplicationArgs 4
 app_global_put
 byte "reporter_address"
 byte ""
