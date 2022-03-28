@@ -184,14 +184,6 @@ len
 substring3
 store 0
 main_l20:
-global LatestTimestamp
-load 0
-btoi
--
-byte "reporter_lock"
-app_global_get
-<
-assert
 txna ApplicationArgs 2
 store 1
 main_l21:
@@ -430,11 +422,8 @@ app_global_put
 byte "query_data"
 txna ApplicationArgs 2
 app_global_put
-byte "reporter_lock"
-txna ApplicationArgs 3
-app_global_put
 byte "medianizer"
-txna ApplicationArgs 4
+txna ApplicationArgs 3
 app_global_put
 byte "reporter_address"
 byte ""

@@ -1,7 +1,6 @@
 from pyteal import *
 
 num_reports = Bytes("num_reports")
-reporter_lock = Bytes("reporter_lock")
 stake_amount = Bytes("stake_amount")
 governance_address = Bytes("governance_address")
 query_id = Bytes("query_id")
@@ -39,8 +38,7 @@ def create():
     0) governance address
     1) query id
     2) query data
-    3) reporter lock
-    4) medianizer application address
+    3) medianizer application address
 
     """
     return Seq(
@@ -50,8 +48,7 @@ def create():
             App.globalPut(governance_address, Txn.application_args[0]),
             App.globalPut(query_id, Txn.application_args[1]),
             App.globalPut(query_data, Txn.application_args[2]),
-            App.globalPut(reporter_lock, Txn.application_args[3]),
-            App.globalPut(medianizer, Txn.application_args[4]),
+            App.globalPut(medianizer, Txn.application_args[3]),
             # 0-not Staked, 1=Staked
             App.globalPut(reporter, Bytes("")),
             App.globalPut(staking_status, Int(0)),
@@ -214,7 +211,6 @@ def report():
                 )
             ),
             get_last_timestamp(),
-            Assert(Global.latest_timestamp() - Btoi(last_timestamp.load()) < App.globalGet(reporter_lock)),
             # App.globalPut(values, Txn.application_args[2]),
             # App.globalPut(timestamps, Int(int(time.time()))),
             add_value(),
