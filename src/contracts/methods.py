@@ -149,7 +149,6 @@ def report():
                 While(Len(last_timestamp.load()) < Int(10)).Do(
                     Seq([last_timestamp.store(Concat(Bytes("0"), last_timestamp.load()))])
                 ),
-                Assert(Len(Txn.application_args[3]) == Int(10)),
                 If(
                     Len(App.globalGet(timestamps)) + Int(10) >= Int(128) - Len(timestamps),
                     Seq(
