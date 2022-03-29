@@ -1,7 +1,7 @@
 from scripts.multisig.multisig import send_multisig_tx
 
 
-def slash_reporter(feed_id:int):
+def slash_reporter(feed_id: int):
     """
     Use the governance contract to approve or deny a value
     calls slash_reporter() on the contract, only callable by governance address

@@ -1,12 +1,14 @@
 import json
 import os
-from typing import Any, Optional
+from typing import Any
+from typing import Optional
 
 from algosdk import mnemonic
 from algosdk.algod import AlgodClient
 from algosdk.future.transaction import *
 
-def send_multisig_tx(app_id:int, fn_name:str, app_args:Optional[List[Any]], foreign_apps:Optional[List[int]]):
+
+def send_multisig_tx(app_id: int, fn_name: str, app_args: Optional[List[Any]], foreign_apps: Optional[List[int]]):
     # Change these values with mnemonics
     mnemonic1 = os.getenv("MNEMONIC1")
     mnemonic2 = os.getenv("MNEMONIC2")
@@ -57,7 +59,9 @@ def send_multisig_tx(app_id:int, fn_name:str, app_args:Optional[List[Any]], fore
     # create a transaction
     sender = msig.address()
     note = "Team Multisig".encode()
-    txn = ApplicationNoOpTxn(sender, params, app_id, note=note, app_args=[fn_name]+app_args, foreign_apps=foreign_apps)
+    txn = ApplicationNoOpTxn(
+        sender, params, app_id, note=note, app_args=[fn_name] + app_args, foreign_apps=foreign_apps
+    )
 
     # create a SignedTransaction object
     mtx = MultisigTransaction(txn, msig)
@@ -68,7 +72,6 @@ def send_multisig_tx(app_id:int, fn_name:str, app_args:Optional[List[Any]], fore
     mtx.sign(private_key_3)
     # print encoded transaction
     # print(encoding.msgpack_encode(mtx))
-
 
     # wait for confirmation
     try:
