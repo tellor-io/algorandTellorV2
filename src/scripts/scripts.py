@@ -177,28 +177,6 @@ class Scripts:
         self.client.send_transaction(signedSubmitValueTxn)
         waitForTransaction(self.client, signedSubmitValueTxn.get_txid())
 
-    def vote(self, gov_vote: int):
-        """
-        Use the governance contract to approve or deny a value
-        calls vote() on the contract, only callable by governance address
-
-        0 means rejected
-        1 means approved
-
-        Args:
-            gov_vote (int, 0 or 1): binary decision to approve or reject a value
-        """
-
-        txn = transaction.ApplicationNoOpTxn(
-            sender=self.governance_address.getAddress(),
-            index=self.app_id,
-            app_args=[b"vote", gov_vote],
-            sp=self.client.suggested_params(),
-        )
-        signedTxn = txn.sign(self.governance_address.getPrivateKey())
-        self.client.send_transaction(signedTxn)
-        waitForTransaction(self.client, signedTxn.get_txid())
-
     def withdraw(self):
         """
         Sends the reporter their stake back and removes their permission to report

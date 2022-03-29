@@ -6,12 +6,12 @@ from algosdk import mnemonic
 from algosdk.algod import AlgodClient
 from algosdk.future.transaction import *
 
-def send_multisig_tx(app_id:int, fn_name:str, app_args:List[Any], foreign_apps:Optional[List[int]]):
+def send_multisig_tx(app_id:int, fn_name:str, app_args:Optional[List[Any]], foreign_apps:Optional[List[int]]):
     # Change these values with mnemonics
     mnemonic1 = os.getenv("MNEMONIC1")
     mnemonic2 = os.getenv("MNEMONIC2")
     mnemonic3 = os.getenv("MNEMONIC3")
-    mnemonic4 = os.getenv("MNEMONIC4")
+    # mnemonic4 = os.getenv("MNEMONIC4")
     # never use mnemonics in production code, replace for demo purposes only
 
     # For ease of reference, add account public and private keys to
