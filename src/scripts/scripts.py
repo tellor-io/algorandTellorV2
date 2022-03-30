@@ -35,7 +35,8 @@ class Scripts:
         tipper: Account,
         reporter: Account,
         governance_address: Account,
-        app_id: Optional[int] = None,
+        feed_app_id: Optional[int] = None,
+        medianizer_app_id: Optional[int] = None,
     ) -> None:
         """
         - connects to algorand node
@@ -53,9 +54,16 @@ class Scripts:
         self.tipper = tipper
         self.reporter = reporter
         self.governance_address = governance_address
-        self.app_id = app_id
-        if self.app_id is not None:
-            self.app_address = get_application_address(self.app_id)
+        self.feed_app_id = feed_app_id
+        self.medianizer_app_id = medianizer_app_id
+
+        self.feeds = []
+        
+        if self.feed_app_id is not None:
+            self.feed_app_address = get_application_address(self.feed_app_id)
+        if self.medianizer_app_id is not None:
+            self.medianizer_app_address = get_application_address(self.medianizer_app_id)
+
 
     def get_contracts(self, client: AlgodClient) -> Tuple[bytes, bytes]:
         """
@@ -75,6 +83,24 @@ class Scripts:
             CLEAR_STATE_PROGRAM = fullyCompileContract(client, clear_state_program())
 
         return APPROVAL_PROGRAM, CLEAR_STATE_PROGRAM
+
+    def get_medianized_value(self):
+
+        state = getAppGlobalState(self.client, self.medianizer_app_id)
+
+        return state["median"]
+
+    def get_current_feeds(self):
+
+        state = getAppGlobalState(self.client, self.medianizer_app_id)
+
+        current_data = {}
+
+        for i in range(5):
+            feed_app_id = state["app_" + i]
+            feed_state = getAppGlobalState(self.client, feed_app_id)
+            current_data[feed_app_id]["values"] = feed_state["values"]
+            current_data[feed_app_id]["timestamps"] = feed_state["timestamps"]
 
     def deploy_tellor_flex(self, query_id: str, query_data: str) -> int:
         """
@@ -118,9 +144,9 @@ class Scripts:
 
         response = waitForTransaction(self.client, signedTxn.get_txid())
         assert response.applicationIndex is not None and response.applicationIndex > 0
-        self.app_id = response.applicationIndex
-        self.app_address = get_application_address(self.app_id)
-        return self.app_id
+        self.feed_app_id = response.applicationIndex
+        self.app_address = get_application_address(self.feed_app_id)
+        return self.feed_app_id
 
     def stake(self, stake_amount=None) -> None:
         """
@@ -131,7 +157,7 @@ class Scripts:
         Args:
             stake_amount (int): override stake_amount for testing purposes
         """
-        appGlobalState = getAppGlobalState(self.client, self.app_id)
+        appGlobalState = getAppGlobalState(self.client, self.feed_app_id)
 
         if stake_amount is None:
             stake_amount = appGlobalState[b"stake_amount"]
@@ -146,7 +172,7 @@ class Scripts:
         )
 
         stakeInTx = transaction.ApplicationNoOpTxn(
-            sender=self.reporter.getAddress(), index=self.app_id, app_args=[b"stake"], sp=self.client.suggested_params()
+            sender=self.reporter.getAddress(), index=self.feed_app_id, app_args=[b"stake"], sp=self.client.suggested_params()
         )
 
         transaction.assign_group_id([payTxn, stakeInTx])
@@ -167,7 +193,7 @@ class Scripts:
         )
 
         no_op_txn = transaction.ApplicationNoOpTxn(
-            sender=self.reporter.getAddress(), index=self.app_id, app_args=[b"tip"], sp=suggestedParams
+            sender=self.reporter.getAddress(), index=self.feed_app_id, app_args=[b"tip"], sp=suggestedParams
         )
 
         signed_pay_txn = payTxn.sign(self.tipper.getPrivateKey())
@@ -188,7 +214,7 @@ class Scripts:
 
         submitValueTxn = transaction.ApplicationNoOpTxn(
             sender=self.reporter.getAddress(),
-            index=self.app_id,
+            index=self.feed_app_id,
             app_args=[b"report", query_id, value],
             sp=self.client.suggested_params(),
         )
@@ -204,7 +230,7 @@ class Scripts:
         """
         txn = transaction.ApplicationNoOpTxn(
             sender=self.reporter.getAddress(),
-            index=self.app_id,
+            index=self.feed_app_id,
             app_args=[b"withdraw"],
             sp=self.client.suggested_params(),
         )
@@ -214,4 +240,4 @@ class Scripts:
 
     def withdraw_request(self):
 
-        send_no_op_tx(self.reporter, self.app_id, "withdraw_request", app_args=None, foreign_apps=None)
+        send_no_op_tx(self.reporter, self.feed_app_id, "withdraw_request", app_args=None, foreign_apps=None)
