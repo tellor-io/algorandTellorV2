@@ -11,7 +11,7 @@ from src.utils.account import Account
 from src.utils.util import fullyCompileContract
 from src.utils.util import getAppGlobalState
 from src.utils.util import waitForTransaction
-
+from src.utils.senders import send_no_op_tx
 APPROVAL_PROGRAM = b""
 CLEAR_STATE_PROGRAM = b""
 
@@ -216,3 +216,7 @@ class Scripts:
         signedTxn = txn.sign(self.reporter.getPrivateKey())
         self.client.send_transaction(signedTxn)
         waitForTransaction(self.client, signedTxn.get_txid())
+
+    def withdraw_request(self):
+
+        send_no_op_tx(self.reporter, self.app_id, "withdraw_request", app_args=None, foreign_apps=None)
