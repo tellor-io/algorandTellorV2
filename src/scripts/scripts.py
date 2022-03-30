@@ -8,6 +8,7 @@ from algosdk.v2client.algod import AlgodClient
 from src.contracts.contracts import approval_program
 from src.contracts.contracts import clear_state_program
 from src.utils.account import Account
+from src.utils.senders import send_no_op_tx
 from src.utils.util import fullyCompileContract
 from src.utils.util import getAppGlobalState
 from src.utils.util import waitForTransaction
@@ -157,6 +158,25 @@ class Scripts:
 
         waitForTransaction(self.client, stakeInTx.get_txid())
 
+    def tip(self, tip_amount: int) -> None:
+
+        suggestedParams = self.client.suggested_params()
+
+        payTxn = transaction.PaymentTxn(
+            sender=self.reporter.getAddress(), receiver=self.app_address, amt=tip_amount, sp=suggestedParams
+        )
+
+        no_op_txn = transaction.ApplicationNoOpTxn(
+            sender=self.reporter.getAddress(), index=self.app_id, app_args=[b"tip"], sp=suggestedParams
+        )
+
+        signed_pay_txn = payTxn.sign(self.tipper.getPrivateKey())
+        signed_no_op_txn = no_op_txn.sign(self.tipper.getPrivateKey())
+
+        self.client.send_transactions([signed_pay_txn, signed_no_op_txn])
+
+        waitForTransaction(self.cient, no_op_txn.get_txid())
+
     def report(self, query_id: bytes, value: bytes):
         """
         Call report() on the contract to set the current value on the contract
@@ -191,3 +211,7 @@ class Scripts:
         signedTxn = txn.sign(self.reporter.getPrivateKey())
         self.client.send_transaction(signedTxn)
         waitForTransaction(self.client, signedTxn.get_txid())
+
+    def withdraw_request(self):
+
+        send_no_op_tx(self.reporter, self.app_id, "withdraw_request", app_args=None, foreign_apps=None)

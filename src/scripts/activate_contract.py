@@ -1,6 +1,6 @@
 from typing import List
 
-from src.scripts.multisig.multisig import send_multisig_tx
+from src.utils.senders import send_multisig_tx
 
 
 def activate_contract(medianizer_id: int, feed_ids: List[int]):

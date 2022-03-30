@@ -1,4 +1,4 @@
-from scripts.multisig.multisig import send_multisig_tx
+from src.utils.senders import send_multisig_tx
 
 
 def change_medianizer(old_medianizer_app_id: int, new_medianizer_app_id: int):
