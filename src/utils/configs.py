@@ -35,6 +35,23 @@ def get_configs(args: List[str]) -> Box:
         "-qd", "--query-data", nargs=1, required=False, type=str, help="a description of the query_id (max 128 bytes)"
     )
 
+    parser.add_argument(
+        "-ti",
+        "--time-interval",
+        nargs=1,
+        required=False,
+        type=int,
+        help="the query_id to submit values to",
+    )
+
+    parser.add_argument(
+        "-med",
+        "--medianizer",
+        nargs=1,
+        required=False,
+        type=int,
+        help="the query_id to submit values to",
+    )
     # get dict of parsed args
     cli_cfg = vars(parser.parse_args(args))
 
