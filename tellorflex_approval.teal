@@ -2,7 +2,7 @@
 txn ApplicationID
 int 0
 ==
-bnz main_l37
+bnz main_l31
 txn OnCompletion
 int NoOp
 ==
@@ -32,15 +32,15 @@ main_l7:
 txna ApplicationArgs 0
 byte "change_governance"
 ==
-bnz main_l36
+bnz main_l30
 txna ApplicationArgs 0
 byte "stake"
 ==
-bnz main_l35
+bnz main_l29
 txna ApplicationArgs 0
 byte "tip"
 ==
-bnz main_l34
+bnz main_l28
 txna ApplicationArgs 0
 byte "report"
 ==
@@ -170,13 +170,13 @@ byte "timestamps"
 app_global_get
 byte ""
 ==
-bnz main_l33
+bnz main_l27
 byte "timestamps"
 app_global_get
 byte "timestamps"
 app_global_get
 len
-int 4
+int 6
 -
 byte "timestamps"
 app_global_get
@@ -186,61 +186,44 @@ store 0
 main_l20:
 txna ApplicationArgs 2
 store 1
-main_l21:
-load 1
-len
-int 10
-<
-bnz main_l32
 byte "values"
 app_global_get
 len
-int 10
+int 6
 +
 int 128
 byte "values"
 len
 -
 >=
-bnz main_l31
+bnz main_l26
 byte "values"
 byte "values"
 app_global_get
 txna ApplicationArgs 2
 concat
 app_global_put
-main_l24:
+main_l22:
 txna ApplicationArgs 3
 store 0
-main_l25:
-load 0
-len
-int 10
-<
-bnz main_l30
-txna ApplicationArgs 3
-len
-int 10
-==
-assert
 byte "timestamps"
 app_global_get
 len
-int 10
+int 6
 +
 int 128
 byte "timestamps"
 len
 -
 >=
-bnz main_l29
+bnz main_l25
 byte "timestamps"
 byte "timestamps"
 app_global_get
 txna ApplicationArgs 3
 concat
 app_global_put
-main_l28:
+main_l24:
 byte "last_value"
 load 0
 load 1
@@ -254,6 +237,16 @@ app_global_get
 itxn_field ApplicationID
 byte "get_values"
 itxn_field ApplicationArgs
+txna Applications 1
+itxn_field Applications
+txna Applications 2
+itxn_field Applications
+txna Applications 3
+itxn_field Applications
+txna Applications 4
+itxn_field Applications
+txna Applications 5
+itxn_field Applications
 itxn_submit
 itxn_begin
 int pay
@@ -270,11 +263,11 @@ int 0
 app_global_put
 int 1
 return
-main_l29:
+main_l25:
 byte "timestamps"
 byte "timestamps"
 app_global_get
-extract 10 118
+extract 6 122
 app_global_put
 byte "timestamps"
 byte "timestamps"
@@ -282,18 +275,12 @@ app_global_get
 txna ApplicationArgs 3
 concat
 app_global_put
-b main_l28
-main_l30:
-byte "0"
-load 0
-concat
-store 0
-b main_l25
-main_l31:
+b main_l24
+main_l26:
 byte "values"
 byte "values"
 app_global_get
-extract 10 118
+extract 6 122
 app_global_put
 byte "values"
 byte "values"
@@ -301,18 +288,12 @@ app_global_get
 txna ApplicationArgs 2
 concat
 app_global_put
-b main_l24
-main_l32:
-byte "0"
-load 1
-concat
-store 1
-b main_l21
-main_l33:
+b main_l22
+main_l27:
 byte "0"
 store 0
 b main_l20
-main_l34:
+main_l28:
 txn GroupIndex
 int 1
 -
@@ -345,7 +326,7 @@ gtxns Amount
 app_global_put
 int 1
 return
-main_l35:
+main_l29:
 byte "reporter_address"
 app_global_get
 byte ""
@@ -391,7 +372,7 @@ gtxns Sender
 app_global_put
 int 1
 return
-main_l36:
+main_l30:
 txn Sender
 byte "governance_address"
 app_global_get
@@ -406,7 +387,7 @@ txna ApplicationArgs 1
 app_global_put
 int 1
 return
-main_l37:
+main_l31:
 byte "tipper"
 txn Sender
 app_global_put

@@ -11,6 +11,7 @@ from algosdk.v2client.algod import AlgodClient
 from pyteal import compileTeal
 from pyteal import Expr
 from pyteal import Mode
+from pyteal.compiler.compiler import MAX_TEAL_VERSION
 
 
 class PendingTxnResponse:
@@ -54,7 +55,7 @@ def waitForTransaction(client: AlgodClient, txID: str, timeout: int = 10) -> Pen
 
 
 def fullyCompileContract(client: AlgodClient, contract: Expr) -> bytes:
-    teal = compileTeal(contract, mode=Mode.Application, version=5)
+    teal = compileTeal(contract, mode=Mode.Application, version=MAX_TEAL_VERSION)
     response = client.compile(teal)
     return b64decode(response["result"])
 

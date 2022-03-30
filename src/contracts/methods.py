@@ -215,7 +215,13 @@ def report():
                     TxnField.type_enum: TxnType.ApplicationCall,
                     TxnField.application_id: App.globalGet(medianizer),
                     TxnField.application_args: [Bytes("get_values")],
-                    TxnField.applications: Txn.applications,
+                    TxnField.applications: [
+                        Txn.applications[1],
+                        Txn.applications[2],
+                        Txn.applications[3],
+                        Txn.applications[4],
+                        Txn.applications[5],
+                    ],
                 }
             ),
             InnerTxnBuilder.Submit(),
@@ -322,7 +328,7 @@ def withdraw():
                     TxnField.type_enum: TxnType.Payment,
                     # TxnField.amount: App.globalGet(stake_amount),
                     TxnField.close_remainder_to: App.globalGet(reporter),
-                    TxnField.applications: Txn.applications,
+                    # TxnField.applications: Txn.applications,
                 }
             ),
             InnerTxnBuilder.Submit(),
