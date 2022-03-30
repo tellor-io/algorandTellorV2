@@ -157,6 +157,31 @@ class Scripts:
 
         waitForTransaction(self.client, stakeInTx.get_txid())
 
+    def tip(self, tip_amount:int) -> None:
+
+        suggestedParams = self.client.suggested_params()
+
+        payTxn = transaction.PaymentTxn(
+            sender=self.reporter.getAddress(),
+            receiver=self.app_address,
+            amt=tip_amount,
+            sp=suggestedParams
+        )
+
+        no_op_txn = transaction.ApplicationNoOpTxn(
+            sender=self.reporter.getAddress(),
+            index=self.app_id,
+            app_args=[b"tip"],
+            sp=suggestedParams
+        )
+
+        signed_pay_txn = payTxn.sign(self.tipper.getPrivateKey())
+        signed_no_op_txn = no_op_txn.sign(self.tipper.getPrivateKey())
+
+        self.client.send_transactions([signed_pay_txn, signed_no_op_txn])
+
+        waitForTransaction(self.cient, no_op_txn.get_txid())
+
     def report(self, query_id: bytes, value: bytes):
         """
         Call report() on the contract to set the current value on the contract

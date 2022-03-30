@@ -6,6 +6,7 @@ from typing import Optional
 from algosdk import mnemonic
 from algosdk.algod import AlgodClient
 from algosdk.future.transaction import *
+from src.utils.account import Account
 
 
 def send_multisig_tx(app_id: int, fn_name: str, app_args: Optional[List[Any]], foreign_apps: Optional[List[int]]):
@@ -77,6 +78,42 @@ def send_multisig_tx(app_id: int, fn_name: str, app_args: Optional[List[Any]], f
     try:
         # send the transaction
         txid = algod_client.send_raw_transaction(encoding.msgpack_encode(mtx))
+        print("TXID: ", txid)
+        confirmed_txn = wait_for_confirmation(algod_client, txid, 6)
+        print("Result confirmed in round: {}".format(confirmed_txn["confirmed-round"]))
+        print("Transaction information: {}".format(json.dumps(confirmed_txn, indent=4)))
+        print("Decoded note: {}".format(base64.b64decode(confirmed_txn["txn"]["txn"]["note"]).decode()))
+    except Exception as err:
+        print(err)
+        
+
+
+def send_no_op_tx(sender: Account, app_id: int, fn_name: str, app_args: Optional[List[Any]], foreign_apps: Optional[List[int]]):
+    
+    # sandbox
+    algod_address = "http://localhost:4001"
+    algod_token = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+
+    # Initialize an algod client
+    algod_client = AlgodClient(algod_token, algod_address)
+
+    # get suggested parameters
+    params = algod_client.suggested_params()
+    # comment out the next two (2) lines to use suggested fees
+    # params.flat_fee = True
+    # params.fee = 1000
+    # wait for confirmation
+
+    note = fn_name + sender.addr
+
+    txn = ApplicationNoOpTxn(
+        sender, params, app_id, note=note, app_args=[fn_name] + app_args, foreign_apps=foreign_apps
+    )
+
+
+    try:
+        # send the transaction
+        txid = algod_client.send_raw_transaction(encoding.msgpack_encode(txn))
         print("TXID: ", txid)
         confirmed_txn = wait_for_confirmation(algod_client, txid, 6)
         print("Result confirmed in round: {}".format(confirmed_txn["confirmed-round"]))

@@ -1,4 +1,4 @@
-from scripts.multisig.multisig import send_multisig_tx
+from src.utils.senders import send_multisig_tx
 
 
 def change_governance(app_id: int, new_gov_address: str):
