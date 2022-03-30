@@ -8,10 +8,11 @@ from algosdk.v2client.algod import AlgodClient
 from src.contracts.contracts import approval_program
 from src.contracts.contracts import clear_state_program
 from src.utils.account import Account
+from src.utils.senders import send_no_op_tx
 from src.utils.util import fullyCompileContract
 from src.utils.util import getAppGlobalState
 from src.utils.util import waitForTransaction
-from src.utils.senders import send_no_op_tx
+
 APPROVAL_PROGRAM = b""
 CLEAR_STATE_PROGRAM = b""
 
@@ -157,22 +158,16 @@ class Scripts:
 
         waitForTransaction(self.client, stakeInTx.get_txid())
 
-    def tip(self, tip_amount:int) -> None:
+    def tip(self, tip_amount: int) -> None:
 
         suggestedParams = self.client.suggested_params()
 
         payTxn = transaction.PaymentTxn(
-            sender=self.reporter.getAddress(),
-            receiver=self.app_address,
-            amt=tip_amount,
-            sp=suggestedParams
+            sender=self.reporter.getAddress(), receiver=self.app_address, amt=tip_amount, sp=suggestedParams
         )
 
         no_op_txn = transaction.ApplicationNoOpTxn(
-            sender=self.reporter.getAddress(),
-            index=self.app_id,
-            app_args=[b"tip"],
-            sp=suggestedParams
+            sender=self.reporter.getAddress(), index=self.app_id, app_args=[b"tip"], sp=suggestedParams
         )
 
         signed_pay_txn = payTxn.sign(self.tipper.getPrivateKey())

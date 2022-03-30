@@ -6,6 +6,7 @@ from typing import Optional
 from algosdk import mnemonic
 from algosdk.algod import AlgodClient
 from algosdk.future.transaction import *
+
 from src.utils.account import Account
 
 
@@ -85,11 +86,12 @@ def send_multisig_tx(app_id: int, fn_name: str, app_args: Optional[List[Any]], f
         print("Decoded note: {}".format(base64.b64decode(confirmed_txn["txn"]["txn"]["note"]).decode()))
     except Exception as err:
         print(err)
-        
 
 
-def send_no_op_tx(sender: Account, app_id: int, fn_name: str, app_args: Optional[List[Any]], foreign_apps: Optional[List[int]]):
-    
+def send_no_op_tx(
+    sender: Account, app_id: int, fn_name: str, app_args: Optional[List[Any]], foreign_apps: Optional[List[int]]
+):
+
     # sandbox
     algod_address = "http://localhost:4001"
     algod_token = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
@@ -109,7 +111,6 @@ def send_no_op_tx(sender: Account, app_id: int, fn_name: str, app_args: Optional
     txn = ApplicationNoOpTxn(
         sender, params, app_id, note=note, app_args=[fn_name] + app_args, foreign_apps=foreign_apps
     )
-
 
     try:
         # send the transaction

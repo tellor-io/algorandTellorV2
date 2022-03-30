@@ -1,16 +1,22 @@
+import base64
 import os
 import sys
-import base64
-from dotenv import load_dotenv
-from pyteal import Mode, compileTeal
-from pyteal.compiler.compiler import MAX_TEAL_VERSION
-from src.utils.configs import get_configs
-from src.contracts.medianizer_contract import approval_program, clear_state_program
-from src.utils.account import Account
-from src.utils.testing.resources import fundAccount
-from algosdk.v2client.algod import AlgodClient
+
 from algosdk.future import transaction
-from algosdk.future.transaction import Multisig, MultisigTransaction, encoding
+from algosdk.future.transaction import encoding
+from algosdk.future.transaction import Multisig
+from algosdk.future.transaction import MultisigTransaction
+from algosdk.v2client.algod import AlgodClient
+from dotenv import load_dotenv
+from pyteal import compileTeal
+from pyteal import Mode
+from pyteal.compiler.compiler import MAX_TEAL_VERSION
+
+from src.contracts.medianizer_contract import approval_program
+from src.contracts.medianizer_contract import clear_state_program
+from src.utils.account import Account
+from src.utils.configs import get_configs
+from src.utils.testing.resources import fundAccount
 from src.utils.testing.resources import getTemporaryAccount
 
 
@@ -56,19 +62,13 @@ def deploy(time_interval: int, network: str):
     approval_state = approval_program()
     clear_state = clear_state_program()
     # compile program to TEAL assembly
-    approval_program_teal = compileTeal(
-        approval_state, mode=Mode.Application, version=MAX_TEAL_VERSION
-    )
-    clear_program_teal = compileTeal(
-        clear_state, mode=Mode.Application, version=MAX_TEAL_VERSION
-    )
+    approval_program_teal = compileTeal(approval_state, mode=Mode.Application, version=MAX_TEAL_VERSION)
+    clear_program_teal = compileTeal(clear_state, mode=Mode.Application, version=MAX_TEAL_VERSION)
     # compile program to binary
     approval_program_compiled = compile_program(client, approval_program_teal)
     clear_program_compiled = compile_program(client, clear_program_teal)
 
-    app_args = [
-        time_interval
-    ]
+    app_args = [time_interval]
 
     txn = transaction.ApplicationCreateTxn(
         sender=msig.address(),
@@ -97,11 +97,7 @@ def deploy(time_interval: int, network: str):
         last_round += 1
         client.status_after_block(last_round)
         txinfo = client.pending_transaction_info(tx_id)
-    print(
-        "Transaction {} confirmed in round {}.".format(
-            tx_id, txinfo.get("confirmed-round")
-        )
-    )
+    print("Transaction {} confirmed in round {}.".format(tx_id, txinfo.get("confirmed-round")))
 
     # display results
     transaction_response = client.pending_transaction_info(tx_id)
