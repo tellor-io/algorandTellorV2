@@ -226,15 +226,23 @@ def report():
             ),
             InnerTxnBuilder.Submit(),
             InnerTxnBuilder.Begin(),
+            # 98% goes to reporter
             InnerTxnBuilder.SetFields(
                 {
                     TxnField.type_enum: TxnType.Payment,
-                    TxnField.amount: App.globalGet(tip_amount),
+                    TxnField.amount: Div(Mul(App.globalGet(tip_amount), Int(98)), Int(100)),
+                    TxnField.receiver: Txn.sender(),
+                }
+            ),
+            # 2% fee to governance
+            InnerTxnBuilder.SetFields(
+                {
+                    TxnField.type_enum: TxnType.Payment,
+                    TxnField.amount: Div(Mul(App.globalGet(tip_amount), Int(2), Int(100))),
                     TxnField.receiver: Txn.sender(),
                 }
             ),
             InnerTxnBuilder.Submit(),
-            # TODO set tip amount to 0
             App.globalPut(App.globalGet(tip_amount), Int(0)),
             Approve(),
         ]
