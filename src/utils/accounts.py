@@ -1,5 +1,6 @@
-from src.utils.testing.resources import getTemporaryAccount
 from algosdk.future.transaction import Multisig
+
+from src.utils.testing.resources import getTemporaryAccount
 
 
 class Accounts:
@@ -8,4 +9,5 @@ class Accounts:
         self.reporter = getTemporaryAccount(client)
         self.bad_actor = getTemporaryAccount(client)
         self.multisig_signers = [getTemporaryAccount(client) for i in range(3)]
-        self.governance = Multisig(version=1,threshold=2,addresses=self.multisig_signers)
+        self.multisig_signers_sk = [i.getPrivateKey() for i in self.multisig_signers]
+        self.governance = Multisig(version=1, threshold=2, addresses=self.multisig_signers)

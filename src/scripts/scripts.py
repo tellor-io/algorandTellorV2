@@ -58,12 +58,11 @@ class Scripts:
         self.medianizer_app_id = medianizer_app_id
 
         self.feeds = []
-        
+
         if self.feed_app_id is not None:
             self.feed_app_address = get_application_address(self.feed_app_id)
         if self.medianizer_app_id is not None:
             self.medianizer_app_address = get_application_address(self.medianizer_app_id)
-
 
     def get_contracts(self, client: AlgodClient) -> Tuple[bytes, bytes]:
         """
@@ -172,7 +171,10 @@ class Scripts:
         )
 
         stakeInTx = transaction.ApplicationNoOpTxn(
-            sender=self.reporter.getAddress(), index=self.feed_app_id, app_args=[b"stake"], sp=self.client.suggested_params()
+            sender=self.reporter.getAddress(),
+            index=self.feed_app_id,
+            app_args=[b"stake"],
+            sp=self.client.suggested_params(),
         )
 
         transaction.assign_group_id([payTxn, stakeInTx])
@@ -238,6 +240,6 @@ class Scripts:
         self.client.send_transaction(signedTxn)
         waitForTransaction(self.client, signedTxn.get_txid())
 
-    def withdraw_request(self):
+    def request_withdraw(self):
 
-        send_no_op_tx(self.reporter, self.feed_app_id, "withdraw_request", app_args=None, foreign_apps=None)
+        send_no_op_tx(self.reporter, self.feed_app_id, "request_withdraw", app_args=None, foreign_apps=None)

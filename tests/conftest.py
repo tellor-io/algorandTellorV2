@@ -61,18 +61,37 @@ def deployed_contract(accounts, client, scripts):
     query_id = "1"
     query_data = "this is my description of query_id 1"
 
-    appID = scripts.deploy_tellor_flex(query_id=query_id, query_data=query_data)
+    appID = scripts.deploy_tellor_flex(
+        query_id=query_id, query_data=query_data, multisigaccounts_sk=accounts.multisig_signers_sk
+    )
 
-    actual = getAppGlobalState(client, appID)
+    actual = getAppGlobalState(client, appID[0])
     expected = {
-        b"governance_address": encoding.decode_address(accounts.governance.getAddress()),
+        b"governance_address": encoding.decode_address(accounts.governance.address()),
         b"query_id": query_id.encode("utf-8"),
         b"query_data": query_data.encode("utf-8"),
         b"num_reports": 0,
         b"stake_amount": 200000,
         b"staking_status": 0,
         b"reporter_address": b"",
-        b"tipper": encoding.decode_address(accounts.tipper.getAddress()),
+    }
+
+    assert actual == expected
+
+    return App(appID, actual)
+
+
+@pytest.fixture(autouse=True)
+def deployed_medianizer_contract(accounts, client, scripts):
+    """deploys medianizer contract, provides app id and state for testing"""
+
+    time_interval = 1234567
+    appID = scripts.deploy_medianizer(time_interval=time_interval, multisigaccounts_sk=accounts.multisig_signers_sk)
+
+    actual = getAppGlobalState(client, appID)
+    expected = {
+        b"governance_address": encoding.decode_address(accounts.governance.address()),
+        b"time_interval": time_interval,
     }
 
     assert actual == expected

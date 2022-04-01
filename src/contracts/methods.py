@@ -345,14 +345,14 @@ def withdraw():
     )
 
 
-def withdraw_request():
+def request_withdraw():
     """
     reporter has to request withdrawal and
     lock their balance for 7 days
     before they can withdraw their stake
 
     Txn args:
-    0) will always equal "withdraw_request"
+    0) will always equal "request_withdraw"
 
     """
     return Seq(
@@ -414,5 +414,5 @@ def handle_method():
         [contract_method == Bytes("report"), report()],
         [contract_method == Bytes("slash_reporter"), slash_reporter()],
         [contract_method == Bytes("withdraw"), withdraw()],
-        [contract_method == Bytes("withdraw_request"), withdraw_request()],
+        [contract_method == Bytes("request_withdraw"), request_withdraw()],
     )
