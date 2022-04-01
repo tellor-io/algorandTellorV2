@@ -35,7 +35,7 @@ def deploy(query_id: str, query_data: str, time_interval: int, network: str):
         reporter = Account.FromMnemonic(os.getenv("REPORTER_MNEMONIC"))
         member_1 = Account.FromMnemonic(os.getenv("MEMBER_1"))
         member_2 = Account.FromMnemonic(os.getenv("MEMBER_2"))
-        multisig_accounts = [member_1,member_2]
+        multisig_accounts = [member_1, member_2]
         governance = Multisig(version=1, threshold=2, addresses=multisig_accounts)
         print("Multisig Address: ", governance.address())
         print(
@@ -46,12 +46,12 @@ def deploy(query_id: str, query_data: str, time_interval: int, network: str):
         )
         input("Press Enter to continue...")
     elif network == "devnet":
-        tipper   = getTemporaryAccount(client)
+        tipper = getTemporaryAccount(client)
         reporter = getTemporaryAccount(client)
         member_1 = getTemporaryAccount(client)
         member_2 = getTemporaryAccount(client)
-        multisig_accounts_pk = [member_1.addr,member_2.addr]
-        multisig_accounts_sk = [member_1.getPrivateKey(),member_2.getPrivateKey()]
+        multisig_accounts_pk = [member_1.addr, member_2.addr]
+        multisig_accounts_sk = [member_1.getPrivateKey(), member_2.getPrivateKey()]
 
         governance = Multisig(version=1, threshold=2, addresses=multisig_accounts_pk)
         fundAccount(client, governance.address())
@@ -63,22 +63,12 @@ def deploy(query_id: str, query_data: str, time_interval: int, network: str):
 
     s = Scripts(client=client, tipper=tipper, reporter=reporter, governance_address=governance, contract_count=5)
 
-    tellor_flex_app_id = s.deploy_tellor_flex(
-        query_id=query_id,
-        query_data=query_data
-    )
-    medianizer_app_id = s.deploy_medianizer(
-        time_interval=time_interval,
-        multisig_accounts_sk=multisig_accounts_sk
-    )
+    tellor_flex_app_id = s.deploy_tellor_flex(query_id=query_id, query_data=query_data)
+    medianizer_app_id = s.deploy_medianizer(time_interval=time_interval, multisig_accounts_sk=multisig_accounts_sk)
 
-    activate_medianizer = s.activate_contract(
-        multisig_accounts_sk=multisig_accounts_sk
-    )
+    activate_medianizer = s.activate_contract(multisig_accounts_sk=multisig_accounts_sk)
 
-    set_medianizer = s.set_medianizer(
-        multisig_accounts_sk=multisig_accounts_sk
-    )
+    set_medianizer = s.set_medianizer(multisig_accounts_sk=multisig_accounts_sk)
     print(f"TellorFlex App deployed on {network}. App id: {tellor_flex_app_id}")
     print(f"Medianizer App deployed on {network}. App id: {medianizer_app_id}")
     print(f"Medianizer activate, Txn id: {activate_medianizer}")
@@ -87,4 +77,6 @@ def deploy(query_id: str, query_data: str, time_interval: int, network: str):
 
 
 config = get_configs(sys.argv[1:])
-deploy(query_id=config.query_id, query_data=config.query_data, time_interval=config.time_interval, network=config.network)
+deploy(
+    query_id=config.query_id, query_data=config.query_data, time_interval=config.time_interval, network=config.network
+)

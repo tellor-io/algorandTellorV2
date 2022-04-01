@@ -2,7 +2,6 @@ import time
 
 import pytest
 from algosdk import encoding
-from algosdk.future.transaction import create_dryrun
 
 from src.utils.util import getAppGlobalState
 
@@ -72,6 +71,7 @@ def test_vote(client, scripts, accounts, deployed_contract):
     assert state[b"num_reports"] == num_reports  # number of reports doesn't increase nor decrease after slashing
     assert state[b"staking_status"] == 0
 
+
 def test_request_withdraw(client, scripts, accounts, deployed_contract):
     """Test request_withdraw() method on feed contract"""
 
@@ -79,22 +79,22 @@ def test_request_withdraw(client, scripts, accounts, deployed_contract):
 
     state = getAppGlobalState(client, deployed_contract.id)
 
-    #assert staking status before fn call is 1
+    # assert staking status before fn call is 1
     assert state[b"staking_status"] == 1
 
-    #assert stake_timestamp is 0
+    # assert stake_timestamp is 0
     assert state[b"stake_timestamp"] == 0
 
-    #call request_withdraw
+    # call request_withdraw
     scripts.request_withdraw()
 
-    #get state again
+    # get state again
     state = getAppGlobalState(client, deployed_contract.id)
 
-    #assert stake timestamp is now approx. time.time()
+    # assert stake timestamp is now approx. time.time()
     assert state[b"stake_timestamp"] == pytest.approx(time.time(), 500)
 
-    #assert staking status is now 2
+    # assert staking status is now 2
     assert state[b"staking_status"] == 2
 
 

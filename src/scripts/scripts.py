@@ -1,9 +1,12 @@
+from typing import Any
+from typing import List
 from typing import Optional
 from typing import Tuple
-from typing import List
-from typing import Any
-from algosdk.atomic_transaction_composer import AtomicTransactionComposer, MultisigTransactionSigner, TransactionWithSigner, AccountTransactionSigner
 
+from algosdk.atomic_transaction_composer import AccountTransactionSigner
+from algosdk.atomic_transaction_composer import AtomicTransactionComposer
+from algosdk.atomic_transaction_composer import MultisigTransactionSigner
+from algosdk.atomic_transaction_composer import TransactionWithSigner
 from algosdk.future import transaction
 from algosdk.logic import get_application_address
 from algosdk.v2client.algod import AlgodClient
@@ -23,6 +26,7 @@ CLEAR_STATE_PROGRAM = b""
 
 MEDIANIZER_APPROVAL_PROGRAM = b""
 MEDIANIZER_CLEAR_STATE_PROGRAM = b""
+
 
 class Scripts:
     """
@@ -44,7 +48,7 @@ class Scripts:
         governance_address: transaction.Multisig,
         feed_app_id: Optional[int] = None,
         medianizer_app_id: Optional[int] = None,
-        contract_count: Optional[int] = 0
+        contract_count: Optional[int] = 0,
     ) -> None:
         """
         - connects to algorand node
@@ -67,12 +71,11 @@ class Scripts:
         self.contract_count = contract_count
 
         self.feeds = []
-        
+
         if self.feed_app_id is not None:
             self.feed_app_address = get_application_address(self.feed_app_id)
         if self.medianizer_app_id is not None:
             self.medianizer_app_address = get_application_address(self.medianizer_app_id)
-
 
     def get_contracts(self, client: AlgodClient) -> Tuple[bytes, bytes]:
         """
@@ -150,10 +153,10 @@ class Scripts:
         localSchema = transaction.StateSchema(num_uints=0, num_byte_slices=0)
         medianizer_id = 0
         app_args = [
-            self.governance_address.address(),
+            transaction.encoding.decode_address(self.governance_address.address()),
             query_id.encode("utf-8"),
             query_data.encode("utf-8"),
-            medianizer_id
+            medianizer_id,
         ]
 
         comp = AtomicTransactionComposer()
@@ -163,17 +166,17 @@ class Scripts:
             comp.add_transaction(
                 TransactionWithSigner(
                     transaction.ApplicationCreateTxn(
-                            sender=self.tipper.getAddress(),
-                            on_complete=transaction.OnComplete.NoOpOC,
-                            approval_program=approval,
-                            clear_program=clear,
-                            global_schema=globalSchema,
-                            local_schema=localSchema,
-                            app_args=app_args,
-                            sp=self.client.suggested_params(),
-                            note=f"{query_id} Feed {i}".encode()
-                        ),
-                    secret_key
+                        sender=self.tipper.getAddress(),
+                        on_complete=transaction.OnComplete.NoOpOC,
+                        approval_program=approval,
+                        clear_program=clear,
+                        global_schema=globalSchema,
+                        local_schema=localSchema,
+                        app_args=app_args,
+                        sp=self.client.suggested_params(),
+                        note=f"{query_id} Feed {i}".encode(),
+                    ),
+                    secret_key,
                 )
             )
         txid = comp.execute(self.client, 4).tx_ids
@@ -181,7 +184,7 @@ class Scripts:
             res = self.client.pending_transaction_info(i)
             app_id = res["application-index"]
             self.feeds.append(app_id)
-        
+
         print("Created new apps:", self.feeds)
         return self.feeds
 
@@ -195,18 +198,18 @@ class Scripts:
         comp = AtomicTransactionComposer()
         comp.add_transaction(
             TransactionWithSigner(
-            transaction.ApplicationCreateTxn(
-                sender=self.governance_address.address(),
-                sp=self.client.suggested_params(),
-                on_complete=transaction.OnComplete.NoOpOC,
-                approval_program=approval,
-                clear_program=clear,
-                global_schema=global_schema,
-                local_schema=local_schema,
-                app_args=app_args),
-            MultisigTransactionSigner(self.governance_address,multisig_accounts_sk)
+                transaction.ApplicationCreateTxn(
+                    sender=self.governance_address.address(),
+                    sp=self.client.suggested_params(),
+                    on_complete=transaction.OnComplete.NoOpOC,
+                    approval_program=approval,
+                    clear_program=clear,
+                    global_schema=global_schema,
+                    local_schema=local_schema,
+                    app_args=app_args,
+                ),
+                MultisigTransactionSigner(self.governance_address, multisig_accounts_sk),
             )
-            
         )
         tx_id = comp.execute(self.client, 4).tx_ids
         res = self.client.pending_transaction_info(tx_id[0])
@@ -223,10 +226,9 @@ class Scripts:
                     index=self.medianizer_app_id,
                     on_complete=transaction.OnComplete.NoOpOC,
                     app_args=["activate_contract"],
-                    foreign_apps=self.feeds
+                    foreign_apps=self.feeds,
                 ),
-            MultisigTransactionSigner(self.governance_address,multisig_accounts_sk)
-                
+                MultisigTransactionSigner(self.governance_address, multisig_accounts_sk),
             )
         )
         tx_id = comp.execute(self.client, 4).tx_ids
@@ -234,7 +236,7 @@ class Scripts:
         return tx_id
 
     def set_medianizer(self, multisig_accounts_sk: List[Any]) -> List[int]:
-        txn_ids=[]
+        txn_ids = []
         for i in self.feeds:
             comp = AtomicTransactionComposer()
             comp.add_transaction(
@@ -244,10 +246,9 @@ class Scripts:
                         sp=self.client.suggested_params(),
                         index=i,
                         on_complete=transaction.OnComplete.NoOpOC,
-                        app_args=["change_medianizer",self.medianizer_app_id]
+                        app_args=["change_medianizer", self.medianizer_app_id],
                     ),
-                MultisigTransactionSigner(self.governance_address,multisig_accounts_sk)
-                    
+                    MultisigTransactionSigner(self.governance_address, multisig_accounts_sk),
                 )
             )
             tx_id = comp.execute(self.client, 3).tx_ids
@@ -278,7 +279,10 @@ class Scripts:
         )
 
         stakeInTx = transaction.ApplicationNoOpTxn(
-            sender=self.reporter.getAddress(), index=self.feed_app_id, app_args=[b"stake"], sp=self.client.suggested_params()
+            sender=self.reporter.getAddress(),
+            index=self.feed_app_id,
+            app_args=[b"stake"],
+            sp=self.client.suggested_params(),
         )
 
         transaction.assign_group_id([payTxn, stakeInTx])
