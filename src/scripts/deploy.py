@@ -63,12 +63,14 @@ def deploy(query_id: str, query_data: str, time_interval: int, network: str):
 
     s = Scripts(client=client, tipper=tipper, reporter=reporter, governance_address=governance, contract_count=5)
 
-    tellor_flex_app_id = s.deploy_tellor_flex(query_id=query_id, query_data=query_data)
-    medianizer_app_id = s.deploy_medianizer(time_interval=time_interval, multisig_accounts_sk=multisig_accounts_sk)
+    tellor_flex_app_id = s.deploy_tellor_flex(
+        query_id=query_id, query_data=query_data, multisigaccounts_sk=multisig_accounts_sk
+    )
+    medianizer_app_id = s.deploy_medianizer(time_interval=time_interval, multisigaccounts_sk=multisig_accounts_sk)
 
-    activate_medianizer = s.activate_contract(multisig_accounts_sk=multisig_accounts_sk)
+    activate_medianizer = s.activate_contract(multisigaccounts_sk=multisig_accounts_sk)
 
-    set_medianizer = s.set_medianizer(multisig_accounts_sk=multisig_accounts_sk)
+    set_medianizer = s.set_medianizer(multisigaccounts_sk=multisig_accounts_sk)
     print(f"TellorFlex App deployed on {network}. App id: {tellor_flex_app_id}")
     print(f"Medianizer App deployed on {network}. App id: {medianizer_app_id}")
     print(f"Medianizer activate, Txn id: {activate_medianizer}")

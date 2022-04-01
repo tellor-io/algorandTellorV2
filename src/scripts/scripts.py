@@ -3,7 +3,6 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 
-from algosdk.atomic_transaction_composer import AccountTransactionSigner
 from algosdk.atomic_transaction_composer import AtomicTransactionComposer
 from algosdk.atomic_transaction_composer import MultisigTransactionSigner
 from algosdk.atomic_transaction_composer import TransactionWithSigner
@@ -133,7 +132,7 @@ class Scripts:
             current_data[feed_app_id]["values"] = feed_state["values"]
             current_data[feed_app_id]["timestamps"] = feed_state["timestamps"]
 
-    def deploy_tellor_flex(self, query_id: str, query_data: str) -> int:
+    def deploy_tellor_flex(self, query_id: str, query_data: str, multisigaccounts_sk: List[str]) -> int:
         """
         Deploy a new tellor reporting contract.
         calls create() method on contract
@@ -153,20 +152,18 @@ class Scripts:
         localSchema = transaction.StateSchema(num_uints=0, num_byte_slices=0)
         medianizer_id = 0
         app_args = [
-            transaction.encoding.decode_address(self.governance_address.address()),
             query_id.encode("utf-8"),
             query_data.encode("utf-8"),
             medianizer_id,
         ]
 
-        comp = AtomicTransactionComposer()
-        secret_key = AccountTransactionSigner(self.tipper.getPrivateKey())
         print(f"Forming {self.contract_count} {query_id} contracts")
         for i in range(self.contract_count):
+            comp = AtomicTransactionComposer()
             comp.add_transaction(
                 TransactionWithSigner(
                     transaction.ApplicationCreateTxn(
-                        sender=self.tipper.getAddress(),
+                        sender=self.governance_address.address(),
                         on_complete=transaction.OnComplete.NoOpOC,
                         approval_program=approval,
                         clear_program=clear,
@@ -176,19 +173,19 @@ class Scripts:
                         sp=self.client.suggested_params(),
                         note=f"{query_id} Feed {i}".encode(),
                     ),
-                    secret_key,
+                    MultisigTransactionSigner(self.governance_address, multisigaccounts_sk),
                 )
             )
-        txid = comp.execute(self.client, 4).tx_ids
-        for i in txid:
-            res = self.client.pending_transaction_info(i)
-            app_id = res["application-index"]
-            self.feeds.append(app_id)
+            txid = comp.execute(self.client, 4).tx_ids
+            for i in txid:
+                res = self.client.pending_transaction_info(i)
+                app_id = res["application-index"]
+                self.feeds.append(app_id)
 
         print("Created new apps:", self.feeds)
         return self.feeds
 
-    def deploy_medianizer(self, time_interval: int, multisig_accounts_sk: List[int]) -> int:
+    def deploy_medianizer(self, time_interval: int, multisigaccounts_sk: List[int]) -> int:
         approval, clear = self.get_contracts_medianizer(self.client)
 
         global_schema = transaction.StateSchema(num_uints=1, num_byte_slices=6)
@@ -208,7 +205,7 @@ class Scripts:
                     local_schema=local_schema,
                     app_args=app_args,
                 ),
-                MultisigTransactionSigner(self.governance_address, multisig_accounts_sk),
+                MultisigTransactionSigner(self.governance_address, multisigaccounts_sk),
             )
         )
         tx_id = comp.execute(self.client, 4).tx_ids
@@ -216,7 +213,7 @@ class Scripts:
         self.medianizer_app_id = res["application-index"]
         return self.medianizer_app_id
 
-    def activate_contract(self, multisig_accounts_sk: List[Any]) -> List[int]:
+    def activate_contract(self, multisigaccounts_sk: List[Any]) -> List[int]:
         comp = AtomicTransactionComposer()
         comp.add_transaction(
             TransactionWithSigner(
@@ -227,14 +224,14 @@ class Scripts:
                     app_args=["activate_contract"],
                     foreign_apps=self.feeds,
                 ),
-                MultisigTransactionSigner(self.governance_address, multisig_accounts_sk),
+                MultisigTransactionSigner(self.governance_address, multisigaccounts_sk),
             )
         )
         tx_id = comp.execute(self.client, 4).tx_ids
         print(f"Medianizer active, tx hash: {tx_id}")
         return tx_id
 
-    def set_medianizer(self, multisig_accounts_sk: List[Any]) -> List[int]:
+    def set_medianizer(self, multisigaccounts_sk: List[Any]) -> List[int]:
         txn_ids = []
         for i in self.feeds:
             comp = AtomicTransactionComposer()
@@ -246,11 +243,11 @@ class Scripts:
                         index=i,
                         app_args=["change_medianizer", self.medianizer_app_id],
                     ),
-                    MultisigTransactionSigner(self.governance_address, multisig_accounts_sk),
+                    MultisigTransactionSigner(self.governance_address, multisigaccounts_sk),
                 )
             )
             tx_id = comp.execute(self.client, 3).tx_ids
-            txn_ids.append(tx_id)
+            txn_ids.append(tx_id[0])
         return txn_ids
 
     def stake(self, stake_amount=None) -> None:
