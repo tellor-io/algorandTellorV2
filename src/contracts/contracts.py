@@ -1,4 +1,4 @@
-from methods import *
+from .methods import *
 from pyteal import *
 
 

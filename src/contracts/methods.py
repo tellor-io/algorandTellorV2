@@ -48,7 +48,7 @@ def create():
             App.globalPut(governance_address, Txn.application_args[0]),
             App.globalPut(query_id, Txn.application_args[1]),
             App.globalPut(query_data, Txn.application_args[2]),
-            App.globalPut(medianizer, Txn.application_args[3]),
+            App.globalPut(medianizer, Btoi(Txn.application_args[3])),
             # 0-not Staked, 1=Staked
             App.globalPut(reporter, Bytes("")),
             App.globalPut(staking_status, Int(0)),
@@ -101,7 +101,7 @@ def change_medianizer():
                     Txn.application_args.length() == Int(2),
                 )
             ),
-            App.globalPut(medianizer, Txn.application_args[1]),
+            App.globalPut(medianizer, Btoi(Txn.application_args[1])),
             Approve(),
         ]
     )
@@ -238,7 +238,7 @@ def report():
             InnerTxnBuilder.SetFields(
                 {
                     TxnField.type_enum: TxnType.Payment,
-                    TxnField.amount: Div(Mul(App.globalGet(tip_amount), Int(2), Int(100))),
+                    TxnField.amount: Div(Mul(App.globalGet(tip_amount), Int(2)), Int(100)),
                     TxnField.receiver: Txn.sender(),
                 }
             ),
@@ -345,14 +345,14 @@ def withdraw():
     )
 
 
-def withdraw_request():
+def request_withdraw():
     """
     reporter has to request withdrawal and
     lock their balance for 7 days
     before they can withdraw their stake
 
     Txn args:
-    0) will always equal "withdraw_request"
+    0) will always equal "request_withdraw"
 
     """
     return Seq(
@@ -409,10 +409,11 @@ def handle_method():
     contract_method = Txn.application_args[0]
     return Cond(
         [contract_method == Bytes("change_governance"), change_governance()],
+        [contract_method == Bytes("change_medianizer"), change_medianizer()],
         [contract_method == Bytes("stake"), stake()],
         [contract_method == Bytes("tip"), tip()],
         [contract_method == Bytes("report"), report()],
         [contract_method == Bytes("slash_reporter"), slash_reporter()],
         [contract_method == Bytes("withdraw"), withdraw()],
-        [contract_method == Bytes("withdraw_request"), withdraw_request()],
+        [contract_method == Bytes("request_withdraw"), request_withdraw()],
     )

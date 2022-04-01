@@ -72,8 +72,8 @@ def test_vote(client, scripts, accounts, deployed_contract):
     assert state[b"num_reports"] == num_reports  # number of reports doesn't increase nor decrease after slashing
     assert state[b"staking_status"] == 0
 
-def test_withdraw_request(client, scripts, accounts, deployed_contract):
-    """Test withdraw_request() method on feed contract"""
+def test_request_withdraw(client, scripts, accounts, deployed_contract):
+    """Test request_withdraw() method on feed contract"""
 
     scripts.stake()
 
@@ -85,8 +85,8 @@ def test_withdraw_request(client, scripts, accounts, deployed_contract):
     #assert stake_timestamp is 0
     assert state[b"stake_timestamp"] == 0
 
-    #call withdraw_request
-    scripts.withdraw_request()
+    #call request_withdraw
+    scripts.request_withdraw()
 
     #get state again
     state = getAppGlobalState(client, deployed_contract.id)
@@ -111,7 +111,7 @@ def test_withdraw(client, scripts, accounts, deployed_contract):
 
     assert state[b"staking_status"] == 1
 
-    scripts.withdraw_request()
+    scripts.request_withdraw()
 
     state = getAppGlobalState(client, deployed_contract.id)
     assert state[b"staking_status"] == 2
