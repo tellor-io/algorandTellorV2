@@ -220,11 +220,10 @@ class Scripts:
         comp = AtomicTransactionComposer()
         comp.add_transaction(
             TransactionWithSigner(
-                transaction.ApplicationCallTxn(
+                transaction.ApplicationNoOpTxn(
                     sender=self.governance_address.address(),
                     sp=self.client.suggested_params(),
                     index=self.medianizer_app_id,
-                    on_complete=transaction.OnComplete.NoOpOC,
                     app_args=["activate_contract"],
                     foreign_apps=self.feeds,
                 ),
@@ -241,11 +240,10 @@ class Scripts:
             comp = AtomicTransactionComposer()
             comp.add_transaction(
                 TransactionWithSigner(
-                    transaction.ApplicationCallTxn(
+                    transaction.ApplicationNoOpTxn(
                         sender=self.governance_address.address(),
                         sp=self.client.suggested_params(),
                         index=i,
-                        on_complete=transaction.OnComplete.NoOpOC,
                         app_args=["change_medianizer", self.medianizer_app_id],
                     ),
                     MultisigTransactionSigner(self.governance_address, multisig_accounts_sk),
@@ -326,6 +324,7 @@ class Scripts:
             sender=self.reporter.getAddress(),
             index=self.feed_app_id,
             app_args=[b"report", query_id, value],
+            foreign_apps=self.feeds,
             sp=self.client.suggested_params(),
         )
 
