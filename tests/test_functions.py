@@ -4,6 +4,7 @@ import pytest
 from algosdk import encoding
 from algosdk.error import AlgodHTTPError
 from algosdk.future import transaction
+from algosdk.logic import get_application_address
 
 from src.utils.util import getAppGlobalState, waitForTransaction
 from utils.senders import send_no_op_tx
@@ -52,6 +53,50 @@ def test_change_medianizer(client, scripts, accounts, deployed_contract):
     state = getAppGlobalState(client, deployed_contract.id)
     assert state[b"medianizer"] == new_medianizer_id
     
+def test_activate_contract(client, scripts, accounts, deployed_contract, deployed_medianizer_contract):
+    """Test activate_contract method on medianizer_contract"""
+
+    medianzier_state = getAppGlobalState(client, deployed_medianizer_contract.id)
+    # app addresses should be null initially
+    assert medianzier_state[b"app_1"] == ""
+    assert medianzier_state[b"app_2"] == ""
+    assert medianzier_state[b"app_3"] == ""
+    assert medianzier_state[b"app_4"] == ""
+    assert medianzier_state[b"app_5"] == ""
+    assert medianzier_state[b"governance"] == encoding.decode_address(accounts.governance.address())
+
+    scripts.activate_contract(accounts.multisig_signers_sk)
+
+    # apps should be
+    app_addr_1 = get_application_address(deployed_contract.id)
+    assert medianzier_state[b"app_1"] == app_addr_1
+    # assert medianzier_state[b"app_2"] == app_addr_2
+    # assert medianzier_state[b"app_3"] == app_addr_3
+    # assert medianzier_state[b"app_4"] == app_addr_4
+    # assert medianzier_state[b"app_5"] == app_addr_5
+    assert medianzier_state[b"governance"] == encoding.decode_address(accounts.governance.address())
+
+
+def test_get_values(client, scripts, accounts, deployed_contract, deployed_medianizer_contract):
+    """Test get_values() method on medianizer_contract"""
+    medianzier_state = getAppGlobalState(client, deployed_medianizer_contract.id)
+    feed_state = getAppGlobalState(client, deployed_contract.id)
+    scripts.stake()
+    assert feed_state[b"num_reports"] == 0
+
+    query_id = b"1"
+    value = 1234
+    timestamp = 5678
+    scripts.report(query_id, value, timestamp)
+    assert feed_state[b"query_id"] == query_id
+    assert feed_state[b"value"] == value
+    assert feed_state[b"timestamp"] == timestamp
+
+    scripts.get_values()
+    assert medianzier_state["median_price"] == value
+    assert medianzier_state["median_timestamp"] == timestamp
+
+
 def test_report(client, scripts, accounts, deployed_contract):
     """Test report() method on contract"""
 
@@ -208,8 +253,9 @@ def test_vote(client, scripts, accounts, deployed_contract):
     assert state[b"num_reports"] == num_reports  # number of reports doesn't increase nor decrease after slashing
     assert state[b"staking_status"] == 0
 
-def test_withdraw_request(client, scripts, accounts, deployed_contract):
-    """Test withdraw_request() method on feed contract"""
+
+def test_request_withdraw(client, scripts, accounts, deployed_contract):
+    """Test request_withdraw() method on feed contract"""
 
     #require 2: assert unstaked account can't request withdrawal
     with pytest.raises(AlgodHTTPError):
@@ -226,22 +272,22 @@ def test_withdraw_request(client, scripts, accounts, deployed_contract):
 
     state = getAppGlobalState(client, deployed_contract.id)
 
-    #assert staking status before fn call is 1
+    # assert staking status before fn call is 1
     assert state[b"staking_status"] == 1
 
-    #assert stake_timestamp is 0
+    # assert stake_timestamp is 0
     assert state[b"stake_timestamp"] == 0
 
-    #call withdraw_request
-    scripts.withdraw_request()
+    # call request_withdraw
+    scripts.request_withdraw()
 
-    #get state again
+    # get state again
     state = getAppGlobalState(client, deployed_contract.id)
 
-    #assert stake timestamp is now approx. time.time()
+    # assert stake timestamp is now approx. time.time()
     assert state[b"stake_timestamp"] == pytest.approx(time.time(), 500)
 
-    #assert staking status is now 2
+    # assert staking status is now 2
     assert state[b"staking_status"] == 2
 
     #require 3: assert reporter cant request withdrawal while in state 2
@@ -262,7 +308,7 @@ def test_withdraw(client, scripts, accounts, deployed_contract):
 
     assert state[b"staking_status"] == 1
 
-    scripts.withdraw_request()
+    scripts.request_withdraw()
 
     state = getAppGlobalState(client, deployed_contract.id)
     assert state[b"staking_status"] == 2

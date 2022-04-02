@@ -1,10 +1,11 @@
 import time
-from typing import Optional
+from typing import Optional, Union
 from typing import Tuple
 
 from algosdk.future import transaction
 from algosdk.logic import get_application_address
 from algosdk.v2client.algod import AlgodClient
+from algosdk.future.transaction import Multisig
 
 from src.contracts.contracts import approval_program
 from src.contracts.contracts import clear_state_program
@@ -37,7 +38,7 @@ class Scripts:
         client: AlgodClient,
         tipper: Account,
         reporter: Account,
-        governance_address: Account,
+        governance_address: Union[Account, Multisig],
         feed_app_id: Optional[int] = None,
         medianizer_app_id: Optional[int] = None,
     ) -> None:
@@ -61,12 +62,11 @@ class Scripts:
         self.medianizer_app_id = medianizer_app_id
 
         self.feeds = []
-        
+
         if self.feed_app_id is not None:
             self.feed_app_address = get_application_address(self.feed_app_id)
         if self.medianizer_app_id is not None:
             self.medianizer_app_address = get_application_address(self.medianizer_app_id)
-
 
     def get_contracts(self, client: AlgodClient) -> Tuple[bytes, bytes]:
         """
@@ -175,7 +175,10 @@ class Scripts:
         )
 
         stakeInTx = transaction.ApplicationNoOpTxn(
-            sender=self.reporter.getAddress(), index=self.feed_app_id, app_args=[b"stake"], sp=self.client.suggested_params()
+            sender=self.reporter.getAddress(),
+            index=self.feed_app_id,
+            app_args=[b"stake"],
+            sp=self.client.suggested_params(),
         )
 
         transaction.assign_group_id([payTxn, stakeInTx])
@@ -257,6 +260,6 @@ class Scripts:
                     if txn.app_call_rejected():
                         print(txn.app_trace(dryrun_results.StackPrinterConfig(max_value_width=0)))
 
-    def withdraw_request(self):
+    def request_withdraw(self):
 
-        send_no_op_tx(self.reporter, self.feed_app_id, "withdraw_request", app_args=None, foreign_apps=None)
+        send_no_op_tx(self.reporter, self.feed_app_id, "request_withdraw", app_args=None, foreign_apps=None)
