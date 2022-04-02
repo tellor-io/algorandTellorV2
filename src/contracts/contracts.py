@@ -1,4 +1,4 @@
-from methods import *
+from src.contracts.methods import *
 from pyteal import *
 
 

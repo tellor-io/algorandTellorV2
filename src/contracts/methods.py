@@ -238,7 +238,7 @@ def report():
             InnerTxnBuilder.SetFields(
                 {
                     TxnField.type_enum: TxnType.Payment,
-                    TxnField.amount: Div(Mul(App.globalGet(tip_amount), Int(2), Int(100))),
+                    TxnField.amount: Div(Mul(App.globalGet(tip_amount), Int(2)), Int(100)),
                     TxnField.receiver: Txn.sender(),
                 }
             ),
