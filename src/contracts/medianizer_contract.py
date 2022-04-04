@@ -21,12 +21,12 @@ def approval_program():
 
     governance = Bytes("governance")
     is_governance = Txn.sender() == App.globalGet(governance)
-    is_valid_feed = Btoi(Txn.sender()) == Or(
-        Btoi(App.globalGet(app_1)),
-        Btoi(App.globalGet(app_2)),
-        Btoi(App.globalGet(app_3)),
-        Btoi(App.globalGet(app_4)),
-        Btoi(App.globalGet(app_5)),
+    is_valid_feed = Or(
+        Txn.sender() == App.globalGet(app_1),
+        Txn.sender() == App.globalGet(app_2),
+        Txn.sender() == App.globalGet(app_3),
+        Txn.sender() == App.globalGet(app_4),
+        Txn.sender() == App.globalGet(app_5),
     )
 
     def create():

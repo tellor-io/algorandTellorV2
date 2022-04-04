@@ -4,6 +4,7 @@ deployment script for testnet or devnet
 import os
 import sys
 
+from algosdk.future.transaction import Multisig
 from algosdk.v2client.algod import AlgodClient
 from dotenv import load_dotenv
 
@@ -14,7 +15,7 @@ from src.utils.testing.resources import fundAccount
 from src.utils.testing.resources import getTemporaryAccount
 
 
-def deploy(query_id: str, query_data: str, network: str):
+def deploy(query_id: str, query_data: str, time_interval: int, network: str):
     """
     quick deployment scheme, works on:
     - local private network
@@ -31,29 +32,53 @@ def deploy(query_id: str, query_data: str, network: str):
     print("current network: ", network)
     if network == "testnet":
         tipper = Account.FromMnemonic(os.getenv("TIPPER_MNEMONIC"))
-        governance = Account.FromMnemonic(os.getenv("GOVERNANCE_ADDR"))
         reporter = Account.FromMnemonic(os.getenv("REPORTER_MNEMONIC"))
+        member_1 = Account.FromMnemonic(os.getenv("MEMBER_1"))
+        member_2 = Account.FromMnemonic(os.getenv("MEMBER_2"))
+        multisig_accounts = [member_1, member_2]
+        governance = Multisig(version=1, threshold=2, addresses=multisig_accounts)
+        print("Multisig Address: ", governance.address())
+        print(
+            "Go to the below link to fund the created account using testnet faucet: \
+            \n https://dispenser.testnet.aws.algodev.network/?account={}".format(
+                governance.address()
+            )
+        )
+        input("Press Enter to continue...")
     elif network == "devnet":
         tipper = getTemporaryAccount(client)
         reporter = getTemporaryAccount(client)
-        governance = getTemporaryAccount(client)
+        member_1 = getTemporaryAccount(client)
+        member_2 = getTemporaryAccount(client)
+        multisig_accounts_pk = [member_1.addr, member_2.addr]
+        multisig_accounts_sk = [member_1.getPrivateKey(), member_2.getPrivateKey()]
 
+        governance = Multisig(version=1, threshold=2, addresses=multisig_accounts_pk)
+        fundAccount(client, governance.address())
         fundAccount(client, reporter.addr)
         fundAccount(client, reporter.addr)
         fundAccount(client, reporter.addr)
     else:
         raise Exception("invalid network selected")
 
-    s = Scripts(client=client, tipper=tipper, reporter=reporter, governance_address=governance)
+    s = Scripts(client=client, tipper=tipper, reporter=reporter, governance_address=governance, contract_count=5)
 
-    app_id = s.deploy_tellor_flex(
-        query_id=query_id,
-        query_data=query_data,
+    tellor_flex_app_id = s.deploy_tellor_flex(
+        query_id=query_id, query_data=query_data, multisigaccounts_sk=multisig_accounts_sk
     )
+    medianizer_app_id = s.deploy_medianizer(time_interval=time_interval, multisigaccounts_sk=multisig_accounts_sk)
 
-    print(f"App deployed on {network}. App id: ", app_id)
-    print("please update config.yaml with new app_id.")
+    activate_medianizer = s.activate_contract(multisigaccounts_sk=multisig_accounts_sk)
+
+    set_medianizer = s.set_medianizer(multisigaccounts_sk=multisig_accounts_sk)
+    print(f"TellorFlex App deployed on {network}. App id: {tellor_flex_app_id}")
+    print(f"Medianizer App deployed on {network}. App id: {medianizer_app_id}")
+    print(f"Medianizer activate, Txn id: {activate_medianizer}")
+    print(f"Set Medianizer on feeds, Txn id: {set_medianizer}")
+    # print("please update config.yaml with new app_id.")
 
 
 config = get_configs(sys.argv[1:])
-deploy(query_id=config.query_id, query_data=config.query_data, network=config.network)
+deploy(
+    query_id=config.query_id, query_data=config.query_data, time_interval=config.time_interval, network=config.network
+)
