@@ -62,6 +62,8 @@ def deployed_contract(accounts, client, scripts):
     """deploys feeds and medianizer contracts, provides app ids for all contracts"""
 
     fundAccount(client, accounts.governance.address())
+    fundAccount(client, accounts.tipper.address())
+    fundAccount(client, accounts.reporter.address())
 
     query_id = "1"
     query_data = "this is my description of query_id 1"
