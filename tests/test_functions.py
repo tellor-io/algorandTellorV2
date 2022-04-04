@@ -1,3 +1,4 @@
+import base64
 import time
 
 import pytest
@@ -105,21 +106,22 @@ def test_report(client, scripts, accounts, deployed_contract):
     state = getAppGlobalState(client, deployed_contract.id)
     assert state[b"num_reports"] == 0
 
-    query_id = b"1"
-    value = b"the data I put on-chain 1234"
+    query_id = b"BTCUSD"
+    value = base64.encode(39000)
     scripts.report(query_id, value)
 
     state = getAppGlobalState(client, deployed_contract.id)
-    assert state[b"num_reports"] == 0  # won't increment until approved by governance
     assert state[b"value"] == value
-    assert pytest.approx(state[b"timestamp"], 100) == int(time.time())
+
+    on_chain_timestamp = int(encoding.base64.b64decode(state[b"timestamp"][:6]))
+    assert pytest.approx(on_chain_timestamp, 100) == int(time.time())
 
     new_value = b"a new data value 4567"
     scripts.report(query_id, new_value)
 
     state = getAppGlobalState(client, deployed_contract.id)
-    assert state[b"num_reports"] == 0  # won't increment until approved by governance
     assert state[b"value"] == new_value
+    on_chain_timestamp = int(encoding.base64.b64decode(state[b"timestamp"][:6]))
     assert pytest.approx(state[b"timestamp"], 100) == int(time.time())
 
 
@@ -236,22 +238,42 @@ def test_tip(client, scripts, accounts, deployed_contract):
     assert curr_tip_amount == prev_tip_amount + tip_amount
 
 
-def test_vote(client, scripts, accounts, deployed_contract):
+def test_slash_reporter(client, scripts, accounts, deployed_contract):
     """Test vote() method on contract"""
     scripts.stake()
     state = getAppGlobalState(client, deployed_contract.id)
     num_reports = state[b"num_reports"]
     scripts.vote(1)
 
+    #require1: can only be called by the governance
+    scripts.governance = accounts.bad_actor
+
+    with pytest.raises(AlgodHTTPError):
+        scripts.slash_reporter()
+
+    #expected behavior: 
+    # - gov address claims stake
+    # - stake status set to 0
+
     state = getAppGlobalState(client, deployed_contract.id)
     num_reports += 1  # number of reports increases by 1
-    assert state[b"num_reports"] == num_reports
     assert state[b"staking_status"] == 1
+    gov_algo_balance_before = client.account_info(accounts.governance.getAddress()).get("amount")
 
-    scripts.vote(0)
+
+    scripts.governance = accounts.governance
+
+    scripts.slash_reporter()
+
     state = getAppGlobalState(client, deployed_contract.id)
-    assert state[b"num_reports"] == num_reports  # number of reports doesn't increase nor decrease after slashing
     assert state[b"staking_status"] == 0
+
+    gov_algo_balance_after = client.account_info(accounts.governance.getAddress()).get("amount")
+
+    assert gov_algo_balance_after == gov_algo_balance_before + state[b"stake_amount"]
+
+
+    
 
 
 def test_request_withdraw(client, scripts, accounts, deployed_contract):

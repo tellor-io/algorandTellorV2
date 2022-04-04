@@ -115,8 +115,8 @@ def report():
     Txn args:
     0) will always equal "report" (in order to route to this method)
     1) query_id -- the ID of the data requested to be put on chain
-    2) value -- the data submitted to the query
-    3) timestamp -- the timestamp of the data submission
+    2) value -- the data submitted to the query (in base64)
+    3) timestamp -- the timestamp of the data submission (in base64)
     """
 
     last_timestamp = ScratchVar(TealType.bytes)
