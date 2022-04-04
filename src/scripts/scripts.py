@@ -1,7 +1,13 @@
 import time
 from typing import Optional, Union
+from typing import Any
+from typing import List
+from typing import Optional
 from typing import Tuple
 
+from algosdk.atomic_transaction_composer import AtomicTransactionComposer
+from algosdk.atomic_transaction_composer import MultisigTransactionSigner
+from algosdk.atomic_transaction_composer import TransactionWithSigner
 from algosdk.future import transaction
 from algosdk.logic import get_application_address
 from algosdk.v2client.algod import AlgodClient
@@ -9,6 +15,8 @@ from algosdk.future.transaction import Multisig
 
 from src.contracts.contracts import approval_program
 from src.contracts.contracts import clear_state_program
+from src.contracts.medianizer_contract import approval_program as approval_medianizer
+from src.contracts.medianizer_contract import clear_state_program as clear_medianizer
 from src.utils.account import Account
 from src.utils.senders import send_no_op_tx
 from src.utils.util import fullyCompileContract
@@ -19,6 +27,9 @@ from algosdk.future.transaction import create_dryrun
 
 APPROVAL_PROGRAM = b""
 CLEAR_STATE_PROGRAM = b""
+
+MEDIANIZER_APPROVAL_PROGRAM = b""
+MEDIANIZER_CLEAR_STATE_PROGRAM = b""
 
 
 class Scripts:
@@ -41,6 +52,7 @@ class Scripts:
         governance_address: Union[Account, Multisig],
         feed_app_id: Optional[int] = None,
         medianizer_app_id: Optional[int] = None,
+        contract_count: Optional[int] = 0,
     ) -> None:
         """
         - connects to algorand node
@@ -60,6 +72,7 @@ class Scripts:
         self.governance_address = governance_address
         self.feed_app_id = feed_app_id
         self.medianizer_app_id = medianizer_app_id
+        self.contract_count = contract_count
 
         self.feeds = []
 
@@ -87,6 +100,25 @@ class Scripts:
 
         return APPROVAL_PROGRAM, CLEAR_STATE_PROGRAM
 
+    def get_contracts_medianizer(self, client: AlgodClient) -> Tuple[bytes, bytes]:
+        """
+        Get the compiled TEAL contracts for the tellor contract.
+
+        Args:
+            client: An algod client that has the ability to compile TEAL programs.
+        Returns:
+            A tuple of 2 byte strings. The first is the approval program, and the
+            second is the clear state program.
+        """
+        global MEDIANIZER_APPROVAL_PROGRAM
+        global MEDIANIZER_CLEAR_STATE_PROGRAM
+
+        if len(MEDIANIZER_APPROVAL_PROGRAM) == 0:
+            MEDIANIZER_APPROVAL_PROGRAM = fullyCompileContract(client, approval_medianizer())
+            MEDIANIZER_CLEAR_STATE_PROGRAM = fullyCompileContract(client, clear_medianizer())
+
+        return MEDIANIZER_APPROVAL_PROGRAM, MEDIANIZER_CLEAR_STATE_PROGRAM
+
     def get_medianized_value(self):
 
         state = getAppGlobalState(self.client, self.medianizer_app_id)
@@ -105,7 +137,7 @@ class Scripts:
             current_data[feed_app_id]["values"] = feed_state["values"]
             current_data[feed_app_id]["timestamps"] = feed_state["timestamps"]
 
-    def deploy_tellor_flex(self, query_id: str, query_data: str) -> int:
+    def deploy_tellor_flex(self, query_id: str, query_data: str, multisigaccounts_sk: List[str]) -> int:
         """
         Deploy a new tellor reporting contract.
         calls create() method on contract
@@ -121,35 +153,107 @@ class Scripts:
         """
         approval, clear = self.get_contracts(self.client)
 
-        globalSchema = transaction.StateSchema(num_uints=7, num_byte_slices=6)
+        globalSchema = transaction.StateSchema(num_uints=9, num_byte_slices=9)
         localSchema = transaction.StateSchema(num_uints=0, num_byte_slices=0)
-
+        medianizer_id = 0
         app_args = [
-            self.governance_address.getAddress(),
             query_id.encode("utf-8"),
             query_data.encode("utf-8"),
+            medianizer_id,
         ]
 
-        txn = transaction.ApplicationCreateTxn(
-            sender=self.tipper.getAddress(),
-            on_complete=transaction.OnComplete.NoOpOC,
-            approval_program=approval,
-            clear_program=clear,
-            global_schema=globalSchema,
-            local_schema=localSchema,
-            app_args=app_args,
-            sp=self.client.suggested_params(),
+        print(f"Forming {self.contract_count} {query_id} contracts")
+        for i in range(self.contract_count):
+            comp = AtomicTransactionComposer()
+            comp.add_transaction(
+                TransactionWithSigner(
+                    transaction.ApplicationCreateTxn(
+                        sender=self.governance_address.address(),
+                        on_complete=transaction.OnComplete.NoOpOC,
+                        approval_program=approval,
+                        clear_program=clear,
+                        global_schema=globalSchema,
+                        local_schema=localSchema,
+                        app_args=app_args,
+                        sp=self.client.suggested_params(),
+                        note=f"{query_id} Feed {i}".encode(),
+                    ),
+                    MultisigTransactionSigner(self.governance_address, multisigaccounts_sk),
+                )
+            )
+            txid = comp.execute(self.client, 4).tx_ids
+            for i in txid:
+                res = self.client.pending_transaction_info(i)
+                app_id = res["application-index"]
+                self.feeds.append(app_id)
+
+        print("Created new apps:", self.feeds)
+        return self.feeds
+
+    def deploy_medianizer(self, time_interval: int, multisigaccounts_sk: List[int]) -> int:
+        approval, clear = self.get_contracts_medianizer(self.client)
+
+        global_schema = transaction.StateSchema(num_uints=1, num_byte_slices=6)
+        local_schema = transaction.StateSchema(num_uints=0, num_byte_slices=0)
+
+        app_args = [time_interval]
+        comp = AtomicTransactionComposer()
+        comp.add_transaction(
+            TransactionWithSigner(
+                transaction.ApplicationCreateTxn(
+                    sender=self.governance_address.address(),
+                    sp=self.client.suggested_params(),
+                    on_complete=transaction.OnComplete.NoOpOC,
+                    approval_program=approval,
+                    clear_program=clear,
+                    global_schema=global_schema,
+                    local_schema=local_schema,
+                    app_args=app_args,
+                ),
+                MultisigTransactionSigner(self.governance_address, multisigaccounts_sk),
+            )
         )
+        tx_id = comp.execute(self.client, 4).tx_ids
+        res = self.client.pending_transaction_info(tx_id[0])
+        self.medianizer_app_id = res["application-index"]
+        return self.medianizer_app_id
 
-        signedTxn = txn.sign(self.tipper.getPrivateKey())
+    def activate_contract(self, multisigaccounts_sk: List[Any]) -> List[int]:
+        comp = AtomicTransactionComposer()
+        comp.add_transaction(
+            TransactionWithSigner(
+                transaction.ApplicationNoOpTxn(
+                    sender=self.governance_address.address(),
+                    sp=self.client.suggested_params(),
+                    index=self.medianizer_app_id,
+                    app_args=["activate_contract"],
+                    foreign_apps=self.feeds,
+                ),
+                MultisigTransactionSigner(self.governance_address, multisigaccounts_sk),
+            )
+        )
+        tx_id = comp.execute(self.client, 4).tx_ids
+        print(f"Medianizer active, tx hash: {tx_id}")
+        return tx_id
 
-        self.client.send_transaction(signedTxn)
-
-        response = waitForTransaction(self.client, signedTxn.get_txid())
-        assert response.applicationIndex is not None and response.applicationIndex > 0
-        self.feed_app_id = response.applicationIndex
-        self.app_address = get_application_address(self.feed_app_id)
-        return self.feed_app_id
+    def set_medianizer(self, multisigaccounts_sk: List[Any]) -> List[int]:
+        txn_ids = []
+        for i in self.feeds:
+            comp = AtomicTransactionComposer()
+            comp.add_transaction(
+                TransactionWithSigner(
+                    transaction.ApplicationNoOpTxn(
+                        sender=self.governance_address.address(),
+                        sp=self.client.suggested_params(),
+                        index=i,
+                        app_args=["change_medianizer", self.medianizer_app_id],
+                    ),
+                    MultisigTransactionSigner(self.governance_address, multisigaccounts_sk),
+                )
+            )
+            tx_id = comp.execute(self.client, 3).tx_ids
+            txn_ids.append(tx_id[0])
+        return txn_ids
 
     def stake(self, stake_amount=None) -> None:
         """
@@ -222,6 +326,7 @@ class Scripts:
             sender=self.reporter.getAddress(),
             index=self.feed_app_id,
             app_args=[b"report", query_id, value],
+            foreign_apps=self.feeds,
             sp=self.client.suggested_params(),
         )
 

@@ -122,7 +122,7 @@ def test_report(client, scripts, accounts, deployed_contract):
     state = getAppGlobalState(client, deployed_contract.id)
     assert state[b"value"] == new_value
     on_chain_timestamp = int(encoding.base64.b64decode(state[b"timestamp"][:6]))
-    assert pytest.approx(state[b"timestamp"], 100) == int(time.time())
+    assert pytest.approx(state[b"timestamp"][:6], 100) == int(time.time())
 
 
 def test_stake(client, scripts, accounts, deployed_contract):

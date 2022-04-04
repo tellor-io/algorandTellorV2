@@ -6,7 +6,6 @@ governance_address = Bytes("governance_address")
 query_id = Bytes("query_id")
 query_data = Bytes("query_data")
 staking_status = Bytes("staking_status")
-tipper = Bytes("tipper")
 reporter = Bytes("reporter_address")
 currently_staked = Bytes("currently_staked")
 timestamps = Bytes("timestamps")
@@ -35,20 +34,18 @@ def create():
     solidity equivalent: constructor()
 
     args:
-    0) governance address
-    1) query id
-    2) query data
-    3) medianizer application address
+    0) query id
+    1) query data
+    2) medianizer application address
 
     """
     return Seq(
         [
-            App.globalPut(tipper, Txn.sender()),
+            App.globalPut(governance_address, Txn.sender()),
             App.globalPut(tip_amount, Int(0)),
-            App.globalPut(governance_address, Txn.application_args[0]),
-            App.globalPut(query_id, Txn.application_args[1]),
-            App.globalPut(query_data, Txn.application_args[2]),
-            App.globalPut(medianizer, Txn.application_args[3]),
+            App.globalPut(query_id, Txn.application_args[0]),
+            App.globalPut(query_data, Txn.application_args[1]),
+            App.globalPut(medianizer, Btoi(Txn.application_args[2])),
             # 0-not Staked, 1=Staked
             App.globalPut(reporter, Bytes("")),
             App.globalPut(staking_status, Int(0)),
@@ -101,7 +98,7 @@ def change_medianizer():
                     Txn.application_args.length() == Int(2),
                 )
             ),
-            App.globalPut(medianizer, Txn.application_args[1]),
+            App.globalPut(medianizer, Btoi(Txn.application_args[1])),
             Approve(),
         ]
     )
@@ -409,6 +406,7 @@ def handle_method():
     contract_method = Txn.application_args[0]
     return Cond(
         [contract_method == Bytes("change_governance"), change_governance()],
+        [contract_method == Bytes("change_medianizer"), change_medianizer()],
         [contract_method == Bytes("stake"), stake()],
         [contract_method == Bytes("tip"), tip()],
         [contract_method == Bytes("report"), report()],

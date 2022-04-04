@@ -5,6 +5,7 @@ from src.scripts.scripts import Scripts
 from src.utils.accounts import Accounts
 from src.utils.helpers import _algod_client
 from src.utils.util import getAppGlobalState
+from algosdk.logic import get_application_address
 
 # from src.utils.helpers import call_sandbox_command
 
@@ -12,13 +13,14 @@ from src.utils.util import getAppGlobalState
 class App:
     """simple class for contract metadata"""
 
-    def __init__(self, id: int, state) -> None:
+    def __init__(self, feed_ids: list, medianizer_id: int) -> None:
         """
-        id (int): the application id
-        state: state of the contract
+        feed (list): a list of tuples for feed id and feed state
+        medianizer_id: int (int): medianizer application id
+        medianizer_state: state of the medianizer
         """
-        self.id = id
-        self.state = state
+        self.feed_ids = feed_ids
+        self.medianizer_id = medianizer_id
 
 
 # def setup_module(module):
@@ -56,58 +58,46 @@ def scripts(client, accounts):
 
 @pytest.fixture(autouse=True)
 def deployed_contract(accounts, client, scripts):
-    """
-    quick deployment scheme, works on:
-    - local private network
-    - algorand public testnet
-    """
+    """deploys contract, provides app id and state for testing"""
 
-    load_dotenv()
+    query_id = "1"
+    query_data = "this is my description of query_id 1"
 
-    algo_address = "http://localhost:4001"
-    algo_token = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-
-    client = AlgodClient(algod_address=algo_address, algod_token=algo_token)
-
-    print("current network: ", network)
-    if network == "testnet":
-        tipper = Account.FromMnemonic(os.getenv("TIPPER_MNEMONIC"))
-        reporter = Account.FromMnemonic(os.getenv("REPORTER_MNEMONIC"))
-        member_1 = Account.FromMnemonic(os.getenv("MEMBER_1"))
-        member_2 = Account.FromMnemonic(os.getenv("MEMBER_2"))
-        multisig_accounts = [member_1, member_2]
-        governance = Multisig(version=1, threshold=2, addresses=multisig_accounts)
-        print("Multisig Address: ", governance.address())
-        print(
-            "Go to the below link to fund the created account using testnet faucet: \
-            \n https://dispenser.testnet.aws.algodev.network/?account={}".format(
-                governance.address()
-            )
-        )
-        input("Press Enter to continue...")
-    elif network == "devnet":
-        tipper = getTemporaryAccount(client)
-        reporter = getTemporaryAccount(client)
-        member_1 = getTemporaryAccount(client)
-        member_2 = getTemporaryAccount(client)
-        multisig_accounts_pk = [member_1.addr, member_2.addr]
-        multisig_accounts_sk = [member_1.getPrivateKey(), member_2.getPrivateKey()]
-
-        governance = Multisig(version=1, threshold=2, addresses=multisig_accounts_pk)
-        fundAccount(client, governance.address())
-        fundAccount(client, reporter.addr)
-        fundAccount(client, reporter.addr)
-        fundAccount(client, reporter.addr)
-    else:
-        raise Exception("invalid network selected")
-
-    s = Scripts(client=client, tipper=tipper, reporter=reporter, governance_address=governance, contract_count=5)
-
-    tellor_flex_app_id = s.deploy_tellor_flex(
-        query_id=query_id, query_data=query_data, multisigaccounts_sk=multisig_accounts_sk
+    feedAppIDs = scripts.deploy_tellor_flex(
+        query_id=query_id, query_data=query_data, multisigaccounts_sk=accounts.multisig_signers_sk
     )
-    medianizer_app_id = s.deploy_medianizer(time_interval=time_interval, multisigaccounts_sk=multisig_accounts_sk)
 
-    activate_medianizer = s.activate_contract(multisigaccounts_sk=multisig_accounts_sk)
+    for ids in feedAppIDs:
+        actual = getAppGlobalState(client, ids)
+        expected = {
+            b"governance_address": encoding.decode_address(accounts.governance.address()),
+            b"query_id": query_id.encode("utf-8"),
+            b"query_data": query_data.encode("utf-8"),
+            b"num_reports": 0,
+            b"stake_amount": 200000,
+            b"staking_status": 0,
+            b"reporter_address": b"",
+        }
 
-    set_medianizer = s.set_medianizer(multisigaccounts_sk=multisig_accounts_sk)
+        assert actual == expected
+
+    time_interval = 1234567
+    medianizerAppID = scripts.deploy_medianizer(time_interval=time_interval, multisigaccounts_sk=accounts.multisig_signers_sk)
+
+    scripts.activate_contract(multisigaccounts_sk=accounts.multisig_signers_sk)
+    scripts.set_medianizer(multisigaccounts_sk=accounts.multisig_signers_sk)
+
+    medianizerState = getAppGlobalState(client, medianizerAppID)
+    feedState1 = getAppGlobalState(client, feedAppIDs[0])
+    feedAddr1 = get_application_address(feedAppIDs[0].id)
+
+    medianizerExpected = {
+        b"governance_address": encoding.decode_address(accounts.governance.address()),
+        b"time_interval": time_interval,
+    }
+
+    assert medianizerState == medianizerExpected
+    assert medianizerState[b"app_1"] == feedAddr1
+    assert feedState1[b"medianizer"] == medianizerAppID
+
+    return App(feedAppIDs, medianizerAppID)

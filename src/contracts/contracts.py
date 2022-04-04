@@ -1,5 +1,10 @@
+<<<<<<< HEAD
 from src.contracts.methods import *
+=======
+>>>>>>> f8b6d86c3e1153470fdd556382a4cab2f10a1fae
 from pyteal import *
+
+from .methods import *
 
 
 def approval_program():
