@@ -47,7 +47,7 @@ class Scripts:
         governance_address: transaction.Multisig,
         feed_app_id: Optional[int] = None,
         medianizer_app_id: Optional[int] = None,
-        contract_count: Optional[int] = 0,
+        contract_count: Optional[int] = 1,
     ) -> None:
         """
         - connects to algorand node

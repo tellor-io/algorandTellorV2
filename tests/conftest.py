@@ -6,6 +6,7 @@ from src.utils.accounts import Accounts
 from src.utils.helpers import _algod_client
 from src.utils.util import getAppGlobalState
 from algosdk.logic import get_application_address
+from src.utils.testing.resources import fundAccount
 
 # from src.utils.helpers import call_sandbox_command
 
@@ -15,9 +16,8 @@ class App:
 
     def __init__(self, feed_ids: list, medianizer_id: int) -> None:
         """
-        feed (list): a list of tuples for feed id and feed state
+        feed_ids (list): a list of feed application ids
         medianizer_id: int (int): medianizer application id
-        medianizer_state: state of the medianizer
         """
         self.feed_ids = feed_ids
         self.medianizer_id = medianizer_id
@@ -53,12 +53,15 @@ def scripts(client, accounts):
         tipper=accounts.tipper,
         reporter=accounts.reporter,
         governance_address=accounts.governance,
+        contract_count=5
     )
 
 
 @pytest.fixture(autouse=True)
 def deployed_contract(accounts, client, scripts):
-    """deploys contract, provides app id and state for testing"""
+    """deploys feeds and medianizer contracts, provides app ids for all contracts"""
+
+    fundAccount(client, accounts.governance.address())
 
     query_id = "1"
     query_data = "this is my description of query_id 1"
@@ -73,10 +76,14 @@ def deployed_contract(accounts, client, scripts):
             b"governance_address": encoding.decode_address(accounts.governance.address()),
             b"query_id": query_id.encode("utf-8"),
             b"query_data": query_data.encode("utf-8"),
-            b"num_reports": 0,
+            b"medianizer": 0,
+            b"timestamps": b"",
             b"stake_amount": 200000,
             b"staking_status": 0,
+            b"stake_timestamp": 0,
             b"reporter_address": b"",
+            b"values": b"",
+            b"tip_amount": 0
         }
 
         assert actual == expected
@@ -86,18 +93,12 @@ def deployed_contract(accounts, client, scripts):
 
     scripts.activate_contract(multisigaccounts_sk=accounts.multisig_signers_sk)
     scripts.set_medianizer(multisigaccounts_sk=accounts.multisig_signers_sk)
-
+    
     medianizerState = getAppGlobalState(client, medianizerAppID)
     feedState1 = getAppGlobalState(client, feedAppIDs[0])
-    feedAddr1 = get_application_address(feedAppIDs[0].id)
+    feedAddr1 = get_application_address(feedAppIDs[0])
 
-    medianizerExpected = {
-        b"governance_address": encoding.decode_address(accounts.governance.address()),
-        b"time_interval": time_interval,
-    }
-
-    assert medianizerState == medianizerExpected
-    assert medianizerState[b"app_1"] == feedAddr1
+    assert medianizerState[b"app_1"] == encoding.decode_address(feedAddr1)
     assert feedState1[b"medianizer"] == medianizerAppID
 
     return App(feedAppIDs, medianizerAppID)
