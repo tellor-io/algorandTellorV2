@@ -57,33 +57,28 @@ def test_change_medianizer(client, scripts, accounts, deployed_contracts):
 def test_activate_contract(client, scripts, accounts, deployed_contracts, deployed_medianizer_contract):
     """Test activate_contract method on medianizer_contract"""
 
-    medianzier_state = getAppGlobalState(client, deployed_medianizer_contract.id)
-    # app addresses should be null initially
-    assert medianzier_state[b"app_1"] == ""
-    assert medianzier_state[b"app_2"] == ""
-    assert medianzier_state[b"app_3"] == ""
-    assert medianzier_state[b"app_4"] == ""
-    assert medianzier_state[b"app_5"] == ""
-    assert medianzier_state[b"governance"] == encoding.decode_address(accounts.governance.address())
+    medianzier_state = getAppGlobalState(client, deployed_contract.medianizer_id)
+    n = 1
+    for i in deployed_contract.feed_ids:
+        feed_state = getAppGlobalState(client, i)
+        app = "app_" + f"{n}"
+        encoded = app.encode('utf-8')
+        addr = get_application_address(i)
+        n+=1
+        assert medianzier_state[encoded] == encoding.decode_address(addr)
+        assert feed_state[b"medianizer"] == deployed_contract.medianizer_id
 
-    scripts.activate_contract(accounts.multisig_signers_sk)
-
-    # apps should be
-    app_addr_1 = get_application_address(deployed_contracts.id)
-    assert medianzier_state[b"app_1"] == app_addr_1
-    # assert medianzier_state[b"app_2"] == app_addr_2
-    # assert medianzier_state[b"app_3"] == app_addr_3
-    # assert medianzier_state[b"app_4"] == app_addr_4
-    # assert medianzier_state[b"app_5"] == app_addr_5
     assert medianzier_state[b"governance"] == encoding.decode_address(accounts.governance.address())
 
 
-def test_get_values(client, scripts, accounts, deployed_contracts, deployed_medianizer_contract):
+def test_get_values(client, scripts, accounts, deployed_contract):
     """Test get_values() method on medianizer_contract"""
-    medianzier_state = getAppGlobalState(client, deployed_medianizer_contract.id)
-    feed_state = getAppGlobalState(client, deployed_contracts.id)
+    medianzier_state = getAppGlobalState(client, deployed_contract.medianizer_id)
     scripts.stake()
-    assert feed_state[b"num_reports"] == 0
+
+    for i in deployed_contract.feed_ids:
+        feed_state = getAppGlobalState(client, i)
+        assert feed_state[b"num_reports"] == 0
 
     query_id = b"1"
     value = 1234
