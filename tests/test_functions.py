@@ -11,9 +11,9 @@ from src.utils.util import getAppGlobalState, waitForTransaction
 from utils.senders import send_no_op_tx
 from utils.testing.resources import getTemporaryAccount
 
-def test_change_governance(client, scripts, accounts, deployed_contract):
+def test_change_governance(client, scripts, accounts, deployed_contracts):
 
-    state = getAppGlobalState(client, deployed_contract.id)
+    state = getAppGlobalState(client, deployed_contracts.id)
     old_gov_address = state[b"governance_contract"]
     new_gov_address = getTemporaryAccount(client).addr
     
@@ -29,13 +29,13 @@ def test_change_governance(client, scripts, accounts, deployed_contract):
 
     #assert governance should be a different address
 
-    state = getAppGlobalState(client, deployed_contract.id)
+    state = getAppGlobalState(client, deployed_contracts.id)
     assert state[b"governance_contract"] == new_gov_address
 
 
-def test_change_medianizer(client, scripts, accounts, deployed_contract):
+def test_change_medianizer(client, scripts, accounts, deployed_contracts):
 
-    state = getAppGlobalState(client, deployed_contract.id)
+    state = getAppGlobalState(client, deployed_contracts.id)
     old_medianizer_id = state[b"medianizer"]
     new_medianizer_id = 1234
     
@@ -51,10 +51,10 @@ def test_change_medianizer(client, scripts, accounts, deployed_contract):
 
     #assert governance should be a different address
 
-    state = getAppGlobalState(client, deployed_contract.id)
+    state = getAppGlobalState(client, deployed_contracts.id)
     assert state[b"medianizer"] == new_medianizer_id
     
-def test_activate_contract(client, scripts, accounts, deployed_contract, deployed_medianizer_contract):
+def test_activate_contract(client, scripts, accounts, deployed_contracts, deployed_medianizer_contract):
     """Test activate_contract method on medianizer_contract"""
 
     medianzier_state = getAppGlobalState(client, deployed_medianizer_contract.id)
@@ -69,7 +69,7 @@ def test_activate_contract(client, scripts, accounts, deployed_contract, deploye
     scripts.activate_contract(accounts.multisig_signers_sk)
 
     # apps should be
-    app_addr_1 = get_application_address(deployed_contract.id)
+    app_addr_1 = get_application_address(deployed_contracts.id)
     assert medianzier_state[b"app_1"] == app_addr_1
     # assert medianzier_state[b"app_2"] == app_addr_2
     # assert medianzier_state[b"app_3"] == app_addr_3
@@ -78,10 +78,10 @@ def test_activate_contract(client, scripts, accounts, deployed_contract, deploye
     assert medianzier_state[b"governance"] == encoding.decode_address(accounts.governance.address())
 
 
-def test_get_values(client, scripts, accounts, deployed_contract, deployed_medianizer_contract):
+def test_get_values(client, scripts, accounts, deployed_contracts, deployed_medianizer_contract):
     """Test get_values() method on medianizer_contract"""
     medianzier_state = getAppGlobalState(client, deployed_medianizer_contract.id)
-    feed_state = getAppGlobalState(client, deployed_contract.id)
+    feed_state = getAppGlobalState(client, deployed_contracts.id)
     scripts.stake()
     assert feed_state[b"num_reports"] == 0
 
@@ -98,19 +98,19 @@ def test_get_values(client, scripts, accounts, deployed_contract, deployed_media
     assert medianzier_state["median_timestamp"] == timestamp
 
 
-def test_report(client, scripts, accounts, deployed_contract):
+def test_report(client, scripts, accounts, deployed_contracts):
     """Test report() method on contract"""
 
     scripts.stake()
 
-    state = getAppGlobalState(client, deployed_contract.id)
+    state = getAppGlobalState(client, deployed_contracts.id)
     assert state[b"num_reports"] == 0
 
     query_id = b"BTCUSD"
     value = base64.encode(39000)
     scripts.report(query_id, value)
 
-    state = getAppGlobalState(client, deployed_contract.id)
+    state = getAppGlobalState(client, deployed_contracts.id)
     assert state[b"value"] == value
 
     on_chain_timestamp = int(encoding.base64.b64decode(state[b"timestamp"][:6]))
@@ -119,26 +119,26 @@ def test_report(client, scripts, accounts, deployed_contract):
     new_value = b"a new data value 4567"
     scripts.report(query_id, new_value)
 
-    state = getAppGlobalState(client, deployed_contract.id)
+    state = getAppGlobalState(client, deployed_contracts.id)
     assert state[b"value"] == new_value
     on_chain_timestamp = int(encoding.base64.b64decode(state[b"timestamp"][:6]))
     assert pytest.approx(state[b"timestamp"][:6], 100) == int(time.time())
 
 
-def test_stake(client, scripts, accounts, deployed_contract):
+def test_stake(client, scripts, accounts, deployed_contracts):
     """Test stake() method on contract"""
 
     stake_amount = 200000
 
     reporter_algo_balance_before = client.account_info(accounts.reporter.getAddress()).get("amount")
-    state = getAppGlobalState(client, deployed_contract.id)
+    state = getAppGlobalState(client, deployed_contracts.id)
 
     assert state[b"staking_status"] == 0
     assert state[b"reporter_address"] == b""
 
     scripts.stake()
 
-    state = getAppGlobalState(client, deployed_contract.id)
+    state = getAppGlobalState(client, deployed_contracts.id)
 
     assert state[b"staking_status"] == 1
     assert state[b"reporter_address"] == encoding.decode_address(accounts.reporter.getAddress())
@@ -147,7 +147,7 @@ def test_stake(client, scripts, accounts, deployed_contract):
     assert reporter_algo_balance_after == reporter_algo_balance_before - stake_amount - client.fee * 2
 
 
-def test_tip(client, scripts, accounts, deployed_contract):
+def test_tip(client, scripts, accounts, deployed_contracts):
     """Test tip() method on feed contract"""
 
     tip_amount = 4
@@ -227,21 +227,21 @@ def test_tip(client, scripts, accounts, deployed_contract):
     # assert that the tip_amount state variable is equal to
     # the algo transferred in txn 1 
 
-    state = getAppGlobalState(client, deployed_contract.id)
+    state = getAppGlobalState(client, deployed_contracts.id)
     prev_tip_amount = state[b"tip_amount"]
 
     scripts.tip()
 
-    state = getAppGlobalState(client, deployed_contract.id)
+    state = getAppGlobalState(client, deployed_contracts.id)
     curr_tip_amount = state[b"tip_amount"]
 
     assert curr_tip_amount == prev_tip_amount + tip_amount
 
 
-def test_slash_reporter(client, scripts, accounts, deployed_contract):
+def test_slash_reporter(client, scripts, accounts, deployed_contracts):
     """Test vote() method on contract"""
     scripts.stake()
-    state = getAppGlobalState(client, deployed_contract.id)
+    state = getAppGlobalState(client, deployed_contracts.id)
     num_reports = state[b"num_reports"]
     scripts.vote(1)
 
@@ -255,7 +255,7 @@ def test_slash_reporter(client, scripts, accounts, deployed_contract):
     # - gov address claims stake
     # - stake status set to 0
 
-    state = getAppGlobalState(client, deployed_contract.id)
+    state = getAppGlobalState(client, deployed_contracts.id)
     num_reports += 1  # number of reports increases by 1
     assert state[b"staking_status"] == 1
     gov_algo_balance_before = client.account_info(accounts.governance.getAddress()).get("amount")
@@ -265,7 +265,7 @@ def test_slash_reporter(client, scripts, accounts, deployed_contract):
 
     scripts.slash_reporter()
 
-    state = getAppGlobalState(client, deployed_contract.id)
+    state = getAppGlobalState(client, deployed_contracts.id)
     assert state[b"staking_status"] == 0
 
     gov_algo_balance_after = client.account_info(accounts.governance.getAddress()).get("amount")
@@ -276,7 +276,7 @@ def test_slash_reporter(client, scripts, accounts, deployed_contract):
     
 
 
-def test_request_withdraw(client, scripts, accounts, deployed_contract):
+def test_request_withdraw(client, scripts, accounts, deployed_contracts):
     """Test request_withdraw() method on feed contract"""
 
     #require 2: assert unstaked account can't request withdrawal
@@ -292,7 +292,7 @@ def test_request_withdraw(client, scripts, accounts, deployed_contract):
     with pytest.raises(AlgodHTTPError):
         scripts.withdraw_request()
 
-    state = getAppGlobalState(client, deployed_contract.id)
+    state = getAppGlobalState(client, deployed_contracts.id)
 
     # assert staking status before fn call is 1
     assert state[b"staking_status"] == 1
@@ -304,7 +304,7 @@ def test_request_withdraw(client, scripts, accounts, deployed_contract):
     scripts.request_withdraw()
 
     # get state again
-    state = getAppGlobalState(client, deployed_contract.id)
+    state = getAppGlobalState(client, deployed_contracts.id)
 
     # assert stake timestamp is now approx. time.time()
     assert state[b"stake_timestamp"] == pytest.approx(time.time(), 500)
@@ -317,27 +317,27 @@ def test_request_withdraw(client, scripts, accounts, deployed_contract):
         scripts.withdraw_request()
 
 
-def test_withdraw(client, scripts, accounts, deployed_contract):
+def test_withdraw(client, scripts, accounts, deployed_contracts):
     """test withdraw() method on contract"""
 
     reporter_algo_balance_before = client.account_info(accounts.reporter.getAddress()).get("amount")
-    state = getAppGlobalState(client, deployed_contract.id)
+    state = getAppGlobalState(client, deployed_contracts.id)
 
     assert state[b"staking_status"] == 0
 
     scripts.stake()
-    state = getAppGlobalState(client, deployed_contract.id)
+    state = getAppGlobalState(client, deployed_contracts.id)
 
     assert state[b"staking_status"] == 1
 
     scripts.request_withdraw()
 
-    state = getAppGlobalState(client, deployed_contract.id)
+    state = getAppGlobalState(client, deployed_contracts.id)
     assert state[b"staking_status"] == 2
 
     tx_fee = 2000
 
-    state = getAppGlobalState(client, deployed_contract.id)
+    state = getAppGlobalState(client, deployed_contracts.id)
 
     reporter_algo_balance_after = client.account_info(accounts.reporter.getAddress()).get("amount")
 

@@ -57,7 +57,7 @@ def scripts(client, accounts):
 
 
 @pytest.fixture(autouse=True)
-def deployed_contract(accounts, client, scripts):
+def deployed_contracts(accounts, client, scripts):
     """deploys contract, provides app id and state for testing"""
 
     query_id = "1"
