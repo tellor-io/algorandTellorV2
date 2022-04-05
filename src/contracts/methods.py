@@ -1,13 +1,11 @@
 from pyteal import *
 
-num_reports = Bytes("num_reports")
 stake_amount = Bytes("stake_amount")
 governance_address = Bytes("governance_address")
 query_id = Bytes("query_id")
 query_data = Bytes("query_data")
 staking_status = Bytes("staking_status")
 reporter = Bytes("reporter_address")
-currently_staked = Bytes("currently_staked")
 timestamps = Bytes("timestamps")
 values = Bytes("values")
 tip_amount = Bytes("tip_amount")
@@ -170,29 +168,14 @@ def report():
             ]
         )
 
-    def get_last_value():
-        return Seq(
-            [
-                If(
-                    App.globalGet(values) == Bytes(""),
-                    last_value.store(Bytes("0")),
-                    last_value.store(
-                        Substring(
-                            App.globalGet(values), Len(App.globalGet(values)) - Int(6), Len(App.globalGet(values))
-                        )
-                    ),
-                )
-            ]
-        )
-
-    medianizer_query_id = App.globalGetEx(Int(1), query_id)
+    medianizer_query_id = App.globalGetEx(App.globalGet(medianizer), query_id)
 
     return Seq(
         [
             medianizer_query_id,
             Assert(
                 And(
-                    Txn.applications[1] == App.globalGet(medianizer),
+                    Txn.applications[6] == App.globalGet(medianizer),
                     medianizer_query_id.hasValue(),
                     App.globalGet(query_id) == medianizer_query_id.value(),
                     App.globalGet(reporter) == Txn.sender(),
@@ -240,7 +223,7 @@ def report():
                 }
             ),
             InnerTxnBuilder.Submit(),
-            App.globalPut(App.globalGet(tip_amount), Int(0)),
+            App.globalPut(tip_amount, Int(0)),
             Approve(),
         ]
     )

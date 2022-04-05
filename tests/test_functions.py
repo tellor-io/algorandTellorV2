@@ -3,11 +3,11 @@ import time
 import pytest
 from algosdk import encoding
 from algosdk.logic import get_application_address
-
 from src.utils.util import getAppGlobalState
+from src.scripts.scripts import Scripts
 
 
-def test_activate_contract(client, scripts, accounts, deployed_contract):
+def test_activate_contract(client, scripts: Scripts, accounts, deployed_contract):
     """Test activate_contract method on medianizer_contract"""
 
     medianzier_state = getAppGlobalState(client, deployed_contract.medianizer_id)
@@ -24,27 +24,31 @@ def test_activate_contract(client, scripts, accounts, deployed_contract):
     assert medianzier_state[b"governance"] == encoding.decode_address(accounts.governance.address())
 
 
-def test_get_values(client, scripts, accounts, deployed_contract):
+def test_get_values(client, scripts: Scripts, accounts, deployed_contract):
     """Test get_values() method on medianizer_contract"""
-    medianzier_state = getAppGlobalState(client, deployed_contract.medianizer_id)
+
+    scripts.feed_app_id = deployed_contract.feed_ids[0]
+    feed_id = scripts.feed_app_id
+    scripts.feed_app_address = get_application_address(feed_id)
+    
+    feed_state = getAppGlobalState(client, feed_id)
+    assert feed_state[b"reporter_address"] == b""
+
+    scripts.tip(300000)
     scripts.stake()
 
-    for i in deployed_contract.feed_ids:
-        feed_state = getAppGlobalState(client, i)
-        assert feed_state[b"num_reports"] == 0
+    feed_state = getAppGlobalState(client, feed_id)
+    assert feed_state[b"staking_status"] == 1
+    assert feed_state[b"reporter_address"] == encoding.decode_address(accounts.reporter.getAddress())
 
     query_id = b"1"
     value = 1234
     timestamp = 5678
     scripts.report(query_id, value, timestamp)
+    medianizer_state = getAppGlobalState(client, deployed_contract.medianizer_id)
     assert feed_state[b"query_id"] == query_id
-    assert feed_state[b"value"] == value
-    assert feed_state[b"timestamp"] == timestamp
-
-    scripts.get_values()
-    assert medianzier_state["median_price"] == value
-    assert medianzier_state["median_timestamp"] == timestamp
-
+    assert medianizer_state[b"median"] == value
+    assert medianizer_state[b"median_timestamp"] == timestamp
 
 def test_report(client, scripts, accounts, deployed_contract):
     """Test report() method on contract"""

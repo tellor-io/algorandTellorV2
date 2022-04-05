@@ -185,13 +185,13 @@ class Scripts:
         print("Created new apps:", self.feeds)
         return self.feeds
 
-    def deploy_medianizer(self, time_interval: int, multisigaccounts_sk: List[int]) -> int:
+    def deploy_medianizer(self, time_interval: int, query_id: bytes,multisigaccounts_sk: List[int]) -> int:
         approval, clear = self.get_contracts_medianizer(self.client)
 
-        global_schema = transaction.StateSchema(num_uints=1, num_byte_slices=6)
+        global_schema = transaction.StateSchema(num_uints=7, num_byte_slices=7)
         local_schema = transaction.StateSchema(num_uints=0, num_byte_slices=0)
 
-        app_args = [time_interval]
+        app_args = [time_interval, query_id]
         comp = AtomicTransactionComposer()
         comp.add_transaction(
             TransactionWithSigner(
@@ -268,7 +268,7 @@ class Scripts:
 
         payTxn = transaction.PaymentTxn(
             sender=self.reporter.getAddress(),
-            receiver=self.app_address,
+            receiver=self.feed_app_address,
             amt=stake_amount,
             sp=suggestedParams,
         )
@@ -294,21 +294,23 @@ class Scripts:
         suggestedParams = self.client.suggested_params()
 
         payTxn = transaction.PaymentTxn(
-            sender=self.reporter.getAddress(), receiver=self.app_address, amt=tip_amount, sp=suggestedParams
+            sender=self.tipper.getAddress(), receiver=self.feed_app_address, amt=tip_amount, sp=suggestedParams
         )
 
         no_op_txn = transaction.ApplicationNoOpTxn(
-            sender=self.reporter.getAddress(), index=self.feed_app_id, app_args=[b"tip"], sp=suggestedParams
+            sender=self.tipper.getAddress(), index=self.feed_app_id, app_args=[b"tip"], sp=suggestedParams
         )
+
+        transaction.assign_group_id([payTxn, no_op_txn])
 
         signed_pay_txn = payTxn.sign(self.tipper.getPrivateKey())
         signed_no_op_txn = no_op_txn.sign(self.tipper.getPrivateKey())
 
         self.client.send_transactions([signed_pay_txn, signed_no_op_txn])
 
-        waitForTransaction(self.cient, no_op_txn.get_txid())
+        waitForTransaction(self.client, no_op_txn.get_txid())
 
-    def report(self, query_id: bytes, value: bytes):
+    def report(self, query_id: bytes, value: bytes, timestamp: int):
         """
         Call report() on the contract to set the current value on the contract
 
@@ -320,8 +322,8 @@ class Scripts:
         submitValueTxn = transaction.ApplicationNoOpTxn(
             sender=self.reporter.getAddress(),
             index=self.feed_app_id,
-            app_args=[b"report", query_id, value],
-            foreign_apps=self.feeds,
+            app_args=[b"report", query_id, value, timestamp],
+            foreign_apps=self.feeds + [self.medianizer_app_id],
             sp=self.client.suggested_params(),
         )
 

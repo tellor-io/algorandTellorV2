@@ -92,7 +92,7 @@ def deployed_contract(accounts, client, scripts):
         assert actual == expected
 
     time_interval = 1234567
-    medianizerAppID = scripts.deploy_medianizer(time_interval=time_interval, multisigaccounts_sk=accounts.multisig_signers_sk)
+    medianizerAppID = scripts.deploy_medianizer(time_interval=time_interval, query_id=query_id, multisigaccounts_sk=accounts.multisig_signers_sk)
 
     scripts.activate_contract(multisigaccounts_sk=accounts.multisig_signers_sk)
     scripts.set_medianizer(multisigaccounts_sk=accounts.multisig_signers_sk)

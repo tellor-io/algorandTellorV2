@@ -10,6 +10,7 @@ def approval_program():
     time_interval = Bytes("time_interval")
     median_timestamp = Bytes("median_timestamp")
     median_price = Bytes("median")
+    query_id = Bytes("query_id")
     app_1 = Bytes("app_1")
     app_2 = Bytes("app_2")
     app_3 = Bytes("app_3")
@@ -41,6 +42,7 @@ def approval_program():
         return Seq(
             App.globalPut(governance, Txn.sender()),
             App.globalPut(time_interval, Btoi(Txn.application_args[0])),
+            App.globalPut(query_id, Txn.application_args[1]),
             Approve(),
         )
 
@@ -119,51 +121,48 @@ def approval_program():
         var5 = ScratchVar(TealType.uint64)
 
         validate_prices = Seq(
-            If(
-                And(
-                    feed_1_value.hasValue(),
-                    Minus(ExtractUint64(feed_1_value.value(), Int(0)), Global.latest_timestamp())
-                    > App.globalGet(time_interval),
-                )
-            )
-            .Then(var1.store(ExtractUint64(feed_1_value.value(), Int(8))))
+            If(feed_1_value.hasValue())
+            .Then(var1.store(ExtractUint64(feed_1_value.value(),Int(8))))
             .Else(var1.store(Int(0))),
-            If(
-                And(
-                    feed_2_value.hasValue(),
-                    Minus(ExtractUint64(feed_2_value.value(), Int(8)), Global.latest_timestamp())
-                    > App.globalGet(time_interval),
-                )
-            )
-            .Then(var2.store(ExtractUint64(feed_2_value.value(), Int(8))))
+            If(var1.load() > Int(0))
+            .Then(Seq(
+                If(Minus(Global.latest_timestamp(),ExtractUint64(feed_1_value.value(), Int(0)))
+                    <(App.globalGet(time_interval)),var1.store(Int(0)))
+            )),
+
+            If(feed_2_value.hasValue())
+            .Then(var2.store(ExtractUint64(feed_2_value.value(),Int(8))))
             .Else(var2.store(Int(0))),
-            If(
-                And(
-                    feed_3_value.hasValue(),
-                    Minus(ExtractUint64(feed_3_value.value(), Int(0)), Global.latest_timestamp())
-                    > App.globalGet(time_interval),
-                )
-            )
-            .Then(var3.store(ExtractUint64(feed_3_value.value(), Int(8))))
+            If(var2.load() > Int(0))
+            .Then(Seq(
+                If(Minus(Global.latest_timestamp(),ExtractUint64(feed_2_value.value(), Int(0)))
+                    <(App.globalGet(time_interval)),var2.store(Int(0)))
+            )),
+
+            If(feed_3_value.hasValue())
+            .Then(var3.store(ExtractUint64(feed_3_value.value(),Int(8))))
             .Else(var3.store(Int(0))),
-            If(
-                And(
-                    feed_4_value.hasValue(),
-                    Minus(ExtractUint64(feed_4_value.value(), Int(0)), Global.latest_timestamp())
-                    > App.globalGet(time_interval),
-                )
-            )
-            .Then(var4.store(ExtractUint64(feed_4_value.value(), Int(8))))
+            If(var3.load() > Int(0))
+            .Then(Seq(
+                If(Minus(Global.latest_timestamp(),ExtractUint64(feed_3_value.value(), Int(0)))
+                    <(App.globalGet(time_interval)),var3.store(Int(0)))
+            )),
+            If(feed_4_value.hasValue())
+            .Then(var4.store(ExtractUint64(feed_4_value.value(),Int(8))))
             .Else(var4.store(Int(0))),
-            If(
-                And(
-                    feed_5_value.hasValue(),
-                    Minus(ExtractUint64(feed_5_value.value(), Int(0)), Global.latest_timestamp())
-                    > App.globalGet(time_interval),
-                )
-            )
-            .Then(var5.store(ExtractUint64(feed_5_value.value(), Int(8))))
+            If(var4.load() > Int(0))
+            .Then(Seq(
+                If(Minus(Global.latest_timestamp(),ExtractUint64(feed_4_value.value(), Int(0)))
+                    <(App.globalGet(time_interval)),var4.store(Int(0)))
+            )),
+            If(feed_5_value.hasValue())
+            .Then(var5.store(ExtractUint64(feed_5_value.value(),Int(8))))
             .Else(var5.store(Int(0))),
+            If(var5.load() > Int(0))
+            .Then(Seq(
+                If(Minus(Global.latest_timestamp(),ExtractUint64(feed_5_value.value(), Int(0)))
+                    <(App.globalGet(time_interval)),var5.store(Int(0)))
+            )),
         )
 
         return Seq(
