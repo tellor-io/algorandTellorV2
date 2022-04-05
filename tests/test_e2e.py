@@ -1,17 +1,24 @@
 import pytest
 from algosdk import encoding
 from algosdk.error import AlgodHTTPError
+from scripts.scripts import Scripts
+from src.utils.accounts import Accounts
 
-from utils.testing.resources import getTemporaryAccount
-from utils.util import getAppGlobalState
+from src.utils.testing.resources import getTemporaryAccount
+from src.utils.util import getAppGlobalState
 
+from algosdk.algod import AlgodClient
 
-def test_not_staked_report_attempt(scripts, accounts, deployed_contract):
+from conftest import App
+
+def test_not_staked_report_attempt(client: AlgodClient, scripts: Scripts, accounts: Accounts, deployed_contract: App):
     """Accounts should not be permitted to report
     if they have not send a stake to the contract"""
 
-    assert deployed_contract.state[b"staking_status"] == 0
-    assert deployed_contract.state[b"reporter_address"] == b""
+    state = getAppGlobalState(client, scripts.feed_app_id)
+
+    assert state[b"staking_status"] == 0
+    assert state[b"reporter_address"] == b""
 
     with pytest.raises(AlgodHTTPError):
         scripts.report(query_id=b"1", value=b"the data I put on-chain 1234")  # expect failure/reversion
@@ -25,7 +32,7 @@ def test_report_wrong_query_id(client, scripts, deployed_contract):
 
     scripts.stake()
 
-    state = getAppGlobalState(client, deployed_contract.id)
+    state = getAppGlobalState(client, scripts.feed_app_id)
     assert state[b"num_reports"] == 0
     assert state[b"query_id"] == b"1"
 
@@ -35,11 +42,11 @@ def test_report_wrong_query_id(client, scripts, deployed_contract):
         scripts.report(query_id, value)
 
 
-def test_stake_amount(client, scripts, deployed_contract):
+def test_stake_amount(client, scripts:Scripts, deployed_contract:App):
     """Reporter should only be able to stake
     with the amount set in the contract by the tipper"""
 
-    state = getAppGlobalState(client, deployed_contract.id)
+    state = getAppGlobalState(client, scripts.feed_app_id)
     stake_amount = state[b"stake_amount"]
 
     # higher stake amount than allowed
@@ -56,7 +63,7 @@ def test_reporter_double_stake(client, scripts, deployed_contract):
 
     scripts.stake()
 
-    state = getAppGlobalState(client, deployed_contract.id)
+    state = getAppGlobalState(client, scripts.feed_app_id)
     assert state[b"staking_status"] == 1  # if 1, account is now staked
 
     with pytest.raises(AlgodHTTPError):
@@ -70,7 +77,7 @@ def test_only_one_staker(client, accounts, scripts, deployed_contract):
 
     scripts.stake()
 
-    state = getAppGlobalState(client, deployed_contract.id)
+    state = getAppGlobalState(client, scripts.feed_app_id)
     assert state[b"reporter_address"] == encoding.decode_address(accounts.reporter.getAddress())
 
     scripts.reporter = getTemporaryAccount(client)
@@ -82,7 +89,7 @@ def test_only_one_staker(client, accounts, scripts, deployed_contract):
 def test_second_withdraw_attempt(scripts, client, deployed_contract):
     """Shouldn't be able to withdraw stake from contract more than once"""
     scripts.stake()
-    state = getAppGlobalState(client, deployed_contract.id)
+    state = getAppGlobalState(client, scripts.feed_app_id)
     assert state[b"staking_status"] == 1
 
     scripts.withdraw()
@@ -94,7 +101,7 @@ def test_second_withdraw_attempt(scripts, client, deployed_contract):
 def test_staking_after_withdrawing(scripts, client, deployed_contract):
     """contract needs to be redeployed to be open for staking again"""
     scripts.stake()
-    state = getAppGlobalState(client, deployed_contract.id)
+    state = getAppGlobalState(client, scripts.feed_app_id)
     assert state[b"staking_status"] == 1
 
     scripts.withdraw()
@@ -107,7 +114,7 @@ def test_reporting_after_withdrawing(scripts, client, deployed_contract):
 
     scripts.stake()
     scripts.withdraw()
-    state = getAppGlobalState(client, deployed_contract.id)
+    state = getAppGlobalState(client, scripts.feed_app_id)
 
     assert state[b"staking_status"] == 0
     query_id = b"1"
@@ -134,7 +141,7 @@ def test_wrong_vote_input(scripts):
 def test_withdraw_after_slashing(scripts, client, deployed_contract):
     """Reporter shouldn't be able to withdraw stake after being slashed"""
     scripts.stake()
-    state = getAppGlobalState(client, deployed_contract.id)
+    state = getAppGlobalState(client, scripts.feed_app_id)
     assert state[b"staking_status"] == 1
     scripts.vote(0)  # 0 means reporter slashed
 

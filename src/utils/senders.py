@@ -43,8 +43,6 @@ def send_multisig_tx(app_id: int, fn_name: str, app_args: Optional[List[Any]], f
         )
     )
 
-    input("Press Enter to continue...")
-
     # sandbox
     algod_address = "http://localhost:4001"
     algod_token = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
@@ -92,6 +90,8 @@ def send_no_op_tx(
     sender: Account, app_id: int, fn_name: str, app_args: Optional[List[Any]], foreign_apps: Optional[List[int]]
 ):
 
+    if not app_args:
+        app_args = []
     # sandbox
     algod_address = "http://localhost:4001"
     algod_token = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
