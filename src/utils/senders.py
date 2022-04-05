@@ -4,7 +4,7 @@ from typing import Any
 from typing import Optional
 
 from algosdk import mnemonic
-from algosdk.algod import AlgodClient
+from algosdk.v2client.algod import AlgodClient
 from algosdk.future.transaction import *
 
 from src.utils.account import Account
@@ -101,6 +101,8 @@ def send_no_op_tx(
 
     # get suggested parameters
     params = algod_client.suggested_params()
+    print(type(params))
+    print(dict(params))
     # comment out the next two (2) lines to use suggested fees
     # params.flat_fee = True
     # params.fee = 1000
@@ -109,7 +111,7 @@ def send_no_op_tx(
     note = fn_name + sender.addr
 
     txn = ApplicationNoOpTxn(
-        sender, params, app_id, note=note, app_args=[fn_name] + app_args, foreign_apps=foreign_apps
+        sender, sp=params, index=app_id, note=note, app_args=[fn_name] + app_args, foreign_apps=foreign_apps
     )
 
     try:
