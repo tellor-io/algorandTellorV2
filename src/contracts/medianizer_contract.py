@@ -127,7 +127,7 @@ def approval_program():
             If(var1.load() > Int(0))
             .Then(Seq(
                 If(Minus(Global.latest_timestamp(),ExtractUint64(feed_1_value.value(), Int(0)))
-                    <(App.globalGet(time_interval)),var1.store(Int(0)))
+                    >(App.globalGet(time_interval)),var1.store(Int(0)))
             )),
 
             If(feed_2_value.hasValue())
@@ -136,7 +136,7 @@ def approval_program():
             If(var2.load() > Int(0))
             .Then(Seq(
                 If(Minus(Global.latest_timestamp(),ExtractUint64(feed_2_value.value(), Int(0)))
-                    <(App.globalGet(time_interval)),var2.store(Int(0)))
+                    >(App.globalGet(time_interval)),var2.store(Int(0)))
             )),
 
             If(feed_3_value.hasValue())
@@ -145,7 +145,7 @@ def approval_program():
             If(var3.load() > Int(0))
             .Then(Seq(
                 If(Minus(Global.latest_timestamp(),ExtractUint64(feed_3_value.value(), Int(0)))
-                    <(App.globalGet(time_interval)),var3.store(Int(0)))
+                    >(App.globalGet(time_interval)),var3.store(Int(0)))
             )),
             If(feed_4_value.hasValue())
             .Then(var4.store(ExtractUint64(feed_4_value.value(),Int(8))))
@@ -153,7 +153,7 @@ def approval_program():
             If(var4.load() > Int(0))
             .Then(Seq(
                 If(Minus(Global.latest_timestamp(),ExtractUint64(feed_4_value.value(), Int(0)))
-                    <(App.globalGet(time_interval)),var4.store(Int(0)))
+                    >(App.globalGet(time_interval)),var4.store(Int(0)))
             )),
             If(feed_5_value.hasValue())
             .Then(var5.store(ExtractUint64(feed_5_value.value(),Int(8))))
@@ -161,7 +161,7 @@ def approval_program():
             If(var5.load() > Int(0))
             .Then(Seq(
                 If(Minus(Global.latest_timestamp(),ExtractUint64(feed_5_value.value(), Int(0)))
-                    <(App.globalGet(time_interval)),var5.store(Int(0)))
+                    >(App.globalGet(time_interval)),var5.store(Int(0)))
             )),
         )
 
@@ -183,7 +183,8 @@ def approval_program():
             .ElseIf(App.globalGet(median_price) == var4.load())
             .Then(App.globalPut(median_timestamp, ExtractUint64(feed_4_value.value(), Int(0))))
             .ElseIf(App.globalGet(median_price) == var5.load())
-            .Then(App.globalPut(median_timestamp, ExtractUint64(feed_5_value.value(), Int(0)))),
+            .Then(App.globalPut(median_timestamp, ExtractUint64(feed_5_value.value(), Int(0))))
+            .Else(App.globalPut(median_timestamp,Global.latest_timestamp())),
             Approve(),
         )
 

@@ -42,8 +42,8 @@ def test_get_values(client, scripts: Scripts, accounts, deployed_contract):
     assert feed_state[b"reporter_address"] == encoding.decode_address(accounts.reporter.getAddress())
 
     query_id = b"1"
-    value = 1234
-    timestamp = 5678
+    value = 3500
+    timestamp = int(time.time()-20)
     scripts.report(query_id, value, timestamp)
     medianizer_state = getAppGlobalState(client, deployed_contract.medianizer_id)
     assert feed_state[b"query_id"] == query_id

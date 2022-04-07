@@ -15,7 +15,6 @@ from src.contracts.contracts import clear_state_program
 from src.contracts.medianizer_contract import approval_program as approval_medianizer
 from src.contracts.medianizer_contract import clear_state_program as clear_medianizer
 from src.utils.account import Account
-from src.utils.senders import send_no_op_tx
 from src.utils.util import fullyCompileContract
 from src.utils.util import getAppGlobalState
 from src.utils.util import waitForTransaction
@@ -321,6 +320,7 @@ class Scripts:
 
         submitValueTxn = transaction.ApplicationNoOpTxn(
             sender=self.reporter.getAddress(),
+            accounts=[self.governance_address.address()],
             index=self.feed_app_id,
             app_args=[b"report", query_id, value, timestamp],
             foreign_apps=self.feeds + [self.medianizer_app_id],
@@ -347,5 +347,15 @@ class Scripts:
         waitForTransaction(self.client, signedTxn.get_txid())
 
     def request_withdraw(self):
-
-        send_no_op_tx(self.reporter, self.feed_app_id, "request_withdraw", app_args=None, foreign_apps=None)
+        """
+        locks reporter for 7 days before being allowed to withdraw stake
+        """
+        txn = transaction.ApplicationNoOpTxn(
+            sender=self.reporter.getAddress(),
+            index=self.feed_app_id,
+            app_args=[b"request_withdraw"],
+            sp=self.client.suggested_params(),
+        )
+        signedTxn = txn.sign(self.reporter.getPrivateKey())
+        self.client.send_transaction(signedTxn)
+        waitForTransaction(self.client, signedTxn.get_txid())

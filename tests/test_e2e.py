@@ -1,20 +1,117 @@
 import pytest
+from time import time
 from algosdk import encoding
 from algosdk.error import AlgodHTTPError
-
+from src.utils.accounts import Accounts
 from utils.testing.resources import getTemporaryAccount
-from utils.util import getAppGlobalState
+from src.scripts.scripts import Scripts
+from algosdk.logic import get_application_address
+
+from src.utils.util import getAppGlobalState
 
 
-def test_not_staked_report_attempt(scripts, accounts, deployed_contract):
+def test_withdraw_before_request(scripts: Scripts, accounts: Accounts, deployed_contract, client):
+    """Reporter cannot withdraw stake without requesting to withdraw"""
+
+    scripts.feed_app_id = deployed_contract.feed_ids[0]
+    feed_id = scripts.feed_app_id
+    scripts.feed_app_address = get_application_address(feed_id)
+    scripts.stake()
+    with pytest.raises(AlgodHTTPError):
+        scripts.withdraw()
+
+def test_withdraw_after_request_withdraw(scripts: Scripts, accounts: Accounts, deployed_contract, client):
+    """Reporter cannot withdraw stake after initiating withdrawal before waiting 7days"""
+
+    scripts.feed_app_id = deployed_contract.feed_ids[0]
+    feed_id = scripts.feed_app_id
+    scripts.feed_app_address = get_application_address(feed_id)
+    scripts.stake()
+    scripts.request_withdraw()
+
+    state = getAppGlobalState(client, feed_id)
+    
+    assert state[b"staking_status"] == 2
+    assert state[b"reporter_address"] == encoding.decode_address(accounts.reporter.getAddress())
+    with pytest.raises(AlgodHTTPError):
+        scripts.withdraw()
+
+def test_report_after_request_withdraw(scripts: Scripts, accounts: Accounts, deployed_contract, client):
+    """reporter can't report after requesting to withdraw"""
+
+    scripts.feed_app_id = deployed_contract.feed_ids[0]
+    feed_id = scripts.feed_app_id
+    scripts.feed_app_address = get_application_address(feed_id)
+    scripts.stake()
+    scripts.request_withdraw()
+    query_id = "1"
+    value = 3500
+    timestamp = int(time())
+    with pytest.raises(AlgodHTTPError):
+        scripts.report(query_id, value, timestamp)
+
+def test_median_computation(scripts: Scripts, accounts: Accounts, deployed_contract, client):
+    """Medianizer -- deploy 5 feeds, submit to 5 feeds, ensure median from 
+        contract matches median calculated from APIs"""
+
+    value = 3500
+    timestamp = int(time())
+    median_time = timestamp + 20 
+    median = 3600
+    for i in deployed_contract.feed_ids:
+        scripts.feed_app_id = i
+        feed_id = scripts.feed_app_id
+        scripts.feed_app_address = get_application_address(feed_id)
+        scripts.stake()
+        query_id = "1"
+        scripts.report(query_id,value,timestamp)
+        value+=50
+        timestamp+=10
+        state = getAppGlobalState(client, deployed_contract.medianizer_id)
+    
+    state = getAppGlobalState(client, deployed_contract.medianizer_id)
+
+    assert state[b"median"] == median
+    assert state[b"median_timestamp"] == median_time
+
+def test_2_feeds(scripts: Scripts, accounts: Accounts, deployed_contract, client):
+    """Medianizer -- ensure that medianizer functions 
+        with less than 5 feeds available"""
+    
+    value = 3500
+    timestamp = int(time())
+    median = (3500 + 3550) / 2
+    for i in range(2):
+        scripts.feed_app_id = deployed_contract.feed_ids[i]
+        feed_id = scripts.feed_app_id
+        scripts.feed_app_address = get_application_address(feed_id)
+        scripts.stake()
+        query_id = "1"
+        scripts.report(query_id,value,timestamp)
+        value+=50
+        timestamp+=10
+        state = getAppGlobalState(client, deployed_contract.medianizer_id)
+
+    state = getAppGlobalState(client, deployed_contract.medianizer_id)
+
+    assert state[b"median"] == median
+    assert state[b"median_timestamp"] == pytest.approx(time(), 200)
+
+def test_not_staked_report_attempt(scripts: Scripts, accounts: Accounts, deployed_contract, client):
     """Accounts should not be permitted to report
     if they have not send a stake to the contract"""
 
-    assert deployed_contract.state[b"staking_status"] == 0
-    assert deployed_contract.state[b"reporter_address"] == b""
+    state = getAppGlobalState(client, deployed_contract.feed_ids[0])
+
+    assert state[b"staking_status"] == 0
+    assert state[b"reporter_address"] == b""
+
+    query_id = "1"
+    value = 3500
+    timestamp = int(time())
 
     with pytest.raises(AlgodHTTPError):
-        scripts.report(query_id=b"1", value=b"the data I put on-chain 1234")  # expect failure/reversion
+        scripts.report(query_id,value,timestamp)  # expect failure/reversion
 
 
 def test_report_wrong_query_id(client, scripts, deployed_contract):

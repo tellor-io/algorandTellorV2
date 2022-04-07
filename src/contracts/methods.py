@@ -219,7 +219,7 @@ def report():
                 {
                     TxnField.type_enum: TxnType.Payment,
                     TxnField.amount: Div(Mul(App.globalGet(tip_amount), Int(2)), Int(100)),
-                    TxnField.receiver: Txn.sender(),
+                    TxnField.receiver: App.globalGet(governance_address),
                 }
             ),
             InnerTxnBuilder.Submit(),
