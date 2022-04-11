@@ -3,7 +3,7 @@ from time import time
 from algosdk import encoding
 from algosdk.error import AlgodHTTPError
 from src.utils.accounts import Accounts
-from utils.testing.resources import getTemporaryAccount
+from src.utils.testing.resources import getTemporaryAccount
 from src.scripts.scripts import Scripts
 from algosdk.logic import get_application_address
 
@@ -74,9 +74,32 @@ def test_median_computation(scripts: Scripts, accounts: Accounts, deployed_contr
     assert state[b"median"] == median
     assert state[b"median_timestamp"] == median_time
 
+def test_median_update(scripts: Scripts, accounts: Accounts, deployed_contract, client):
+    """If the median is updated, the timestamp of median is the 
+       timestamp of the API call"""
+
+    value = 3500
+    timestamp = int(time())
+    timestamps = []
+    for i in range(3):
+        scripts.feed_app_id = deployed_contract.feed_ids[i]
+        feed_id = scripts.feed_app_id
+        scripts.feed_app_address = get_application_address(feed_id)
+        scripts.stake()
+        query_id = "1"
+        scripts.report(query_id,value,timestamp)
+        timestamps.append(timestamp)
+        value+=50
+        timestamp+=10
+        state = getAppGlobalState(client, deployed_contract.medianizer_id)
+
+    state = getAppGlobalState(client, deployed_contract.medianizer_id)
+
+    assert state[b"median_timestamp"] == pytest.approx(timestamps[1], 200)
+
 def test_2_feeds(scripts: Scripts, accounts: Accounts, deployed_contract, client):
     """Medianizer -- ensure that medianizer functions 
-        with less than 5 feeds available"""
+        with less than 5 feeds"""
     
     value = 3500
     timestamp = int(time())
@@ -96,6 +119,19 @@ def test_2_feeds(scripts: Scripts, accounts: Accounts, deployed_contract, client
 
     assert state[b"median"] == median
     assert state[b"median_timestamp"] == pytest.approx(time(), 200)
+
+def test_old_timestamp(scripts: Scripts, accounts: Accounts, deployed_contract, client):
+    """Timestamp older than an hour should be rejected"""
+
+    scripts.feed_app_id = deployed_contract.feed_ids[0]
+    feed_id = scripts.feed_app_id
+    scripts.feed_app_address = get_application_address(feed_id)
+    scripts.stake()
+    query_id = "1"
+    value = 3500
+    timestamp = int(time() - 3610)
+    with pytest.raises(AlgodHTTPError):
+        scripts.report(query_id, value, timestamp)
 
 def test_not_staked_report_attempt(scripts: Scripts, accounts: Accounts, deployed_contract, client):
     """Accounts should not be permitted to report

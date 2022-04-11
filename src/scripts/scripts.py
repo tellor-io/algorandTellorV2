@@ -131,7 +131,7 @@ class Scripts:
             current_data[feed_app_id]["values"] = feed_state["values"]
             current_data[feed_app_id]["timestamps"] = feed_state["timestamps"]
 
-    def deploy_tellor_flex(self, query_id: str, query_data: str, multisigaccounts_sk: List[str]) -> int:
+    def deploy_tellor_flex(self, query_id: str, query_data: str, timestamp_freshness: int, multisigaccounts_sk: List[str]) -> int:
         """
         Deploy a new tellor reporting contract.
         calls create() method on contract
@@ -147,13 +147,14 @@ class Scripts:
         """
         approval, clear = self.get_contracts(self.client)
 
-        globalSchema = transaction.StateSchema(num_uints=9, num_byte_slices=9)
+        globalSchema = transaction.StateSchema(num_uints=10, num_byte_slices=9)
         localSchema = transaction.StateSchema(num_uints=0, num_byte_slices=0)
         medianizer_id = 0
         app_args = [
             query_id.encode("utf-8"),
             query_data.encode("utf-8"),
             medianizer_id,
+            timestamp_freshness
         ]
 
         print(f"Forming {self.contract_count} {query_id} contracts")
@@ -184,13 +185,13 @@ class Scripts:
         print("Created new apps:", self.feeds)
         return self.feeds
 
-    def deploy_medianizer(self, time_interval: int, query_id: bytes,multisigaccounts_sk: List[int]) -> int:
+    def deploy_medianizer(self, timestamp_freshness: int, query_id: bytes,multisigaccounts_sk: List[int]) -> int:
         approval, clear = self.get_contracts_medianizer(self.client)
 
         global_schema = transaction.StateSchema(num_uints=7, num_byte_slices=7)
         local_schema = transaction.StateSchema(num_uints=0, num_byte_slices=0)
 
-        app_args = [time_interval, query_id]
+        app_args = [timestamp_freshness, query_id]
         comp = AtomicTransactionComposer()
         comp.add_transaction(
             TransactionWithSigner(
@@ -210,6 +211,7 @@ class Scripts:
         tx_id = comp.execute(self.client, 4).tx_ids
         res = self.client.pending_transaction_info(tx_id[0])
         self.medianizer_app_id = res["application-index"]
+        print(f"Created medianizer app: {self.medianizer_app_id}")
         return self.medianizer_app_id
 
     def activate_contract(self, multisigaccounts_sk: List[Any]) -> List[int]:
@@ -329,7 +331,7 @@ class Scripts:
 
         signedSubmitValueTxn = submitValueTxn.sign(self.reporter.getPrivateKey())
         self.client.send_transaction(signedSubmitValueTxn)
-        waitForTransaction(self.client, signedSubmitValueTxn.get_txid())
+        waitForTransaction(self.client, signedSubmitValueTxn.get_txid(), timeout=30)
 
     def withdraw(self):
         """

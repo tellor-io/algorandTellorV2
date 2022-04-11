@@ -7,7 +7,7 @@ Medianizer for feed i.e. BTC/USD
 
 
 def approval_program():
-    time_interval = Bytes("time_interval")
+    timestamp_freshness = Bytes("timestamp_freshness")
     median_timestamp = Bytes("median_timestamp")
     median_price = Bytes("median")
     query_id = Bytes("query_id")
@@ -41,7 +41,7 @@ def approval_program():
         """
         return Seq(
             App.globalPut(governance, Txn.sender()),
-            App.globalPut(time_interval, Btoi(Txn.application_args[0])),
+            App.globalPut(timestamp_freshness, Btoi(Txn.application_args[0])),
             App.globalPut(query_id, Txn.application_args[1]),
             Approve(),
         )
@@ -100,7 +100,7 @@ def approval_program():
     def get_values():
         """
         Gets values and timestamp of last report from all feeds
-        and checks timestamp age against time_interval then passes
+        and checks timestamp age against timestamp_freshness then passes
         values to medinizer function to get the median and stores globally
 
         Txn args:
@@ -127,7 +127,7 @@ def approval_program():
             If(var1.load() > Int(0))
             .Then(Seq(
                 If(Minus(Global.latest_timestamp(),ExtractUint64(feed_1_value.value(), Int(0)))
-                    >(App.globalGet(time_interval)),var1.store(Int(0)))
+                    >(App.globalGet(timestamp_freshness)),var1.store(Int(0)))
             )),
 
             If(feed_2_value.hasValue())
@@ -136,7 +136,7 @@ def approval_program():
             If(var2.load() > Int(0))
             .Then(Seq(
                 If(Minus(Global.latest_timestamp(),ExtractUint64(feed_2_value.value(), Int(0)))
-                    >(App.globalGet(time_interval)),var2.store(Int(0)))
+                    >(App.globalGet(timestamp_freshness)),var2.store(Int(0)))
             )),
 
             If(feed_3_value.hasValue())
@@ -145,7 +145,7 @@ def approval_program():
             If(var3.load() > Int(0))
             .Then(Seq(
                 If(Minus(Global.latest_timestamp(),ExtractUint64(feed_3_value.value(), Int(0)))
-                    >(App.globalGet(time_interval)),var3.store(Int(0)))
+                    >(App.globalGet(timestamp_freshness)),var3.store(Int(0)))
             )),
             If(feed_4_value.hasValue())
             .Then(var4.store(ExtractUint64(feed_4_value.value(),Int(8))))
@@ -153,7 +153,7 @@ def approval_program():
             If(var4.load() > Int(0))
             .Then(Seq(
                 If(Minus(Global.latest_timestamp(),ExtractUint64(feed_4_value.value(), Int(0)))
-                    >(App.globalGet(time_interval)),var4.store(Int(0)))
+                    >(App.globalGet(timestamp_freshness)),var4.store(Int(0)))
             )),
             If(feed_5_value.hasValue())
             .Then(var5.store(ExtractUint64(feed_5_value.value(),Int(8))))
@@ -161,7 +161,7 @@ def approval_program():
             If(var5.load() > Int(0))
             .Then(Seq(
                 If(Minus(Global.latest_timestamp(),ExtractUint64(feed_5_value.value(), Int(0)))
-                    >(App.globalGet(time_interval)),var5.store(Int(0)))
+                    >(App.globalGet(timestamp_freshness)),var5.store(Int(0)))
             )),
         )
 
@@ -254,7 +254,6 @@ def approval_program():
             .Then(Div((a.slot.load() + b.slot.load()), Int(2)))
             .ElseIf(i.load() == Int(1))
             .Then(a.slot.load())
-            .Else(Int(1))
         )
         return Seq(sort_1, sort_2, sort_3, sort_4, value_count, middle_value)
 

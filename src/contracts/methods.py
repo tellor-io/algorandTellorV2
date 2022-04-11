@@ -7,6 +7,7 @@ query_data = Bytes("query_data")
 staking_status = Bytes("staking_status")
 reporter = Bytes("reporter_address")
 timestamps = Bytes("timestamps")
+timestamp_freshness = Bytes("timestamp_freshness")
 values = Bytes("values")
 tip_amount = Bytes("tip_amount")
 stake_timestamp = Bytes("stake_timestamp")
@@ -35,6 +36,7 @@ def create():
     0) query id
     1) query data
     2) medianizer application address
+    3) timestamp freshness
 
     """
     return Seq(
@@ -49,6 +51,7 @@ def create():
             App.globalPut(staking_status, Int(0)),
             App.globalPut(values, Bytes("base64", "")),
             App.globalPut(timestamps, Bytes("base64", "")),
+            App.globalPut(timestamp_freshness, Btoi(Txn.application_args[3])),
             App.globalPut(stake_timestamp, Int(0)),
             App.globalPut(stake_amount, Int(200000)),  # 200 dollars of ALGO
             Approve(),
@@ -175,6 +178,7 @@ def report():
             medianizer_query_id,
             Assert(
                 And(
+                    Minus(Global.latest_timestamp(), Btoi(Txn.application_args[3])) < App.globalGet(timestamp_freshness),
                     Txn.applications[6] == App.globalGet(medianizer),
                     medianizer_query_id.hasValue(),
                     App.globalGet(query_id) == medianizer_query_id.value(),
@@ -246,7 +250,8 @@ def stake():
         [
             Assert(
                 And(
-                    App.globalGet(reporter) == Bytes(""),
+                    # TODO: assert staking_status Int(0) and reporter Bytes("") to allow other reporter if in withdrawal stage
+                    App.globalGet(reporter) == Bytes(""),#TODO: blocks other reporters to stake when reporter is in withdrawal process
                     Gtxn[on_stake_tx_index].sender() == Txn.sender(),
                     Gtxn[on_stake_tx_index].receiver() == Global.current_application_address(),
                     Gtxn[on_stake_tx_index].amount() == App.globalGet(stake_amount),
