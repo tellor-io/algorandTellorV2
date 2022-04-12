@@ -208,8 +208,7 @@ def report():
                     ],
                 }
             ),
-            InnerTxnBuilder.Submit(),
-            InnerTxnBuilder.Begin(),
+            InnerTxnBuilder.Next(),
             # 98% goes to reporter
             InnerTxnBuilder.SetFields(
                 {
@@ -218,6 +217,7 @@ def report():
                     TxnField.receiver: Txn.sender(),
                 }
             ),
+            InnerTxnBuilder.Next(),
             # 2% fee to governance
             InnerTxnBuilder.SetFields(
                 {
@@ -381,6 +381,7 @@ def slash_reporter():
             ),
             InnerTxnBuilder.Submit(),
             App.globalPut(staking_status, Int(0)),
+            App.globalPut(reporter, Bytes("")),
             Approve(),
         ]
     )

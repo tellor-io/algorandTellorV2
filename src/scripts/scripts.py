@@ -361,3 +361,38 @@ class Scripts:
         signedTxn = txn.sign(self.reporter.getPrivateKey())
         self.client.send_transaction(signedTxn)
         waitForTransaction(self.client, signedTxn.get_txid())
+    
+    def withdraw_dry(self,txns=[], timestamp: int=0):
+        """
+        locks reporter for 7 days before being allowed to withdraw stake
+        """
+        txn = transaction.ApplicationNoOpTxn(
+            sender=self.reporter.getAddress(),
+            index=self.feed_app_id,
+            app_args=[b"withdraw"],
+            sp=self.client.suggested_params(),
+        )
+        signedTxn = txn.sign(self.reporter.getPrivateKey())
+        dryrun = transaction.create_dryrun(client=self.client, txns=[signedTxn] + txns, latest_timestamp=timestamp)
+        dryrun_response = self.client.dryrun(dryrun)
+
+        return dryrun_response
+
+    def slash_reporter(self, multisigaccounts_sk: List[Any]) -> int:
+        """
+        governance slashes reporter for bad report
+        """
+        comp = AtomicTransactionComposer()
+        comp.add_transaction(
+                TransactionWithSigner(
+                    transaction.ApplicationNoOpTxn(
+                        sender=self.governance_address.address(),
+                        sp=self.client.suggested_params(),
+                        index=self.feed_app_id,
+                        app_args=["slash_reporter"],
+                    ),
+                MultisigTransactionSigner(self.governance_address, multisigaccounts_sk),
+                )
+            )
+        txn_id = comp.execute(self.client, 3).tx_ids
+        return txn_id

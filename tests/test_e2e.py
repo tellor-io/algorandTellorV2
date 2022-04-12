@@ -3,8 +3,8 @@ from time import time
 from algosdk import encoding
 from algosdk.error import AlgodHTTPError
 from src.utils.accounts import Accounts
-from src.utils.testing.resources import getTemporaryAccount
 from src.scripts.scripts import Scripts
+from algosdk.future import transaction
 from algosdk.logic import get_application_address
 
 from src.utils.util import getAppGlobalState
@@ -150,29 +150,35 @@ def test_not_staked_report_attempt(scripts: Scripts, accounts: Accounts, deploye
         scripts.report(query_id,value,timestamp)  # expect failure/reversion
 
 
-def test_report_wrong_query_id(client, scripts, deployed_contract):
+def test_report_wrong_query_id(scripts: Scripts, accounts: Accounts, deployed_contract, client):
     """Reporter should not be able to report to the wrong
     query_id. the transaction should revert if they pass in
-    to report() a different query_id than the one specified
-    in the contract by the tipper"""
+    to report() a different query_id"""
+    scripts.feed_app_id = deployed_contract.feed_ids[0]
+    feed_id = scripts.feed_app_id
+    scripts.feed_app_address = get_application_address(feed_id)
 
     scripts.stake()
 
-    state = getAppGlobalState(client, deployed_contract.id)
-    assert state[b"num_reports"] == 0
+    state = getAppGlobalState(client, deployed_contract.feed_id)
+    assert state[b"staking_status"] == 1
     assert state[b"query_id"] == b"1"
 
     query_id = b"2"
-    value = b"the data I put on-chain 1234"
+    value = 3500
+    timestamp = int(time()-1000)
     with pytest.raises(AlgodHTTPError):
-        scripts.report(query_id, value)
+        scripts.report(query_id, value, timestamp)
 
 
-def test_stake_amount(client, scripts, deployed_contract):
+def test_stake_amount(scripts: Scripts, accounts: Accounts, deployed_contract, client):
     """Reporter should only be able to stake
-    with the amount set in the contract by the tipper"""
+    with the amount set in the contract"""
+    scripts.feed_app_id = deployed_contract.feed_ids[0]
+    feed_id = scripts.feed_app_id
+    scripts.feed_app_address = get_application_address(feed_id)
 
-    state = getAppGlobalState(client, deployed_contract.id)
+    state = getAppGlobalState(client, deployed_contract.feed_id)
     stake_amount = state[b"stake_amount"]
 
     # higher stake amount than allowed
@@ -184,98 +190,141 @@ def test_stake_amount(client, scripts, deployed_contract):
         scripts.stake(stake_amount=stake_amount - 10)
 
 
-def test_reporter_double_stake(client, scripts, deployed_contract):
+def test_reporter_double_stake(scripts: Scripts, accounts: Accounts, deployed_contract, client):
     """An account shouln't be able to stake twice"""
+    scripts.feed_app_id = deployed_contract.feed_ids[0]
+    feed_id = scripts.feed_app_id
+    scripts.feed_app_address = get_application_address(feed_id)
 
     scripts.stake()
 
-    state = getAppGlobalState(client, deployed_contract.id)
+    state = getAppGlobalState(client, deployed_contract.feed_ids)
     assert state[b"staking_status"] == 1  # if 1, account is now staked
 
     with pytest.raises(AlgodHTTPError):
         scripts.stake()
 
 
-def test_only_one_staker(client, accounts, scripts, deployed_contract):
+def test_only_one_staker(scripts: Scripts, accounts: Accounts, deployed_contract, client):
     """An account can't replace another account as the reporter
     in other words, a second account
     can't stake if another account is staked"""
+    scripts.feed_app_id = deployed_contract.feed_ids[0]
+    feed_id = scripts.feed_app_id
+    scripts.feed_app_address = get_application_address(feed_id)
 
     scripts.stake()
 
-    state = getAppGlobalState(client, deployed_contract.id)
+    state = getAppGlobalState(client, deployed_contract.feed_ids)
     assert state[b"reporter_address"] == encoding.decode_address(accounts.reporter.getAddress())
 
-    scripts.reporter = getTemporaryAccount(client)
+    scripts.reporter = accounts.bad_actor
 
     with pytest.raises(AlgodHTTPError):
         scripts.stake()
 
+def test_reporting_without_staking(scripts: Scripts, accounts: Accounts, deployed_contract, client):
+    """Can't report if not staked"""
+    scripts.feed_app_id = deployed_contract.feed_ids[0]
+    feed_id = scripts.feed_app_id
+    scripts.feed_app_address = get_application_address(feed_id)
 
-def test_second_withdraw_attempt(scripts, client, deployed_contract):
-    """Shouldn't be able to withdraw stake from contract more than once"""
-    scripts.stake()
-    state = getAppGlobalState(client, deployed_contract.id)
-    assert state[b"staking_status"] == 1
+    state = getAppGlobalState(client, deployed_contract.feed_id)
+    assert state[b"staking_status"] == 0
+    assert state[b"query_id"] == b"1"
 
-    scripts.withdraw()
-
+    query_id = state[b"query_id"]
+    value = 3500
+    timestamp = int(time()-1000)
     with pytest.raises(AlgodHTTPError):
-        scripts.withdraw()
+        scripts.report(query_id, value, timestamp)
+
+# def test_second_withdraw_attempt(scripts: Scripts, accounts: Accounts, deployed_contract, client):
+#     """Shouldn't be able to withdraw stake from contract more than once"""
+#     scripts.feed_app_id = deployed_contract.feed_ids[0]
+#     feed_id = scripts.feed_app_id
+#     scripts.feed_app_address = get_application_address(feed_id)
+
+#     scripts.stake()
+#     state = getAppGlobalState(client, deployed_contract.feed_id)
+#     assert state[b"staking_status"] == 1
+
+#     scripts.request_withdraw()
+
+#     txn = transaction.ApplicationNoOpTxn(
+#             sender=accounts.reporter.getAddress(),
+#             index=feed_id,
+#             app_args=[b"withdraw"],
+#             sp=client.suggested_params(),
+#         )
+#     signedTxn = txn.sign(accounts.reporter.getPrivateKey())
+#     res = scripts.withdraw_dry(txns=signedTxn, timestamp=int(time())+604800)
+
+#     with pytest.raises(AlgodHTTPError):
+#         scripts.withdraw()
 
 
-def test_staking_after_withdrawing(scripts, client, deployed_contract):
-    """contract needs to be redeployed to be open for staking again"""
-    scripts.stake()
-    state = getAppGlobalState(client, deployed_contract.id)
-    assert state[b"staking_status"] == 1
+# def test_staking_after_withdrawing(scripts, client, deployed_contract):
+#     """contract needs to be redeployed to be open for staking again"""
+#     scripts.stake()
+#     state = getAppGlobalState(client, deployed_contract.id)
+#     assert state[b"staking_status"] == 1
 
-    scripts.withdraw()
-    with pytest.raises(AlgodHTTPError):
-        scripts.stake()
+#     scripts.withdraw()
+#     with pytest.raises(AlgodHTTPError):
+#         scripts.stake()
 
 
-def test_reporting_after_withdrawing(scripts, client, deployed_contract):
-    """Reporter can't report once stake has been withdrawn"""
+# def test_reporting_after_withdrawing(scripts, client, deployed_contract):
+#     """Reporter can't report once stake has been withdrawn"""
 
-    scripts.stake()
-    scripts.withdraw()
-    state = getAppGlobalState(client, deployed_contract.id)
+#     scripts.stake()
+#     scripts.withdraw()
+#     state = getAppGlobalState(client, deployed_contract.id)
+
+#     assert state[b"staking_status"] == 0
+#     query_id = b"1"
+#     value = b"the data I put on-chain 1234"
+#     with pytest.raises(AlgodHTTPError):
+#         scripts.report(query_id, value)
+
+
+def test_request_withdraw_without_staking(scripts: Scripts, accounts: Accounts, deployed_contract, client):
+    """Shouldn't be able to request a withdraw without staking"""
+    scripts.feed_app_id = deployed_contract.feed_ids[0]
+    feed_id = scripts.feed_app_id
+    scripts.feed_app_address = get_application_address(feed_id)
+
+    state = getAppGlobalState(client, deployed_contract.feed_ids[0])
 
     assert state[b"staking_status"] == 0
-    query_id = b"1"
-    value = b"the data I put on-chain 1234"
-    with pytest.raises(AlgodHTTPError):
-        scripts.report(query_id, value)
-
-
-def test_withdrawing_without_staking(scripts, deployed_contract):
-    """Shouldn't be able to withdraw without staking"""
-    assert deployed_contract.state[b"staking_status"] == 0
-    assert deployed_contract.state[b"reporter_address"] == b""
+    assert state[b"reporter_address"] == b""
 
     with pytest.raises(AlgodHTTPError):
-        scripts.withdraw()
+        scripts.request_withdraw()
 
 
-def test_wrong_vote_input(scripts):
-    """checks other vote input other than 0 and 1"""
-    with pytest.raises(AlgodHTTPError):
-        scripts.vote(5)
-
-
-def test_withdraw_after_slashing(scripts, client, deployed_contract):
+def test_withdraw_after_slashing(scripts: Scripts, accounts: Accounts, deployed_contract, client):
     """Reporter shouldn't be able to withdraw stake after being slashed"""
+    scripts.feed_app_id = deployed_contract.feed_ids[0]
+    feed_id = scripts.feed_app_id
+    scripts.feed_app_address = get_application_address(feed_id)
+
     scripts.stake()
-    state = getAppGlobalState(client, deployed_contract.id)
+    state = getAppGlobalState(client, deployed_contract.feed_ids[0])
+
     assert state[b"staking_status"] == 1
-    scripts.vote(0)  # 0 means reporter slashed
+    scripts.slash_reporter(multisigaccounts_sk=accounts.multisig_signers_sk)  # 0 means reporter slashed
+
+    state = getAppGlobalState(client, deployed_contract.feed_ids[0])
+
+    assert state[b"staking_status"] == 0
 
     with pytest.raises(AlgodHTTPError):
-        scripts.withdraw()
+        scripts.request_withdraw()
 
 
-def test_overflow_in_create(scripts, client):
+def test_overflow_in_create(scripts: Scripts, accounts: Accounts, deployed_contract, client):
     """Contract deployment should revert if
     bytes inputs are longer than 128 bytes"""
 
@@ -283,4 +332,4 @@ def test_overflow_in_create(scripts, client):
     query_data = "my query_id is invalid because it is >128 bytes in length"
 
     with pytest.raises(AlgodHTTPError):
-        scripts.deploy_tellor_flex(query_id=too_long_query_id, query_data=query_data)
+        scripts.deploy_tellor_flex(query_id=too_long_query_id, query_data=query_data, timestamp_freshness=3600, multisigaccounts_sk=accounts.multisig_signers_sk)

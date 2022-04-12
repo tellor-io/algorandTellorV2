@@ -1,5 +1,5 @@
 import pytest
-from algosdk import encoding
+from algosdk import encoding, constants
 
 from src.scripts.scripts import Scripts
 from src.utils.accounts import Accounts
@@ -32,9 +32,9 @@ class App:
 def client():
     """AlgodClient for testing"""
     client = _algod_client()
-    client.flat_fee = True
-    client.fee = 1000
-    print("fee ", client.fee)
+    client.suggested_params().flat_fee = True
+    client.suggested_params().min_fee = 2 * constants.MIN_TXN_FEE
+    print("fee ", client.suggested_params().min_fee)
     return client
 
 
