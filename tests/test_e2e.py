@@ -239,6 +239,22 @@ def test_reporting_without_staking(scripts: Scripts, accounts: Accounts, deploye
     with pytest.raises(AlgodHTTPError):
         scripts.report(query_id, value, timestamp)
 
+def test_early_withdraw_attempt(scripts: Scripts, accounts: Accounts, deployed_contract, client):
+    """Shouldn't be able to withdraw stake from contract before the 7 day interval"""
+    scripts.feed_app_id = deployed_contract.feed_ids[0]
+    feed_id = scripts.feed_app_id
+    scripts.feed_app_address = get_application_address(feed_id)
+
+    scripts.stake()
+    state = getAppGlobalState(client, feed_id)
+    assert state[b"staking_status"] == 1
+
+    scripts.request_withdraw()
+
+    res = scripts.withdraw_dry(timestamp=int(time())+518400) # 6 days in seconds
+
+    assert res['txns'][0]['app-call-messages'][1] == "REJECT"
+
 # def test_second_withdraw_attempt(scripts: Scripts, accounts: Accounts, deployed_contract, client):
 #     """Shouldn't be able to withdraw stake from contract more than once"""
 #     scripts.feed_app_id = deployed_contract.feed_ids[0]

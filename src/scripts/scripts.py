@@ -362,7 +362,7 @@ class Scripts:
         self.client.send_transaction(signedTxn)
         waitForTransaction(self.client, signedTxn.get_txid())
     
-    def withdraw_dry(self,txns=[], timestamp: int=0):
+    def withdraw_dry(self,txns: List=[], timestamp: int=0):
         """
         locks reporter for 7 days before being allowed to withdraw stake
         """
