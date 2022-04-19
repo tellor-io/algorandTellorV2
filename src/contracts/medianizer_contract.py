@@ -122,47 +122,65 @@ def approval_program():
 
         validate_prices = Seq(
             If(feed_1_value.hasValue())
-            .Then(var1.store(ExtractUint64(feed_1_value.value(),Int(8))))
+            .Then(var1.store(ExtractUint64(feed_1_value.value(), Int(8))))
             .Else(var1.store(Int(0))),
-            If(var1.load() > Int(0))
-            .Then(Seq(
-                If(Minus(Global.latest_timestamp(),ExtractUint64(feed_1_value.value(), Int(0)))
-                    >(App.globalGet(timestamp_freshness)),var1.store(Int(0)))
-            )),
-
+            If(var1.load() > Int(0)).Then(
+                Seq(
+                    If(
+                        Minus(Global.latest_timestamp(), ExtractUint64(feed_1_value.value(), Int(0)))
+                        > (App.globalGet(timestamp_freshness)),
+                        var1.store(Int(0)),
+                    )
+                )
+            ),
             If(feed_2_value.hasValue())
-            .Then(var2.store(ExtractUint64(feed_2_value.value(),Int(8))))
+            .Then(var2.store(ExtractUint64(feed_2_value.value(), Int(8))))
             .Else(var2.store(Int(0))),
-            If(var2.load() > Int(0))
-            .Then(Seq(
-                If(Minus(Global.latest_timestamp(),ExtractUint64(feed_2_value.value(), Int(0)))
-                    >(App.globalGet(timestamp_freshness)),var2.store(Int(0)))
-            )),
-
+            If(var2.load() > Int(0)).Then(
+                Seq(
+                    If(
+                        Minus(Global.latest_timestamp(), ExtractUint64(feed_2_value.value(), Int(0)))
+                        > (App.globalGet(timestamp_freshness)),
+                        var2.store(Int(0)),
+                    )
+                )
+            ),
             If(feed_3_value.hasValue())
-            .Then(var3.store(ExtractUint64(feed_3_value.value(),Int(8))))
+            .Then(var3.store(ExtractUint64(feed_3_value.value(), Int(8))))
             .Else(var3.store(Int(0))),
-            If(var3.load() > Int(0))
-            .Then(Seq(
-                If(Minus(Global.latest_timestamp(),ExtractUint64(feed_3_value.value(), Int(0)))
-                    >(App.globalGet(timestamp_freshness)),var3.store(Int(0)))
-            )),
+            If(var3.load() > Int(0)).Then(
+                Seq(
+                    If(
+                        Minus(Global.latest_timestamp(), ExtractUint64(feed_3_value.value(), Int(0)))
+                        > (App.globalGet(timestamp_freshness)),
+                        var3.store(Int(0)),
+                    )
+                )
+            ),
             If(feed_4_value.hasValue())
-            .Then(var4.store(ExtractUint64(feed_4_value.value(),Int(8))))
+            .Then(var4.store(ExtractUint64(feed_4_value.value(), Int(8))))
             .Else(var4.store(Int(0))),
-            If(var4.load() > Int(0))
-            .Then(Seq(
-                If(Minus(Global.latest_timestamp(),ExtractUint64(feed_4_value.value(), Int(0)))
-                    >(App.globalGet(timestamp_freshness)),var4.store(Int(0)))
-            )),
+            If(var4.load() > Int(0)).Then(
+                Seq(
+                    If(
+                        Minus(Global.latest_timestamp(), ExtractUint64(feed_4_value.value(), Int(0)))
+                        > (App.globalGet(timestamp_freshness)),
+                        var4.store(Int(0)),
+                    )
+                )
+            ),
             If(feed_5_value.hasValue())
-            .Then(var5.store(ExtractUint64(feed_5_value.value(),Int(8))))
+            .Then(var5.store(ExtractUint64(feed_5_value.value(), Int(8))))
             .Else(var5.store(Int(0))),
-            If(var5.load() > Int(0))
-            .Then(Seq(
-                If(Minus(Global.latest_timestamp(),ExtractUint64(feed_5_value.value(), Int(0)))
-                    >(App.globalGet(timestamp_freshness)),var5.store(Int(0)))
-            )),
+            If(var5.load() > Int(0)).Then(
+                Seq(
+                    If(
+                        Minus(Global.latest_timestamp(), ExtractUint64(feed_5_value.value(), Int(0)))
+                        > (App.globalGet(timestamp_freshness)),
+                        var5.store(Int(0)),
+                    )
+                )
+            ),
         )
 
         return Seq(
@@ -184,7 +202,7 @@ def approval_program():
             .Then(App.globalPut(median_timestamp, ExtractUint64(feed_4_value.value(), Int(0))))
             .ElseIf(App.globalGet(median_price) == var5.load())
             .Then(App.globalPut(median_timestamp, ExtractUint64(feed_5_value.value(), Int(0))))
-            .Else(App.globalPut(median_timestamp,Global.latest_timestamp())),
+            .Else(App.globalPut(median_timestamp, Global.latest_timestamp())),
             Approve(),
         )
 

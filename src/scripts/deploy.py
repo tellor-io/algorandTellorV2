@@ -66,7 +66,9 @@ def deploy(query_id: str, query_data: str, timestamp_freshness: int, network: st
     tellor_flex_app_id = s.deploy_tellor_flex(
         query_id=query_id, query_data=query_data, multisigaccounts_sk=multisig_accounts_sk
     )
-    medianizer_app_id = s.deploy_medianizer(timestamp_freshness=timestamp_freshness, multisigaccounts_sk=multisig_accounts_sk)
+    medianizer_app_id = s.deploy_medianizer(
+        timestamp_freshness=timestamp_freshness, multisigaccounts_sk=multisig_accounts_sk
+    )
 
     activate_medianizer = s.activate_contract(multisigaccounts_sk=multisig_accounts_sk)
 
@@ -80,5 +82,8 @@ def deploy(query_id: str, query_data: str, timestamp_freshness: int, network: st
 
 config = get_configs(sys.argv[1:])
 deploy(
-    query_id=config.query_id, query_data=config.query_data, timestamp_freshness=config.timestamp_freshness, network=config.network
+    query_id=config.query_id,
+    query_data=config.query_data,
+    timestamp_freshness=config.timestamp_freshness,
+    network=config.network,
 )
