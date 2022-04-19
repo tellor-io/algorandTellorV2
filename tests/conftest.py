@@ -1,5 +1,5 @@
 import pytest
-from algosdk import encoding
+from algosdk import encoding, constants
 
 from src.scripts.scripts import Scripts
 from src.utils.accounts import Accounts
@@ -32,9 +32,9 @@ class App:
 def client():
     """AlgodClient for testing"""
     client = _algod_client()
-    client.flat_fee = True
-    client.fee = 1000
-    print("fee ", client.fee)
+    client.suggested_params().flat_fee = True
+    client.suggested_params().min_fee = 2 * constants.MIN_TXN_FEE
+    print("fee ", client.suggested_params().min_fee)
     return client
 
 
@@ -68,9 +68,10 @@ def deployed_contract(accounts, client, scripts):
 
     query_id = "1"
     query_data = "this is my description of query_id 1"
+    timestamp_freshness = 3600
 
     feedAppIDs = scripts.deploy_tellor_flex(
-        query_id=query_id, query_data=query_data, multisigaccounts_sk=accounts.multisig_signers_sk
+        query_id=query_id, query_data=query_data, timestamp_freshness=timestamp_freshness, multisigaccounts_sk=accounts.multisig_signers_sk
     )
 
     for ids in feedAppIDs:
@@ -79,6 +80,7 @@ def deployed_contract(accounts, client, scripts):
             b"governance_address": encoding.decode_address(accounts.governance.address()),
             b"query_id": query_id.encode("utf-8"),
             b"query_data": query_data.encode("utf-8"),
+            b"timestamp_freshness": timestamp_freshness,
             b"medianizer": 0,
             b"timestamps": b"",
             b"stake_amount": 200000,
@@ -91,8 +93,8 @@ def deployed_contract(accounts, client, scripts):
 
         assert actual == expected
 
-    time_interval = 1234567
-    medianizerAppID = scripts.deploy_medianizer(time_interval=time_interval, multisigaccounts_sk=accounts.multisig_signers_sk)
+
+    medianizerAppID = scripts.deploy_medianizer(timestamp_freshness=timestamp_freshness, query_id=query_id, multisigaccounts_sk=accounts.multisig_signers_sk)
 
     scripts.activate_contract(multisigaccounts_sk=accounts.multisig_signers_sk)
     scripts.set_medianizer(multisigaccounts_sk=accounts.multisig_signers_sk)

@@ -36,8 +36,8 @@ def get_configs(args: List[str]) -> Box:
     )
 
     parser.add_argument(
-        "-ti",
-        "--time-interval",
+        "-tf",
+        "--timestamp_freshness",
         nargs=1,
         required=False,
         type=int,

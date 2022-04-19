@@ -15,7 +15,7 @@ from src.utils.testing.resources import fundAccount
 from src.utils.testing.resources import getTemporaryAccount
 
 
-def deploy(query_id: str, query_data: str, time_interval: int, network: str):
+def deploy(query_id: str, query_data: str, timestamp_freshness: int, network: str):
     """
     quick deployment scheme, works on:
     - local private network
@@ -66,7 +66,7 @@ def deploy(query_id: str, query_data: str, time_interval: int, network: str):
     tellor_flex_app_id = s.deploy_tellor_flex(
         query_id=query_id, query_data=query_data, multisigaccounts_sk=multisig_accounts_sk
     )
-    medianizer_app_id = s.deploy_medianizer(time_interval=time_interval, multisigaccounts_sk=multisig_accounts_sk)
+    medianizer_app_id = s.deploy_medianizer(timestamp_freshness=timestamp_freshness, multisigaccounts_sk=multisig_accounts_sk)
 
     activate_medianizer = s.activate_contract(multisigaccounts_sk=multisig_accounts_sk)
 
@@ -80,5 +80,5 @@ def deploy(query_id: str, query_data: str, time_interval: int, network: str):
 
 config = get_configs(sys.argv[1:])
 deploy(
-    query_id=config.query_id, query_data=config.query_data, time_interval=config.time_interval, network=config.network
+    query_id=config.query_id, query_data=config.query_data, timestamp_freshness=config.timestamp_freshness, network=config.network
 )

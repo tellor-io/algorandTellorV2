@@ -15,7 +15,6 @@ from src.contracts.contracts import clear_state_program
 from src.contracts.medianizer_contract import approval_program as approval_medianizer
 from src.contracts.medianizer_contract import clear_state_program as clear_medianizer
 from src.utils.account import Account
-from src.utils.senders import send_no_op_tx
 from src.utils.util import fullyCompileContract
 from src.utils.util import getAppGlobalState
 from src.utils.util import waitForTransaction
@@ -132,7 +131,7 @@ class Scripts:
             current_data[feed_app_id]["values"] = feed_state["values"]
             current_data[feed_app_id]["timestamps"] = feed_state["timestamps"]
 
-    def deploy_tellor_flex(self, query_id: str, query_data: str, multisigaccounts_sk: List[str]) -> int:
+    def deploy_tellor_flex(self, query_id: str, query_data: str, timestamp_freshness: int, multisigaccounts_sk: List[str]) -> int:
         """
         Deploy a new tellor reporting contract.
         calls create() method on contract
@@ -148,13 +147,14 @@ class Scripts:
         """
         approval, clear = self.get_contracts(self.client)
 
-        globalSchema = transaction.StateSchema(num_uints=9, num_byte_slices=9)
+        globalSchema = transaction.StateSchema(num_uints=10, num_byte_slices=9)
         localSchema = transaction.StateSchema(num_uints=0, num_byte_slices=0)
         medianizer_id = 0
         app_args = [
             query_id.encode("utf-8"),
             query_data.encode("utf-8"),
             medianizer_id,
+            timestamp_freshness
         ]
 
         print(f"Forming {self.contract_count} {query_id} contracts")
@@ -185,13 +185,13 @@ class Scripts:
         print("Created new apps:", self.feeds)
         return self.feeds
 
-    def deploy_medianizer(self, time_interval: int, multisigaccounts_sk: List[int]) -> int:
+    def deploy_medianizer(self, timestamp_freshness: int, query_id: bytes,multisigaccounts_sk: List[int]) -> int:
         approval, clear = self.get_contracts_medianizer(self.client)
 
-        global_schema = transaction.StateSchema(num_uints=1, num_byte_slices=6)
+        global_schema = transaction.StateSchema(num_uints=7, num_byte_slices=7)
         local_schema = transaction.StateSchema(num_uints=0, num_byte_slices=0)
 
-        app_args = [time_interval]
+        app_args = [timestamp_freshness, query_id]
         comp = AtomicTransactionComposer()
         comp.add_transaction(
             TransactionWithSigner(
@@ -211,6 +211,7 @@ class Scripts:
         tx_id = comp.execute(self.client, 4).tx_ids
         res = self.client.pending_transaction_info(tx_id[0])
         self.medianizer_app_id = res["application-index"]
+        print(f"Created medianizer app: {self.medianizer_app_id}")
         return self.medianizer_app_id
 
     def activate_contract(self, multisigaccounts_sk: List[Any]) -> List[int]:
@@ -268,7 +269,7 @@ class Scripts:
 
         payTxn = transaction.PaymentTxn(
             sender=self.reporter.getAddress(),
-            receiver=self.app_address,
+            receiver=self.feed_app_address,
             amt=stake_amount,
             sp=suggestedParams,
         )
@@ -294,21 +295,23 @@ class Scripts:
         suggestedParams = self.client.suggested_params()
 
         payTxn = transaction.PaymentTxn(
-            sender=self.reporter.getAddress(), receiver=self.app_address, amt=tip_amount, sp=suggestedParams
+            sender=self.tipper.getAddress(), receiver=self.feed_app_address, amt=tip_amount, sp=suggestedParams
         )
 
         no_op_txn = transaction.ApplicationNoOpTxn(
-            sender=self.reporter.getAddress(), index=self.feed_app_id, app_args=[b"tip"], sp=suggestedParams
+            sender=self.tipper.getAddress(), index=self.feed_app_id, app_args=[b"tip"], sp=suggestedParams
         )
+
+        transaction.assign_group_id([payTxn, no_op_txn])
 
         signed_pay_txn = payTxn.sign(self.tipper.getPrivateKey())
         signed_no_op_txn = no_op_txn.sign(self.tipper.getPrivateKey())
 
         self.client.send_transactions([signed_pay_txn, signed_no_op_txn])
 
-        waitForTransaction(self.cient, no_op_txn.get_txid())
+        waitForTransaction(self.client, no_op_txn.get_txid())
 
-    def report(self, query_id: bytes, value: bytes):
+    def report(self, query_id: bytes, value: bytes, timestamp: int):
         """
         Call report() on the contract to set the current value on the contract
 
@@ -319,15 +322,16 @@ class Scripts:
 
         submitValueTxn = transaction.ApplicationNoOpTxn(
             sender=self.reporter.getAddress(),
+            accounts=[self.governance_address.address()],
             index=self.feed_app_id,
-            app_args=[b"report", query_id, value],
-            foreign_apps=self.feeds,
+            app_args=[b"report", query_id, value, timestamp],
+            foreign_apps=self.feeds + [self.medianizer_app_id],
             sp=self.client.suggested_params(),
         )
 
         signedSubmitValueTxn = submitValueTxn.sign(self.reporter.getPrivateKey())
         self.client.send_transaction(signedSubmitValueTxn)
-        waitForTransaction(self.client, signedSubmitValueTxn.get_txid())
+        waitForTransaction(self.client, signedSubmitValueTxn.get_txid(), timeout=30)
 
     def withdraw(self):
         """
@@ -345,5 +349,50 @@ class Scripts:
         waitForTransaction(self.client, signedTxn.get_txid())
 
     def request_withdraw(self):
+        """
+        locks reporter for 7 days before being allowed to withdraw stake
+        """
+        txn = transaction.ApplicationNoOpTxn(
+            sender=self.reporter.getAddress(),
+            index=self.feed_app_id,
+            app_args=[b"request_withdraw"],
+            sp=self.client.suggested_params(),
+        )
+        signedTxn = txn.sign(self.reporter.getPrivateKey())
+        self.client.send_transaction(signedTxn)
+        waitForTransaction(self.client, signedTxn.get_txid())
+    
+    def withdraw_dry(self,txns: List=[], timestamp: int=0):
+        """
+        locks reporter for 7 days before being allowed to withdraw stake
+        """
+        txn = transaction.ApplicationNoOpTxn(
+            sender=self.reporter.getAddress(),
+            index=self.feed_app_id,
+            app_args=[b"withdraw"],
+            sp=self.client.suggested_params(),
+        )
+        signedTxn = txn.sign(self.reporter.getPrivateKey())
+        dryrun = transaction.create_dryrun(client=self.client, txns=[signedTxn] + txns, latest_timestamp=timestamp)
+        dryrun_response = self.client.dryrun(dryrun)
 
-        send_no_op_tx(self.reporter, self.feed_app_id, "request_withdraw", app_args=None, foreign_apps=None)
+        return dryrun_response
+
+    def slash_reporter(self, multisigaccounts_sk: List[Any]) -> int:
+        """
+        governance slashes reporter for bad report
+        """
+        comp = AtomicTransactionComposer()
+        comp.add_transaction(
+                TransactionWithSigner(
+                    transaction.ApplicationNoOpTxn(
+                        sender=self.governance_address.address(),
+                        sp=self.client.suggested_params(),
+                        index=self.feed_app_id,
+                        app_args=["slash_reporter"],
+                    ),
+                MultisigTransactionSigner(self.governance_address, multisigaccounts_sk),
+                )
+            )
+        txn_id = comp.execute(self.client, 3).tx_ids
+        return txn_id

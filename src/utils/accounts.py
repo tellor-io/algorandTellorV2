@@ -8,6 +8,7 @@ class Accounts:
     def __init__(self, client) -> None:
         self.tipper = getTemporaryAccount(client)
         self.reporter = getTemporaryAccount(client)
+        self.reporters = [getTemporaryAccount(client) for _ in range(5)]
         self.bad_actor = getTemporaryAccount(client)
         self.multisig_obj = [getTemporaryAccount(client) for i in range(3)]
         self.multisig_signers = [i.getAddress() for i in self.multisig_obj]
