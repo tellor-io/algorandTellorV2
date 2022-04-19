@@ -1,21 +1,19 @@
-import pytest
 from time import time
-from algosdk import encoding
-from algosdk.error import AlgodHTTPError
-from scripts.scripts import Scripts
-from src.utils.accounts import Accounts
 
-from src.utils.testing.resources import getTemporaryAccount
-from src.utils.accounts import Accounts
-from src.scripts.scripts import Scripts
+import pytest
+from algosdk import encoding
+from algosdk.algod import AlgodClient
+from algosdk.error import AlgodHTTPError
 from algosdk.future import transaction
 from algosdk.logic import get_application_address
 
+from conftest import App
+from scripts.scripts import Scripts
+from src.scripts.scripts import Scripts
+from src.utils.accounts import Accounts
+from src.utils.testing.resources import getTemporaryAccount
 from src.utils.util import getAppGlobalState
 
-from algosdk.algod import AlgodClient
-
-from conftest import App
 
 def test_not_staked_report_attempt(client: AlgodClient, scripts: Scripts, accounts: Accounts, deployed_contract: App):
     """Accounts should not be permitted to report
@@ -25,6 +23,8 @@ def test_not_staked_report_attempt(client: AlgodClient, scripts: Scripts, accoun
 
     assert state[b"staking_status"] == 0
     assert state[b"reporter_address"] == b""
+
+
 def test_withdraw_before_request(scripts: Scripts, accounts: Accounts, deployed_contract, client):
     """Reporter cannot withdraw stake without requesting to withdraw"""
 
@@ -34,6 +34,7 @@ def test_withdraw_before_request(scripts: Scripts, accounts: Accounts, deployed_
     scripts.stake()
     with pytest.raises(AlgodHTTPError):
         scripts.withdraw()
+
 
 def test_withdraw_after_request_withdraw(scripts: Scripts, accounts: Accounts, deployed_contract, client):
     """Reporter cannot withdraw stake after initiating withdrawal before waiting 7days"""
@@ -45,11 +46,12 @@ def test_withdraw_after_request_withdraw(scripts: Scripts, accounts: Accounts, d
     scripts.request_withdraw()
 
     state = getAppGlobalState(client, feed_id)
-    
+
     assert state[b"staking_status"] == 2
     assert state[b"reporter_address"] == encoding.decode_address(accounts.reporter.getAddress())
     with pytest.raises(AlgodHTTPError):
         scripts.withdraw()
+
 
 def test_report_after_request_withdraw(scripts: Scripts, accounts: Accounts, deployed_contract, client):
     """reporter can't report after requesting to withdraw"""
@@ -65,13 +67,14 @@ def test_report_after_request_withdraw(scripts: Scripts, accounts: Accounts, dep
     with pytest.raises(AlgodHTTPError):
         scripts.report(query_id, value, timestamp)
 
+
 def test_median_computation(scripts: Scripts, accounts: Accounts, deployed_contract, client):
-    """Medianizer -- deploy 5 feeds, submit to 5 feeds, ensure median from 
-        contract matches median calculated from APIs"""
+    """Medianizer -- deploy 5 feeds, submit to 5 feeds, ensure median from
+    contract matches median calculated from APIs"""
 
     value = 3500
     timestamp = int(time())
-    median_time = timestamp + 20 
+    median_time = timestamp + 20
     median = 3600
     for i in deployed_contract.feed_ids:
         scripts.feed_app_id = i
@@ -79,19 +82,20 @@ def test_median_computation(scripts: Scripts, accounts: Accounts, deployed_contr
         scripts.feed_app_address = get_application_address(feed_id)
         scripts.stake()
         query_id = "1"
-        scripts.report(query_id,value,timestamp)
-        value+=50
-        timestamp+=10
+        scripts.report(query_id, value, timestamp)
+        value += 50
+        timestamp += 10
         state = getAppGlobalState(client, deployed_contract.medianizer_id)
-    
+
     state = getAppGlobalState(client, deployed_contract.medianizer_id)
 
     assert state[b"median"] == median
     assert state[b"median_timestamp"] == median_time
 
+
 def test_median_update(scripts: Scripts, accounts: Accounts, deployed_contract, client):
-    """If the median is updated, the timestamp of median is the 
-       timestamp of the API call"""
+    """If the median is updated, the timestamp of median is the
+    timestamp of the API call"""
 
     value = 3500
     timestamp = int(time())
@@ -102,20 +106,21 @@ def test_median_update(scripts: Scripts, accounts: Accounts, deployed_contract, 
         scripts.feed_app_address = get_application_address(feed_id)
         scripts.stake()
         query_id = "1"
-        scripts.report(query_id,value,timestamp)
+        scripts.report(query_id, value, timestamp)
         timestamps.append(timestamp)
-        value+=50
-        timestamp+=10
+        value += 50
+        timestamp += 10
         state = getAppGlobalState(client, deployed_contract.medianizer_id)
 
     state = getAppGlobalState(client, deployed_contract.medianizer_id)
 
     assert state[b"median_timestamp"] == pytest.approx(timestamps[1], 200)
 
+
 def test_2_feeds(scripts: Scripts, accounts: Accounts, deployed_contract, client):
-    """Medianizer -- ensure that medianizer functions 
-        with less than 5 feeds"""
-    
+    """Medianizer -- ensure that medianizer functions
+    with less than 5 feeds"""
+
     value = 3500
     timestamp = int(time())
     median = (3500 + 3550) / 2
@@ -125,15 +130,16 @@ def test_2_feeds(scripts: Scripts, accounts: Accounts, deployed_contract, client
         scripts.feed_app_address = get_application_address(feed_id)
         scripts.stake()
         query_id = "1"
-        scripts.report(query_id,value,timestamp)
-        value+=50
-        timestamp+=10
+        scripts.report(query_id, value, timestamp)
+        value += 50
+        timestamp += 10
         state = getAppGlobalState(client, deployed_contract.medianizer_id)
 
     state = getAppGlobalState(client, deployed_contract.medianizer_id)
 
     assert state[b"median"] == median
     assert state[b"median_timestamp"] == pytest.approx(time(), 200)
+
 
 def test_old_timestamp(scripts: Scripts, accounts: Accounts, deployed_contract, client):
     """Timestamp older than an hour should be rejected"""
@@ -147,6 +153,7 @@ def test_old_timestamp(scripts: Scripts, accounts: Accounts, deployed_contract, 
     timestamp = int(time() - 3610)
     with pytest.raises(AlgodHTTPError):
         scripts.report(query_id, value, timestamp)
+
 
 def test_not_staked_report_attempt(scripts: Scripts, accounts: Accounts, deployed_contract, client):
     """Accounts should not be permitted to report
@@ -162,7 +169,7 @@ def test_not_staked_report_attempt(scripts: Scripts, accounts: Accounts, deploye
     timestamp = int(time())
 
     with pytest.raises(AlgodHTTPError):
-        scripts.report(query_id,value,timestamp)  # expect failure/reversion
+        scripts.report(query_id, value, timestamp)  # expect failure/reversion
 
 
 def test_report_wrong_query_id(scripts: Scripts, accounts: Accounts, deployed_contract, client):
@@ -183,7 +190,7 @@ def test_report_wrong_query_id(scripts: Scripts, accounts: Accounts, deployed_co
 
     query_id = b"2"
     value = 3500
-    timestamp = int(time()-1000)
+    timestamp = int(time() - 1000)
     with pytest.raises(AlgodHTTPError):
         scripts.report(query_id, value, timestamp)
 
@@ -240,6 +247,7 @@ def test_only_one_staker(scripts: Scripts, accounts: Accounts, deployed_contract
     with pytest.raises(AlgodHTTPError):
         scripts.stake()
 
+
 def test_reporting_without_staking(scripts: Scripts, accounts: Accounts, deployed_contract, client):
     """Can't report if not staked"""
     scripts.feed_app_id = deployed_contract.feed_ids[0]
@@ -252,9 +260,10 @@ def test_reporting_without_staking(scripts: Scripts, accounts: Accounts, deploye
 
     query_id = state[b"query_id"]
     value = 3500
-    timestamp = int(time()-1000)
+    timestamp = int(time() - 1000)
     with pytest.raises(AlgodHTTPError):
         scripts.report(query_id, value, timestamp)
+
 
 def test_early_withdraw_attempt(scripts: Scripts, accounts: Accounts, deployed_contract, client):
     """Shouldn't be able to withdraw stake from contract before the 7 day interval"""
@@ -268,14 +277,15 @@ def test_early_withdraw_attempt(scripts: Scripts, accounts: Accounts, deployed_c
 
     scripts.request_withdraw()
 
-    res = scripts.withdraw_dry(timestamp=int(time())+518400) # 6 days in seconds
+    res = scripts.withdraw_dry(timestamp=int(time()) + 518400)  # 6 days in seconds
 
-    assert res['txns'][0]['app-call-messages'][1] == "REJECT"
+    assert res["txns"][0]["app-call-messages"][1] == "REJECT"
 
     scripts.stake()
     scripts.withdraw()
     state = getAppGlobalState(client, scripts.feed_app_id)
-    
+
+
 # def test_second_withdraw_attempt(scripts: Scripts, accounts: Accounts, deployed_contract, client):
 #     """Shouldn't be able to withdraw stake from contract more than once"""
 #     scripts.feed_app_id = deployed_contract.feed_ids[0]
@@ -368,4 +378,9 @@ def test_overflow_in_create(scripts: Scripts, accounts: Accounts, deployed_contr
     query_data = "my query_id is invalid because it is >128 bytes in length"
 
     with pytest.raises(AlgodHTTPError):
-        scripts.deploy_tellor_flex(query_id=too_long_query_id, query_data=query_data, timestamp_freshness=3600, multisigaccounts_sk=accounts.multisig_signers_sk)
+        scripts.deploy_tellor_flex(
+            query_id=too_long_query_id,
+            query_data=query_data,
+            timestamp_freshness=3600,
+            multisigaccounts_sk=accounts.multisig_signers_sk,
+        )

@@ -1,17 +1,18 @@
 import time
-from typing import Optional, Union
 from typing import Any
 from typing import List
 from typing import Optional
 from typing import Tuple
+from typing import Union
 
 from algosdk.atomic_transaction_composer import AtomicTransactionComposer
 from algosdk.atomic_transaction_composer import MultisigTransactionSigner
 from algosdk.atomic_transaction_composer import TransactionWithSigner
 from algosdk.future import transaction
+from algosdk.future.transaction import create_dryrun
+from algosdk.future.transaction import Multisig
 from algosdk.logic import get_application_address
 from algosdk.v2client.algod import AlgodClient
-from algosdk.future.transaction import Multisig
 
 from src.contracts.contracts import approval_program
 from src.contracts.contracts import clear_state_program
@@ -21,7 +22,6 @@ from src.utils.account import Account
 from src.utils.util import fullyCompileContract
 from src.utils.util import getAppGlobalState
 from src.utils.util import waitForTransaction
-from algosdk.future.transaction import create_dryrun
 
 
 APPROVAL_PROGRAM = b""
@@ -136,7 +136,9 @@ class Scripts:
             current_data[feed_app_id]["values"] = feed_state["values"]
             current_data[feed_app_id]["timestamps"] = feed_state["timestamps"]
 
-    def deploy_tellor_flex(self, query_id: str, query_data: str, timestamp_freshness: int, multisigaccounts_sk: List[str]) -> int:
+    def deploy_tellor_flex(
+        self, query_id: str, query_data: str, timestamp_freshness: int, multisigaccounts_sk: List[str]
+    ) -> int:
         """
         Deploy a new tellor reporting contract.
         calls create() method on contract
@@ -155,12 +157,7 @@ class Scripts:
         globalSchema = transaction.StateSchema(num_uints=10, num_byte_slices=9)
         localSchema = transaction.StateSchema(num_uints=0, num_byte_slices=0)
         medianizer_id = 0
-        app_args = [
-            query_id.encode("utf-8"),
-            query_data.encode("utf-8"),
-            medianizer_id,
-            timestamp_freshness
-        ]
+        app_args = [query_id.encode("utf-8"), query_data.encode("utf-8"), medianizer_id, timestamp_freshness]
 
         print(f"Forming {self.contract_count} {query_id} contracts")
         for i in range(self.contract_count):
@@ -190,7 +187,7 @@ class Scripts:
         print("Created new apps:", self.feeds)
         return self.feeds
 
-    def deploy_medianizer(self, timestamp_freshness: int, query_id: bytes,multisigaccounts_sk: List[int]) -> int:
+    def deploy_medianizer(self, timestamp_freshness: int, query_id: bytes, multisigaccounts_sk: List[int]) -> int:
         approval, clear = self.get_contracts_medianizer(self.client)
 
         global_schema = transaction.StateSchema(num_uints=7, num_byte_slices=7)
@@ -338,7 +335,7 @@ class Scripts:
         self.client.send_transaction(signedSubmitValueTxn)
         waitForTransaction(self.client, signedSubmitValueTxn.get_txid(), timeout=30)
 
-    def withdraw(self, ff_time:int=0):
+    def withdraw(self, ff_time: int = 0):
         """
         Sends the reporter their stake back and removes their permission to report
         calls withdraw() on the contract
@@ -362,12 +359,12 @@ class Scripts:
                 sp=self.client.suggested_params(),
             )
             signedTxn = txn.sign(self.reporter.getPrivateKey())
-            dr_request = create_dryrun(self.client, [txn], latest_timestamp= time.time() + ff_time)
+            dr_request = create_dryrun(self.client, [txn], latest_timestamp=time.time() + ff_time)
             dr_response = self.client.dryrun(dr_request)
             dr_result = dr_request.DryrunResponse(dr_response)
             for txn in dr_result.txns:
-                    if txn.app_call_rejected():
-                        print(txn.app_trace(dryrun_results.StackPrinterConfig(max_value_width=0)))
+                if txn.app_call_rejected():
+                    print(txn.app_trace(dryrun_results.StackPrinterConfig(max_value_width=0)))
 
     def request_withdraw(self):
         """
@@ -382,8 +379,8 @@ class Scripts:
         signedTxn = txn.sign(self.reporter.getPrivateKey())
         self.client.send_transaction(signedTxn)
         waitForTransaction(self.client, signedTxn.get_txid())
-    
-    def withdraw_dry(self,txns: List=[], timestamp: int=0):
+
+    def withdraw_dry(self, txns: List = [], timestamp: int = 0):
         """
         locks reporter for 7 days before being allowed to withdraw stake
         """
@@ -405,15 +402,15 @@ class Scripts:
         """
         comp = AtomicTransactionComposer()
         comp.add_transaction(
-                TransactionWithSigner(
-                    transaction.ApplicationNoOpTxn(
-                        sender=self.governance_address.address(),
-                        sp=self.client.suggested_params(),
-                        index=self.feed_app_id,
-                        app_args=["slash_reporter"],
-                    ),
+            TransactionWithSigner(
+                transaction.ApplicationNoOpTxn(
+                    sender=self.governance_address.address(),
+                    sp=self.client.suggested_params(),
+                    index=self.feed_app_id,
+                    app_args=["slash_reporter"],
+                ),
                 MultisigTransactionSigner(self.governance_address, multisigaccounts_sk),
-                )
             )
+        )
         txn_id = comp.execute(self.client, 3).tx_ids
         return txn_id

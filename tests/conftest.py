@@ -1,12 +1,13 @@
 import pytest
-from algosdk import encoding, constants
+from algosdk import constants
+from algosdk import encoding
+from algosdk.logic import get_application_address
 
 from src.scripts.scripts import Scripts
 from src.utils.accounts import Accounts
 from src.utils.helpers import _algod_client
-from src.utils.util import getAppGlobalState
-from algosdk.logic import get_application_address
 from src.utils.testing.resources import fundAccount
+from src.utils.util import getAppGlobalState
 
 # from src.utils.helpers import call_sandbox_command
 
@@ -53,7 +54,7 @@ def scripts(client, accounts):
         tipper=accounts.tipper,
         reporter=accounts.reporter,
         governance_address=accounts.governance,
-        contract_count=5
+        contract_count=5,
     )
 
 
@@ -71,7 +72,10 @@ def deployed_contract(accounts, client, scripts):
     timestamp_freshness = 3600
 
     feedAppIDs = scripts.deploy_tellor_flex(
-        query_id=query_id, query_data=query_data, timestamp_freshness=timestamp_freshness, multisigaccounts_sk=accounts.multisig_signers_sk
+        query_id=query_id,
+        query_data=query_data,
+        timestamp_freshness=timestamp_freshness,
+        multisigaccounts_sk=accounts.multisig_signers_sk,
     )
 
     for ids in feedAppIDs:
@@ -88,17 +92,18 @@ def deployed_contract(accounts, client, scripts):
             b"stake_timestamp": 0,
             b"reporter_address": b"",
             b"values": b"",
-            b"tip_amount": 0
+            b"tip_amount": 0,
         }
 
         assert actual == expected
 
-
-    medianizerAppID = scripts.deploy_medianizer(timestamp_freshness=timestamp_freshness, query_id=query_id, multisigaccounts_sk=accounts.multisig_signers_sk)
+    medianizerAppID = scripts.deploy_medianizer(
+        timestamp_freshness=timestamp_freshness, query_id=query_id, multisigaccounts_sk=accounts.multisig_signers_sk
+    )
 
     scripts.activate_contract(multisigaccounts_sk=accounts.multisig_signers_sk)
     scripts.set_medianizer(multisigaccounts_sk=accounts.multisig_signers_sk)
-    
+
     medianizerState = getAppGlobalState(client, medianizerAppID)
     feedState1 = getAppGlobalState(client, feedAppIDs[0])
     feedAddr1 = get_application_address(feedAppIDs[0])

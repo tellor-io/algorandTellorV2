@@ -1,12 +1,14 @@
 from time import time
+
 from algosdk import encoding
+from algosdk.error import AlgodHTTPError
+from algosdk.logic import get_application_address
+
 from src.scripts.scripts import Scripts
 from src.utils.accounts import Accounts
-from algosdk.error import AlgodHTTPError
 from src.utils.helpers import _algod_client
-from src.utils.util import getAppGlobalState
-from algosdk.logic import get_application_address
 from src.utils.testing.resources import fundAccount
+from src.utils.util import getAppGlobalState
 
 print("TELLOR APPLICATION WALKTHROUGH")
 
@@ -23,14 +25,21 @@ for i in accounts.reporters:
     fundAccount(client, i.getAddress())
 fundAccount(client, accounts.bad_actor.getAddress())
 # constructor variables
-query_id="btc/usd"
-query_data="this is my description of query_id `btc/usd"
-timestamp_freshness=3600
-multisigaccounts_sk=accounts.multisig_signers_sk
+query_id = "btc/usd"
+query_data = "this is my description of query_id `btc/usd"
+timestamp_freshness = 3600
+multisigaccounts_sk = accounts.multisig_signers_sk
 
 # deploy contract
-feed_ids = scripts.deploy_tellor_flex(query_id=query_id, query_data=query_data,timestamp_freshness=timestamp_freshness,multisigaccounts_sk=multisigaccounts_sk)
-medianizer_id = scripts.deploy_medianizer(timestamp_freshness=timestamp_freshness,query_id=query_id,multisigaccounts_sk=multisigaccounts_sk)
+feed_ids = scripts.deploy_tellor_flex(
+    query_id=query_id,
+    query_data=query_data,
+    timestamp_freshness=timestamp_freshness,
+    multisigaccounts_sk=multisigaccounts_sk,
+)
+medianizer_id = scripts.deploy_medianizer(
+    timestamp_freshness=timestamp_freshness, query_id=query_id, multisigaccounts_sk=multisigaccounts_sk
+)
 activate_medianizer = scripts.activate_contract(multisigaccounts_sk=multisigaccounts_sk)
 connect_feeds_medianizer = scripts.set_medianizer(multisigaccounts_sk=multisigaccounts_sk)
 
@@ -45,14 +54,14 @@ for i in feed_ids:
     scripts.feed_app_address = get_application_address(feed_id)
     scripts.tip(100000)
 # print contract attributes
-state               = getAppGlobalState(client, appID=feed_ids[0])
-query_id            = state[b"query_id"]
-query_data          = state[b"query_data"]
-stake_amount        = state[b"stake_amount"]
-governance          = state[b"governance_address"]
-tip_amount          = state[b"tip_amount"]
-medianizer          = state[b"medianizer"]   
-timestamp_freshness = state[b"timestamp_freshness"]   
+state = getAppGlobalState(client, appID=feed_ids[0])
+query_id = state[b"query_id"]
+query_data = state[b"query_data"]
+stake_amount = state[b"stake_amount"]
+governance = state[b"governance_address"]
+tip_amount = state[b"tip_amount"]
+medianizer = state[b"medianizer"]
+timestamp_freshness = state[b"timestamp_freshness"]
 
 print("---------------")
 
@@ -68,9 +77,9 @@ print("reporter address set later!")
 
 print("---------------")
 
-state               = getAppGlobalState(client, appID=medianizer_id)
-query_id            = state[b"query_id"]
-governance          = state[b"governance"]
+state = getAppGlobalState(client, appID=medianizer_id)
+query_id = state[b"query_id"]
+governance = state[b"governance"]
 timestamp_freshness = state[b"timestamp_freshness"]
 
 print("---medianizer contract variables set on app creation---")
@@ -98,7 +107,7 @@ for i in range(3):
     staking_status = state[b"staking_status"]
     print("data reporter address: ", encoding.encode_address(reporter))
     print("staking status (1 if staked, 0 if not staked): ", staking_status)
-    timestamp  = int(time()-500)
+    timestamp = int(time() - 500)
     scripts.report(query_id=query_id, value=good_value, timestamp=timestamp)
     print(f"I'm reporting, {query_id}, at, {good_value}, on timestamp: {timestamp}")
     state = getAppGlobalState(client=client, appID=medianizer_id)
@@ -108,7 +117,7 @@ for i in range(3):
     print(f"Median value: {median}, timestamp: {median_timestamp} after {i+1} report(s)")
 
     print("---------------")
-    good_value+=500
+    good_value += 500
 
 print(f"reporter trying to withdraw stake...")
 try:
@@ -135,7 +144,7 @@ except AlgodHTTPError:
 bad_value = 40
 scripts.reporter = accounts.reporters[1]
 scripts.feed_app_id = feed_ids[1]
-scripts.report(query_id=query_id, value=bad_value, timestamp=int(time()-500))
+scripts.report(query_id=query_id, value=bad_value, timestamp=int(time() - 500))
 print("I'm a bad actor and I'm reporting ", query_id, " at", bad_value)
 print("---------------")
 
@@ -152,6 +161,6 @@ print("---------------")
 # trying to report after being slashed
 print("reporter trying to report after being slashed")
 try:
-    scripts.report(query_id=query_id, value=good_value, timestamp=int(time()-500))
+    scripts.report(query_id=query_id, value=good_value, timestamp=int(time() - 500))
 except AlgodHTTPError:
     print("Error: can't report you've been slashed and no longer staked!")
