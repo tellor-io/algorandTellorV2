@@ -2,23 +2,19 @@ import pytest
 from time import time
 from algosdk import encoding
 from algosdk.error import AlgodHTTPError
-<<<<<<< HEAD
 from scripts.scripts import Scripts
 from src.utils.accounts import Accounts
 
 from src.utils.testing.resources import getTemporaryAccount
-=======
 from src.utils.accounts import Accounts
 from src.scripts.scripts import Scripts
 from algosdk.future import transaction
 from algosdk.logic import get_application_address
 
->>>>>>> 2a4d801f5a9c24fb3cf1b978278710617fbce972
 from src.utils.util import getAppGlobalState
 
 from algosdk.algod import AlgodClient
 
-<<<<<<< HEAD
 from conftest import App
 
 def test_not_staked_report_attempt(client: AlgodClient, scripts: Scripts, accounts: Accounts, deployed_contract: App):
@@ -29,7 +25,6 @@ def test_not_staked_report_attempt(client: AlgodClient, scripts: Scripts, accoun
 
     assert state[b"staking_status"] == 0
     assert state[b"reporter_address"] == b""
-=======
 def test_withdraw_before_request(scripts: Scripts, accounts: Accounts, deployed_contract, client):
     """Reporter cannot withdraw stake without requesting to withdraw"""
 
@@ -165,7 +160,6 @@ def test_not_staked_report_attempt(scripts: Scripts, accounts: Accounts, deploye
     query_id = "1"
     value = 3500
     timestamp = int(time())
->>>>>>> 2a4d801f5a9c24fb3cf1b978278710617fbce972
 
     with pytest.raises(AlgodHTTPError):
         scripts.report(query_id,value,timestamp)  # expect failure/reversion
@@ -181,13 +175,10 @@ def test_report_wrong_query_id(scripts: Scripts, accounts: Accounts, deployed_co
 
     scripts.stake()
 
-<<<<<<< HEAD
     state = getAppGlobalState(client, scripts.feed_app_id)
     assert state[b"num_reports"] == 0
-=======
     state = getAppGlobalState(client, deployed_contract.feed_id)
     assert state[b"staking_status"] == 1
->>>>>>> 2a4d801f5a9c24fb3cf1b978278710617fbce972
     assert state[b"query_id"] == b"1"
 
     query_id = b"2"
@@ -197,22 +188,14 @@ def test_report_wrong_query_id(scripts: Scripts, accounts: Accounts, deployed_co
         scripts.report(query_id, value, timestamp)
 
 
-<<<<<<< HEAD
-def test_stake_amount(client, scripts:Scripts, deployed_contract:App):
-=======
 def test_stake_amount(scripts: Scripts, accounts: Accounts, deployed_contract, client):
->>>>>>> 2a4d801f5a9c24fb3cf1b978278710617fbce972
     """Reporter should only be able to stake
     with the amount set in the contract"""
     scripts.feed_app_id = deployed_contract.feed_ids[0]
     feed_id = scripts.feed_app_id
     scripts.feed_app_address = get_application_address(feed_id)
 
-<<<<<<< HEAD
-    state = getAppGlobalState(client, scripts.feed_app_id)
-=======
     state = getAppGlobalState(client, deployed_contract.feed_id)
->>>>>>> 2a4d801f5a9c24fb3cf1b978278710617fbce972
     stake_amount = state[b"stake_amount"]
 
     # higher stake amount than allowed
@@ -232,11 +215,7 @@ def test_reporter_double_stake(scripts: Scripts, accounts: Accounts, deployed_co
 
     scripts.stake()
 
-<<<<<<< HEAD
-    state = getAppGlobalState(client, scripts.feed_app_id)
-=======
-    state = getAppGlobalState(client, deployed_contract.feed_ids)
->>>>>>> 2a4d801f5a9c24fb3cf1b978278710617fbce972
+    state = getAppGlobalState(client, feed_id)
     assert state[b"staking_status"] == 1  # if 1, account is now staked
 
     with pytest.raises(AlgodHTTPError):
@@ -253,11 +232,7 @@ def test_only_one_staker(scripts: Scripts, accounts: Accounts, deployed_contract
 
     scripts.stake()
 
-<<<<<<< HEAD
-    state = getAppGlobalState(client, scripts.feed_app_id)
-=======
-    state = getAppGlobalState(client, deployed_contract.feed_ids)
->>>>>>> 2a4d801f5a9c24fb3cf1b978278710617fbce972
+    state = getAppGlobalState(client, feed_id)
     assert state[b"reporter_address"] == encoding.decode_address(accounts.reporter.getAddress())
 
     scripts.reporter = accounts.bad_actor
@@ -271,19 +246,9 @@ def test_reporting_without_staking(scripts: Scripts, accounts: Accounts, deploye
     feed_id = scripts.feed_app_id
     scripts.feed_app_address = get_application_address(feed_id)
 
-<<<<<<< HEAD
-def test_second_withdraw_attempt(scripts, client, deployed_contract):
-    """Shouldn't be able to withdraw stake from contract more than once"""
-    scripts.stake()
-    state = getAppGlobalState(client, scripts.feed_app_id)
-    assert state[b"staking_status"] == 1
-
-    scripts.withdraw()
-=======
     state = getAppGlobalState(client, deployed_contract.feed_id)
     assert state[b"staking_status"] == 0
     assert state[b"query_id"] == b"1"
->>>>>>> 2a4d801f5a9c24fb3cf1b978278710617fbce972
 
     query_id = state[b"query_id"]
     value = 3500
@@ -298,11 +263,7 @@ def test_early_withdraw_attempt(scripts: Scripts, accounts: Accounts, deployed_c
     scripts.feed_app_address = get_application_address(feed_id)
 
     scripts.stake()
-<<<<<<< HEAD
-    state = getAppGlobalState(client, scripts.feed_app_id)
-=======
     state = getAppGlobalState(client, feed_id)
->>>>>>> 2a4d801f5a9c24fb3cf1b978278710617fbce972
     assert state[b"staking_status"] == 1
 
     scripts.request_withdraw()
@@ -311,17 +272,15 @@ def test_early_withdraw_attempt(scripts: Scripts, accounts: Accounts, deployed_c
 
     assert res['txns'][0]['app-call-messages'][1] == "REJECT"
 
-<<<<<<< HEAD
     scripts.stake()
     scripts.withdraw()
     state = getAppGlobalState(client, scripts.feed_app_id)
-=======
+    
 # def test_second_withdraw_attempt(scripts: Scripts, accounts: Accounts, deployed_contract, client):
 #     """Shouldn't be able to withdraw stake from contract more than once"""
 #     scripts.feed_app_id = deployed_contract.feed_ids[0]
 #     feed_id = scripts.feed_app_id
 #     scripts.feed_app_address = get_application_address(feed_id)
->>>>>>> 2a4d801f5a9c24fb3cf1b978278710617fbce972
 
 #     scripts.stake()
 #     state = getAppGlobalState(client, deployed_contract.feed_id)
@@ -389,12 +348,7 @@ def test_withdraw_after_slashing(scripts: Scripts, accounts: Accounts, deployed_
     scripts.feed_app_address = get_application_address(feed_id)
 
     scripts.stake()
-<<<<<<< HEAD
-    state = getAppGlobalState(client, scripts.feed_app_id)
-=======
-    state = getAppGlobalState(client, deployed_contract.feed_ids[0])
-
->>>>>>> 2a4d801f5a9c24fb3cf1b978278710617fbce972
+    state = getAppGlobalState(client, feed_id)
     assert state[b"staking_status"] == 1
     scripts.slash_reporter(multisigaccounts_sk=accounts.multisig_signers_sk)  # 0 means reporter slashed
 
