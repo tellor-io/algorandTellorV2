@@ -1,3 +1,5 @@
+import time
+from typing import Optional, Union
 from typing import Any
 from typing import List
 from typing import Optional
@@ -9,6 +11,7 @@ from algosdk.atomic_transaction_composer import TransactionWithSigner
 from algosdk.future import transaction
 from algosdk.logic import get_application_address
 from algosdk.v2client.algod import AlgodClient
+from algosdk.future.transaction import Multisig
 
 from src.contracts.contracts import approval_program
 from src.contracts.contracts import clear_state_program
@@ -18,6 +21,8 @@ from src.utils.account import Account
 from src.utils.util import fullyCompileContract
 from src.utils.util import getAppGlobalState
 from src.utils.util import waitForTransaction
+from algosdk.future.transaction import create_dryrun
+
 
 APPROVAL_PROGRAM = b""
 CLEAR_STATE_PROGRAM = b""
@@ -43,7 +48,7 @@ class Scripts:
         client: AlgodClient,
         tipper: Account,
         reporter: Account,
-        governance_address: transaction.Multisig,
+        governance_address: Union[Account, Multisig],
         feed_app_id: Optional[int] = None,
         medianizer_app_id: Optional[int] = None,
         contract_count: Optional[int] = 1,
@@ -333,20 +338,36 @@ class Scripts:
         self.client.send_transaction(signedSubmitValueTxn)
         waitForTransaction(self.client, signedSubmitValueTxn.get_txid(), timeout=30)
 
-    def withdraw(self):
+    def withdraw(self, ff_time:int=0):
         """
         Sends the reporter their stake back and removes their permission to report
         calls withdraw() on the contract
         """
-        txn = transaction.ApplicationNoOpTxn(
-            sender=self.reporter.getAddress(),
-            index=self.feed_app_id,
-            app_args=[b"withdraw"],
-            sp=self.client.suggested_params(),
-        )
-        signedTxn = txn.sign(self.reporter.getPrivateKey())
-        self.client.send_transaction(signedTxn)
-        waitForTransaction(self.client, signedTxn.get_txid())
+
+        if ff_time == 0:
+            txn = transaction.ApplicationNoOpTxn(
+                sender=self.reporter.getAddress(),
+                index=self.feed_app_id,
+                app_args=[b"withdraw"],
+                sp=self.client.suggested_params(),
+            )
+            signedTxn = txn.sign(self.reporter.getPrivateKey())
+            self.client.send_transaction(signedTxn)
+            waitForTransaction(self.client, signedTxn.get_txid())
+        else:
+            txn = transaction.ApplicationNoOpTxn(
+                sender=self.reporter.getAddress(),
+                index=self.feed_app_id,
+                app_args=[b"withdraw"],
+                sp=self.client.suggested_params(),
+            )
+            signedTxn = txn.sign(self.reporter.getPrivateKey())
+            dr_request = create_dryrun(self.client, [txn], latest_timestamp= time.time() + ff_time)
+            dr_response = self.client.dryrun(dr_request)
+            dr_result = dr_request.DryrunResponse(dr_response)
+            for txn in dr_result.txns:
+                    if txn.app_call_rejected():
+                        print(txn.app_trace(dryrun_results.StackPrinterConfig(max_value_width=0)))
 
     def request_withdraw(self):
         """
