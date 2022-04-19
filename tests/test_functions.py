@@ -204,7 +204,7 @@ def test_tip(client, scripts:Scripts, accounts, deployed_contract:App):
     # require 3: revert if txn 1 is not a payment tx    
     with pytest.raises(AlgodHTTPError):
         payTxn = transaction.ApplicationNoOpTxn(
-                sender=accounts.bad_actor.getAddress(), receiver=scripts.add_address, app_args=[b"report"], sp=suggestedParams
+                sender=accounts.bad_actor.getAddress(), receiver=scripts.feed_app_address, app_args=[b"report"], sp=suggestedParams
             )
 
         no_op_txn = transaction.ApplicationNoOpTxn(
@@ -252,7 +252,9 @@ def test_slash_reporter(client, scripts:Scripts, accounts, deployed_contract:App
     """Test vote() method on contract"""
 
     scripts.feed_app_id = deployed_contract.feed_ids[0]
+    scripts.feed_app_address = get_application_address(scripts.feed_app_id)
     scripts.stake()
+    
     state = getAppGlobalState(client, deployed_contract.feed_ids[0])
     num_reports = state[b"num_reports"]
     scripts.vote(1)
@@ -296,6 +298,8 @@ def test_request_withdraw(client, scripts:Scripts, accounts, deployed_contract):
         scripts.request_withdraw()
 
     #stake reporter
+    scripts.feed_app_id = deployed_contract.feed_ids[0]
+    scripts.feed_app_address = get_application_address(scripts.feed_app_id)
     scripts.stake()
 
     #require 1: assert bad actor cant begin
@@ -338,6 +342,7 @@ def test_withdraw(client, scripts:Scripts, accounts, deployed_contract:App):
     assert state[b"staking_status"] == 0
 
     scripts.feed_app_id = deployed_contract.feed_ids[0]
+    scripts.feed_app_address = get_application_address(scripts.feed_app_id)
     scripts.stake()
     state = getAppGlobalState(client, deployed_contract.feed_ids[0])
 

@@ -101,8 +101,6 @@ def send_no_op_tx(
 
     # get suggested parameters
     params = algod_client.suggested_params()
-    print(type(params))
-    print(dict(params))
     # comment out the next two (2) lines to use suggested fees
     # params.flat_fee = True
     # params.fee = 1000
