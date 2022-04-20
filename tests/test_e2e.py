@@ -2,6 +2,7 @@ from time import time
 
 import pytest
 from algosdk import encoding
+from algosdk import constants
 from algosdk.algod import AlgodClient
 from algosdk.error import AlgodHTTPError
 from algosdk.future import transaction
@@ -384,3 +385,87 @@ def test_overflow_in_create(scripts: Scripts, accounts: Accounts, deployed_contr
             timestamp_freshness=3600,
             multisigaccounts_sk=accounts.multisig_signers_sk,
         )
+
+def test_reporter_clearing_algo_from_contract(scripts: Scripts, accounts: Accounts, deployed_contract, client):
+    """Reporter shouldn't empty contract of all ALGO on claiming a tip"""
+
+    tip_amt = 300000
+
+    # get app id and app address
+    scripts.feed_app_id = deployed_contract.feed_ids[0]
+    feed_id = scripts.feed_app_id
+    scripts.feed_app_address = get_application_address(feed_id)
+    app_address = scripts.feed_app_address
+
+    # get app balance before any staking
+    app_balance_b4_staking = client.account_info(app_address).get("amount")
+    
+    # assert that app doesn't have any balance initially
+    assert app_balance_b4_staking == 0
+    
+    # add tip to the contract
+    scripts.tip(tip_amt)
+
+    # check app balance after a tip has been added
+    app_balance_after_tipping = client.account_info(app_address).get("amount")
+    
+    # assert app balance is same as tip amount after a tip is added
+    assert app_balance_after_tipping == tip_amt
+    
+    # reporter adds a stake to the app
+    scripts.stake()
+    # get state of the after reporter stakes
+    state = getAppGlobalState(client, feed_id)
+    stake_amt = state[b"stake_amount"]
+
+    # check app balance after reporter adds stake
+    app_balance_after_staking = client.account_info(app_address).get("amount")
+    
+    # app balance should equal the tip amount plus stake amount
+    assert app_balance_after_staking == tip_amt + stake_amt
+
+    query_id = b"1"
+    value = 3500
+    timestamp = int(time() - 1000)
+
+    # reporter submits value and is tipped instantaneously
+    scripts.report(query_id, value, timestamp)
+
+    # get app balance after reporter submits a value
+    app_balance_after_report = client.account_info(app_address).get("amount")
+    
+    # app balance should be reduced by only the tip amount after reporter takes the tip
+    assert app_balance_after_report == tip_amt + stake_amt - tip_amt - constants.MIN_TXN_FEE*3
+
+
+
+def test_tip_amount_received_by_reporter(scripts: Scripts, accounts: Accounts, deployed_contract, client):
+    """Reporter receives correct tip amount on single tip"""
+
+    tip_amt = 300000
+    scripts.feed_app_id = deployed_contract.feed_ids[0]
+    feed_id = scripts.feed_app_id
+    scripts.feed_app_address = get_application_address(feed_id)
+
+    # tip added to feed app
+    scripts.tip(tip_amt)
+
+    # reporter stakes to become reporter
+    scripts.stake()
+
+    # get reporter balance before a report is submitted
+    reporter_balance_b4_tipping = client.account_info(accounts.reporter.getAddress()).get("amount")
+
+    query_id = b"1"
+    value = 3500
+    timestamp = int(time() - 1000)
+
+    # reporter submits a value
+    scripts.report(query_id, value, timestamp)
+
+    # get reporter balance after they submit a value
+    reporter_balance_after_tipping = client.account_info(accounts.reporter.getAddress()).get("amount")
+
+    # reporter balance should increase to 98 percent of tip amount
+    assert reporter_balance_after_tipping == (reporter_balance_b4_tipping + (tip_amt*.98)) - constants.MIN_TXN_FEE
+
