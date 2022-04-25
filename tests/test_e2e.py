@@ -5,14 +5,11 @@ from algosdk import encoding
 from algosdk import constants
 from algosdk.algod import AlgodClient
 from algosdk.error import AlgodHTTPError
-from algosdk.future import transaction
 from algosdk.logic import get_application_address
 
 from conftest import App
-from scripts.scripts import Scripts
 from src.scripts.scripts import Scripts
 from src.utils.accounts import Accounts
-from src.utils.testing.resources import getTemporaryAccount
 from src.utils.util import getAppGlobalState
 
 
@@ -469,3 +466,36 @@ def test_tip_amount_received_by_reporter(scripts: Scripts, accounts: Accounts, d
     # reporter balance should increase to 98 percent of tip amount
     assert reporter_balance_after_tipping == (reporter_balance_b4_tipping + (tip_amt*.98)) - constants.MIN_TXN_FEE
 
+def test_accuracy_bytes_slicing(scripts: Scripts, accounts: Accounts, deployed_contract:App, client):
+    """
+    After a report is submitted, the `last_value` global var
+    should contain an accurate value and timestamp
+    """
+
+    scripts.feed_app_id = deployed_contract.feed_ids[0]
+    feed_id = scripts.feed_app_id
+    scripts.feed_app_address = get_application_address(feed_id)
+
+    scripts.stake()
+
+    query_id = b"1"
+    value = 40000
+    timestamp = int(time())
+
+    scripts.report(query_id, value, timestamp)
+
+    state = getAppGlobalState(client, feed_id)
+
+    last_value_and_timestamp = encoding.base64.b64decode(str(state[b"last_value"]))
+    print(last_value_and_timestamp)
+
+    # assert len(last_value_and_timestamp) == 12
+
+    on_chain_value = last_value_and_timestamp[:6]
+    on_chain_timestamp = last_value_and_timestamp[-6:]
+
+    print(int(on_chain_value))
+    print(on_chain_timestamp)
+
+    assert int(encoding.base64.b64decode(on_chain_value)) == value
+    assert int(encoding.base64.b64decode(on_chain_timestamp)) == timestamp
