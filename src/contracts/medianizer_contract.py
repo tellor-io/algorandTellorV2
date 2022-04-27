@@ -87,11 +87,7 @@ def approval_program():
         return Seq(
             [
                 Assert(
-                    And(
-                        is_governance,
-                        Txn.application_args.length() == Int(2),
-                        Len(Txn.application_args[1]) == Int(32)
-                    )
+                    And(is_governance, Txn.application_args.length() == Int(2), Len(Txn.application_args[1]) == Int(32))
                 ),
                 App.globalPut(governance, Txn.application_args[1]),
                 Approve(),

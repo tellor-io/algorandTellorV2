@@ -1,16 +1,16 @@
-import pytest
 from time import time
+
+import pytest
+from algosdk import constants
+from algosdk import encoding
+from algosdk.algod import AlgodClient
+from algosdk.error import AlgodHTTPError
+from algosdk.logic import get_application_address
 
 from conftest import App
 from src.scripts.scripts import Scripts
 from src.utils.accounts import Accounts
 from src.utils.util import getAppGlobalState
-
-from algosdk import encoding
-from algosdk import constants
-from algosdk.algod import AlgodClient
-from algosdk.error import AlgodHTTPError
-from algosdk.logic import get_application_address
 
 
 def test_2_feeds(scripts: Scripts, deployed_contract: App, client: AlgodClient):
@@ -20,7 +20,7 @@ def test_2_feeds(scripts: Scripts, deployed_contract: App, client: AlgodClient):
     """
 
     value = 3500
-    timestamp = int(time()-500)
+    timestamp = int(time() - 500)
     median = (3500 + 3550) / 2
     for i in range(2):
         scripts.feed_app_id = deployed_contract.feed_ids[i]
@@ -53,7 +53,7 @@ def test_accuracy_bytes_slicing(scripts: Scripts, deployed_contract: App, client
 
     query_id = b"1"
     value = 40000
-    timestamp = int(time()-500)
+    timestamp = int(time() - 500)
 
     scripts.report(query_id, value, timestamp)
 
@@ -66,13 +66,13 @@ def test_accuracy_bytes_slicing(scripts: Scripts, deployed_contract: App, client
     on_chain_timestamp = last_value_and_timestamp[:8]
     on_chain_value = last_value_and_timestamp[8:]
 
-    assert int.from_bytes(on_chain_value, 'big') == value
-    assert int.from_bytes(on_chain_timestamp, 'big')  == timestamp
+    assert int.from_bytes(on_chain_value, "big") == value
+    assert int.from_bytes(on_chain_timestamp, "big") == timestamp
 
 
 def test_early_withdraw_attempt(scripts: Scripts, deployed_contract: App, client: AlgodClient):
     """
-    Shouldn't be able to withdraw stake from contract 
+    Shouldn't be able to withdraw stake from contract
     before the 1 day interval
     """
     scripts.feed_app_id = deployed_contract.feed_ids[0]
@@ -92,12 +92,12 @@ def test_early_withdraw_attempt(scripts: Scripts, deployed_contract: App, client
 
 def test_median_computation(scripts: Scripts, deployed_contract: App, client: AlgodClient):
     """
-    Medianizer -- deploy 5 feeds, submit to 5 feeds, 
+    Medianizer -- deploy 5 feeds, submit to 5 feeds,
     ensure median from contract matches median calculated from APIs
     """
 
     value = 3500
-    timestamp = int(time()-500)
+    timestamp = int(time() - 500)
     median_time = timestamp + 20
     median = 3600
     for i in deployed_contract.feed_ids:
@@ -124,7 +124,7 @@ def test_median_update(scripts: Scripts, deployed_contract: App, client: AlgodCl
     """
 
     value = 3500
-    timestamp = int(time()-500)
+    timestamp = int(time() - 500)
     timestamps = []
     for i in range(3):
         scripts.feed_app_id = deployed_contract.feed_ids[i]
@@ -141,66 +141,6 @@ def test_median_update(scripts: Scripts, deployed_contract: App, client: AlgodCl
     state = getAppGlobalState(client, deployed_contract.medianizer_id)
 
     assert state[b"median_timestamp"] == pytest.approx(timestamps[1], 200)
-
-
-def test_not_staked_report_attempt(scripts: Scripts, client: AlgodClient):
-    """
-    Accounts should not be permitted to report
-    if they have not send a stake to the contract
-    """
-
-    state = getAppGlobalState(client, scripts.feed_app_id)
-
-    assert state[b"staking_status"] == 0
-    assert state[b"reporter_address"] == b""
-
-
-def test_withdraw_after_request_withdraw(scripts: Scripts, accounts: Accounts, deployed_contract: App, client: AlgodClient):
-    """
-    Reporter cannot withdraw stake after initiating 
-    withdrawal before waiting a 24hr
-    """
-
-    scripts.feed_app_id = deployed_contract.feed_ids[0]
-    feed_id = scripts.feed_app_id
-    scripts.feed_app_address = get_application_address(feed_id)
-    scripts.stake()
-    scripts.request_withdraw()
-
-    state = getAppGlobalState(client, feed_id)
-
-    assert state[b"staking_status"] == 2
-    assert state[b"reporter_address"] == encoding.decode_address(accounts.reporter.getAddress())
-    with pytest.raises(AlgodHTTPError):
-        scripts.withdraw()
-
-
-def test_withdraw_before_request(scripts: Scripts, deployed_contract: App):
-    """Reporter cannot withdraw stake without requesting to withdraw"""
-
-    scripts.feed_app_id = deployed_contract.feed_ids[0]
-    feed_id = scripts.feed_app_id
-    scripts.feed_app_address = get_application_address(feed_id)
-    scripts.stake()
-    with pytest.raises(AlgodHTTPError):
-        scripts.withdraw()
-
-
-def test_report_after_request_withdraw(scripts: Scripts, deployed_contract: App):
-    """
-    reporter can't report after requesting to withdraw
-    """
-
-    scripts.feed_app_id = deployed_contract.feed_ids[0]
-    feed_id = scripts.feed_app_id
-    scripts.feed_app_address = get_application_address(feed_id)
-    scripts.stake()
-    scripts.request_withdraw()
-    query_id = "1"
-    value = 3500
-    timestamp = int(time())
-    with pytest.raises(AlgodHTTPError):
-        scripts.report(query_id, value, timestamp)
 
 
 def test_not_staked_report_attempt(scripts: Scripts, deployed_contract: App, client: AlgodClient):
@@ -277,6 +217,23 @@ def test_overflow_in_create(scripts: Scripts, accounts: Accounts):
         )
 
 
+def test_report_after_request_withdraw(scripts: Scripts, deployed_contract: App):
+    """
+    reporter can't report after requesting to withdraw
+    """
+
+    scripts.feed_app_id = deployed_contract.feed_ids[0]
+    feed_id = scripts.feed_app_id
+    scripts.feed_app_address = get_application_address(feed_id)
+    scripts.stake()
+    scripts.request_withdraw()
+    query_id = "1"
+    value = 3500
+    timestamp = int(time())
+    with pytest.raises(AlgodHTTPError):
+        scripts.report(query_id, value, timestamp)
+
+
 def test_report_wrong_query_id(scripts: Scripts, deployed_contract: App, client: AlgodClient):
     """
     Reporter should not be able to report to the wrong
@@ -299,23 +256,6 @@ def test_report_wrong_query_id(scripts: Scripts, deployed_contract: App, client:
     with pytest.raises(AlgodHTTPError):
         scripts.report(query_id, value, timestamp)
 
-# 
-def test_reporter_double_stake(scripts: Scripts, deployed_contract: App, client: AlgodClient):
-    """
-    An account shouln't be able to stake twice
-    """
-    scripts.feed_app_id = deployed_contract.feed_ids[0]
-    feed_id = scripts.feed_app_id
-    scripts.feed_app_address = get_application_address(feed_id)
-
-    scripts.stake()
-
-    state = getAppGlobalState(client, feed_id)
-    assert state[b"staking_status"] == 1  # if 1, account is now staked
-
-    with pytest.raises(AlgodHTTPError):
-        scripts.stake()
-
 
 def test_reporting_after_requesting_withdraw(scripts: Scripts, deployed_contract: App, client: AlgodClient):
     """
@@ -327,7 +267,7 @@ def test_reporting_after_requesting_withdraw(scripts: Scripts, deployed_contract
     scripts.feed_app_address = get_application_address(feed_id)
 
     scripts.stake()
-    
+
     scripts.request_withdraw()
     state = getAppGlobalState(client, feed_id)
 
@@ -358,23 +298,6 @@ def test_reporting_without_staking(scripts: Scripts, deployed_contract: App, cli
         scripts.report(query_id, value, timestamp)
 
 
-def test_request_withdraw_without_staking(scripts: Scripts, deployed_contract: App, client: AlgodClient):
-    """
-    Shouldn't be able to request a withdraw without staking
-    """
-    scripts.feed_app_id = deployed_contract.feed_ids[0]
-    feed_id = scripts.feed_app_id
-    scripts.feed_app_address = get_application_address(feed_id)
-
-    state = getAppGlobalState(client, deployed_contract.feed_ids[0])
-
-    assert state[b"staking_status"] == 0
-    assert state[b"reporter_address"] == b""
-
-    with pytest.raises(AlgodHTTPError):
-        scripts.request_withdraw()
-
-
 def test_reporter_clearing_algo_from_contract(scripts: Scripts, deployed_contract: App, client: AlgodClient):
     """
     Reporter shouldn't empty contract of all ALGO on claiming a tip
@@ -390,19 +313,19 @@ def test_reporter_clearing_algo_from_contract(scripts: Scripts, deployed_contrac
 
     # get app balance before any staking
     app_balance_b4_staking = client.account_info(app_address).get("amount")
-    
+
     # assert that app doesn't have any balance initially
     assert app_balance_b4_staking == 0
-    
+
     # add tip to the contract
     scripts.tip(tip_amt)
 
     # check app balance after a tip has been added
     app_balance_after_tipping = client.account_info(app_address).get("amount")
-    
+
     # assert app balance is same as tip amount after a tip is added
     assert app_balance_after_tipping == tip_amt
-    
+
     # reporter adds a stake to the app
     scripts.stake()
     # get state of the after reporter stakes
@@ -411,7 +334,7 @@ def test_reporter_clearing_algo_from_contract(scripts: Scripts, deployed_contrac
 
     # check app balance after reporter adds stake
     app_balance_after_staking = client.account_info(app_address).get("amount")
-    
+
     # app balance should equal the tip amount plus stake amount
     assert app_balance_after_staking == tip_amt + stake_amt
 
@@ -424,9 +347,81 @@ def test_reporter_clearing_algo_from_contract(scripts: Scripts, deployed_contrac
 
     # get app balance after reporter submits a value
     app_balance_after_report = client.account_info(app_address).get("amount")
-    
+
     # app balance should be reduced by only the tip amount after reporter takes the tip
-    assert app_balance_after_report == tip_amt + stake_amt - tip_amt - constants.MIN_TXN_FEE*3
+    assert app_balance_after_report == tip_amt + stake_amt - tip_amt - constants.MIN_TXN_FEE * 3
+
+
+#
+def test_reporter_double_stake(scripts: Scripts, deployed_contract: App, client: AlgodClient):
+    """
+    An account shouln't be able to stake twice
+    """
+    scripts.feed_app_id = deployed_contract.feed_ids[0]
+    feed_id = scripts.feed_app_id
+    scripts.feed_app_address = get_application_address(feed_id)
+
+    scripts.stake()
+
+    state = getAppGlobalState(client, feed_id)
+    assert state[b"staking_status"] == 1  # if 1, account is now staked
+
+    with pytest.raises(AlgodHTTPError):
+        scripts.stake()
+
+
+def test_reporter_tip_receipt(scripts: Scripts, accounts: Accounts, deployed_contract: App, client: AlgodClient):
+    """
+    Reporter receives correct tip amount after multiple consecutive tips
+    """
+    tip_amt = 300000
+
+    # get app id and app address
+    scripts.feed_app_id = deployed_contract.feed_ids[0]
+    feed_id = scripts.feed_app_id
+    scripts.feed_app_address = get_application_address(feed_id)
+
+    # add tip to the contract multiple times
+    scripts.tip(tip_amt)
+    scripts.tip(tip_amt)
+    scripts.tip(tip_amt)
+
+    # reporter adds a stake to the app
+    scripts.stake()
+
+    # get reporter balance before any reporting
+    reporter_balance_b4_staking = client.account_info(accounts.reporter.getAddress()).get("amount")
+
+    query_id = b"1"
+    value = 3500
+    timestamp = int(time() - 1000)
+
+    # reporter submits value and is tipped instantaneously
+    scripts.report(query_id, value, timestamp)
+
+    # get reporter balance after submiting a value
+    reporter_balance_after_report = client.account_info(accounts.reporter.getAddress()).get("amount")
+
+    # reporter balance should increase by 3 times the tip amount minus 2% fee
+    tip_amt = (tip_amt * 98) / 100
+    assert reporter_balance_after_report == reporter_balance_b4_staking + (tip_amt * 3) - constants.MIN_TXN_FEE
+
+
+def test_request_withdraw_without_staking(scripts: Scripts, deployed_contract: App, client: AlgodClient):
+    """
+    Shouldn't be able to request a withdraw without staking
+    """
+    scripts.feed_app_id = deployed_contract.feed_ids[0]
+    feed_id = scripts.feed_app_id
+    scripts.feed_app_address = get_application_address(feed_id)
+
+    state = getAppGlobalState(client, deployed_contract.feed_ids[0])
+
+    assert state[b"staking_status"] == 0
+    assert state[b"reporter_address"] == b""
+
+    with pytest.raises(AlgodHTTPError):
+        scripts.request_withdraw()
 
 
 def test_stake_amount(scripts: Scripts, deployed_contract: App, client: AlgodClient):
@@ -450,7 +445,9 @@ def test_stake_amount(scripts: Scripts, deployed_contract: App, client: AlgodCli
         scripts.stake(stake_amount=stake_amount - 10)
 
 
-def test_tip_amount_received_by_reporter(scripts: Scripts, accounts: Accounts, deployed_contract: App, client: AlgodClient):
+def test_tip_amount_received_by_reporter(
+    scripts: Scripts, accounts: Accounts, deployed_contract: App, client: AlgodClient
+):
     """
     Reporter receives correct tip amount on single tip
     """
@@ -480,7 +477,40 @@ def test_tip_amount_received_by_reporter(scripts: Scripts, accounts: Accounts, d
     reporter_balance_after_tipping = client.account_info(accounts.reporter.getAddress()).get("amount")
 
     # reporter balance should increase to 98 percent of tip amount
-    assert reporter_balance_after_tipping == (reporter_balance_b4_tipping + (tip_amt*.98)) - constants.MIN_TXN_FEE
+    assert reporter_balance_after_tipping == (reporter_balance_b4_tipping + (tip_amt * 0.98)) - constants.MIN_TXN_FEE
+
+
+def test_withdraw_after_request_withdraw(
+    scripts: Scripts, accounts: Accounts, deployed_contract: App, client: AlgodClient
+):
+    """
+    Reporter cannot withdraw stake after initiating
+    withdrawal before waiting a 24hr
+    """
+
+    scripts.feed_app_id = deployed_contract.feed_ids[0]
+    feed_id = scripts.feed_app_id
+    scripts.feed_app_address = get_application_address(feed_id)
+    scripts.stake()
+    scripts.request_withdraw()
+
+    state = getAppGlobalState(client, feed_id)
+
+    assert state[b"staking_status"] == 2
+    assert state[b"reporter_address"] == encoding.decode_address(accounts.reporter.getAddress())
+    with pytest.raises(AlgodHTTPError):
+        scripts.withdraw()
+
+
+def test_withdraw_before_request(scripts: Scripts, deployed_contract: App):
+    """Reporter cannot withdraw stake without requesting to withdraw"""
+
+    scripts.feed_app_id = deployed_contract.feed_ids[0]
+    feed_id = scripts.feed_app_id
+    scripts.feed_app_address = get_application_address(feed_id)
+    scripts.stake()
+    with pytest.raises(AlgodHTTPError):
+        scripts.withdraw()
 
 
 def test_withdraw_after_slashing(scripts: Scripts, accounts: Accounts, deployed_contract: App, client: AlgodClient):

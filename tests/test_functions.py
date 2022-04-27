@@ -1,10 +1,9 @@
-import time
 from time import time
-from algosdk.algod import AlgodClient
 
 import pytest
 from algosdk import constants
 from algosdk import encoding
+from algosdk.algod import AlgodClient
 from algosdk.error import AlgodHTTPError
 from algosdk.future import transaction
 from algosdk.logic import get_application_address
@@ -52,8 +51,7 @@ def test_change_governance(client: AlgodClient, accounts: Accounts, deployed_con
             sender=accounts.bad_actor.getAddress(),
             app_args=["change_governance", encoding.decode_address(new_gov_address)],
             sp=client.suggested_params(),
-            index=deployed_contract.feed_ids[0]
-
+            index=deployed_contract.feed_ids[0],
         )
 
         signedTxn = txn.sign(accounts.bad_actor.getPrivateKey())
@@ -61,7 +59,7 @@ def test_change_governance(client: AlgodClient, accounts: Accounts, deployed_con
         waitForTransaction(client, signedTxn.get_txid(), timeout=30)
 
 
-def test_change_governance(client: AlgodClient, accounts: Accounts, deployed_contract: App):
+def test_change_governance_medianizer(client: AlgodClient, accounts: Accounts, deployed_contract: App):
     """
     Test change_governance method on medianizer
     """
@@ -77,8 +75,7 @@ def test_change_governance(client: AlgodClient, accounts: Accounts, deployed_con
             sender=accounts.bad_actor.getAddress(),
             app_args=["change_governance", encoding.decode_address(new_gov_address)],
             sp=client.suggested_params(),
-            index=deployed_contract.medianizer_id
-
+            index=deployed_contract.medianizer_id,
         )
 
         signedTxn = txn.sign(accounts.bad_actor.getPrivateKey())
@@ -89,10 +86,9 @@ def test_change_governance(client: AlgodClient, accounts: Accounts, deployed_con
     with pytest.raises(AlgodHTTPError):
         txn = transaction.ApplicationNoOpTxn(
             sender=accounts.governance.address(),
-            app_args=["change_governance",""],
+            app_args=["change_governance", ""],
             sp=client.suggested_params(),
-            index=deployed_contract.medianizer_id
-
+            index=deployed_contract.medianizer_id,
         )
 
         mtx = transaction.MultisigTransaction(txn, accounts.governance)
@@ -104,12 +100,11 @@ def test_change_governance(client: AlgodClient, accounts: Accounts, deployed_con
 
     # assert governance should be a different address
     txn = transaction.ApplicationNoOpTxn(
-            sender=accounts.governance.address(),
-            app_args=["change_governance", encoding.decode_address(new_gov_address)],
-            sp=client.suggested_params(),
-            index=deployed_contract.medianizer_id
-
-        )
+        sender=accounts.governance.address(),
+        app_args=["change_governance", encoding.decode_address(new_gov_address)],
+        sp=client.suggested_params(),
+        index=deployed_contract.medianizer_id,
+    )
 
     mtx = transaction.MultisigTransaction(txn, accounts.governance)
     for i in accounts.multisig_signers_sk:
@@ -126,7 +121,7 @@ def test_change_medianizer(client: AlgodClient, accounts: Accounts, deployed_con
     state = getAppGlobalState(client, deployed_contract.feed_ids[0])
     old_medianizer_id = state[b"medianizer"]
     assert old_medianizer_id == deployed_contract.medianizer_id
-    
+
     new_medianizer_id = 1234
 
     # require 1: should revert if not called by current governance address
@@ -134,7 +129,7 @@ def test_change_medianizer(client: AlgodClient, accounts: Accounts, deployed_con
         txn = transaction.ApplicationNoOpTxn(
             accounts.bad_actor.getAddress(),
             client.suggested_params(),
-            app_args=["change_medianizer",new_medianizer_id],
+            app_args=["change_medianizer", new_medianizer_id],
             index=deployed_contract.feed_ids[0],
         )
 
@@ -262,7 +257,7 @@ def test_slash_reporter(client: AlgodClient, scripts: Scripts, accounts: Account
     scripts.stake()
 
     state = getAppGlobalState(client, deployed_contract.feed_ids[0])
-    state[b"staking_status"] == 1
+    assert state[b"staking_status"] == 1
     governance_algo_balance_before = client.account_info(accounts.governance.address()).get("amount")
 
     scripts.slash_reporter(multisigaccounts_sk=accounts.multisig_signers_sk)
@@ -273,7 +268,8 @@ def test_slash_reporter(client: AlgodClient, scripts: Scripts, accounts: Account
     assert state[b"staking_status"] == 0
     assert state[b"reporter_address"] == b""
     assert governance_algo_balance_after == governance_algo_balance_before + state[b"stake_amount"] - (
-        2 * constants.MIN_TXN_FEE)
+        2 * constants.MIN_TXN_FEE
+    )
 
 
 def test_stake(client: AlgodClient, scripts: Scripts, accounts: Accounts, deployed_contract: App):

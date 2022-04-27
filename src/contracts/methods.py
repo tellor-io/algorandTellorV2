@@ -43,14 +43,14 @@ def create():
         [
             App.globalPut(governance_address, Txn.sender()),  # governance multisig
             App.globalPut(tip_amount, Int(0)),
-            App.globalPut(query_id, Txn.application_args[0]), # query id to report
-            App.globalPut(query_data, Txn.application_args[1]), # query data descriptor
+            App.globalPut(query_id, Txn.application_args[0]),  # query id to report
+            App.globalPut(query_data, Txn.application_args[1]),  # query data descriptor
             App.globalPut(medianizer, Btoi(Txn.application_args[2])),
             App.globalPut(reporter, Bytes("")),
             App.globalPut(staking_status, Int(0)),  # 0-not Staked, 1=Staked
             App.globalPut(values, Bytes("base64", "")),
             App.globalPut(timestamps, Bytes("base64", "")),
-            App.globalPut(timestamp_freshness, Btoi(Txn.application_args[3])),  # to check age of timestamp against 
+            App.globalPut(timestamp_freshness, Btoi(Txn.application_args[3])),  # to check age of timestamp against
             App.globalPut(lock_timestamp, Int(0)),
             App.globalPut(stake_amount, Int(200000)),  # 200 ALGOs stake amount
             Approve(),
@@ -70,11 +70,7 @@ def change_governance():
     return Seq(
         [
             Assert(
-                And(
-                    is_governance,
-                    Txn.application_args.length() == Int(2),
-                    Len(Txn.application_args[1]) == Int(32)
-                )
+                And(is_governance, Txn.application_args.length() == Int(2), Len(Txn.application_args[1]) == Int(32))
             ),
             App.globalPut(governance_address, Txn.application_args[1]),
             Approve(),
@@ -195,18 +191,17 @@ def report():
             add_value(),
             add_timestamp(),
             App.globalPut(Bytes("last_value"), Concat(last_timestamp.load(), last_value.load())),
-            
             # inner transaction builder triggered when reports submits a value
             InnerTxnBuilder.Begin(),
             InnerTxnBuilder.SetFields(
                 {
-            # triggers medianizer function to pull values from all the feeds
-            # and pick median
+                    # triggers medianizer function to pull values from all the feeds
+                    # and pick median
                     TxnField.type_enum: TxnType.ApplicationCall,
                     TxnField.application_id: App.globalGet(medianizer),
                     TxnField.application_args: [Bytes("get_values")],
                     TxnField.applications: [
-                    # applications array for feed ids for passing to medianizer
+                        # applications array for feed ids for passing to medianizer
                         Txn.applications[1],
                         Txn.applications[2],
                         Txn.applications[3],
@@ -369,8 +364,7 @@ def withdraw():
                 And(
                     is_reporter,
                     # check reporter waited a day from request before withdrawing stake
-                    Global.latest_timestamp() - App.globalGet(lock_timestamp)
-                    > Int(86400),
+                    Global.latest_timestamp() - App.globalGet(lock_timestamp) > Int(86400),
                     App.globalGet(staking_status) == Int(2),
                 )
             ),
@@ -380,8 +374,8 @@ def withdraw():
             # send funds back to reporter (the sender) w/ inner tx
             InnerTxnBuilder.Begin(),
             InnerTxnBuilder.SetFields(
-                {   # send contract balance to reporter since only one staker
-                # TODO: WILL THIS LOCK THE CONTRACT?!
+                {  # send contract balance to reporter since only one staker
+                    # TODO: WILL THIS LOCK THE CONTRACT?!
                     TxnField.type_enum: TxnType.Payment,
                     TxnField.close_remainder_to: App.globalGet(reporter),
                 }
