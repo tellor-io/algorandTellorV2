@@ -6,9 +6,7 @@ query_id = Bytes("query_id")
 query_data = Bytes("query_data")
 staking_status = Bytes("staking_status")
 reporter = Bytes("reporter_address")
-timestamps = Bytes("timestamps")
 timestamp_freshness = Bytes("timestamp_freshness")
-values = Bytes("values")
 tip_amount = Bytes("tip_amount")
 lock_timestamp = Bytes("lock_timestamp")
 medianizer = Bytes("medianizer")
@@ -48,8 +46,6 @@ def create():
             App.globalPut(medianizer, Btoi(Txn.application_args[2])),
             App.globalPut(reporter, Bytes("")),
             App.globalPut(staking_status, Int(0)),  # 0-not Staked, 1=Staked
-            App.globalPut(values, Bytes("base64", "")),
-            App.globalPut(timestamps, Bytes("base64", "")),
             App.globalPut(timestamp_freshness, Btoi(Txn.application_args[3])),  # to check age of timestamp against
             App.globalPut(lock_timestamp, Int(0)),
             App.globalPut(stake_amount, Int(200000)),  # 200 ALGOs stake amount
@@ -121,16 +117,6 @@ def report():
         return Seq(
             [
                 last_timestamp.store(Txn.application_args[3]),
-                If(
-                    Len(App.globalGet(timestamps)) + Int(6) >= Int(128) - Len(timestamps),
-                    Seq(
-                        [
-                            App.globalPut(timestamps, Substring(App.globalGet(timestamps), Int(6), Int(128))),
-                            App.globalPut(timestamps, Concat(App.globalGet(timestamps), Txn.application_args[3])),
-                        ]
-                    ),
-                    App.globalPut(timestamps, Concat(App.globalGet(timestamps), Txn.application_args[3])),
-                ),
             ]
         )
 
@@ -139,34 +125,6 @@ def report():
         return Seq(
             [
                 last_value.store(Txn.application_args[2]),
-                If(
-                    Len(App.globalGet(values)) + Int(6) >= Int(128) - Len(values),
-                    Seq(
-                        [
-                            App.globalPut(values, Substring(App.globalGet(values), Int(6), Int(128))),
-                            App.globalPut(values, Concat(App.globalGet(values), Txn.application_args[2])),
-                        ]
-                    ),
-                    App.globalPut(values, Concat(App.globalGet(values), Txn.application_args[2])),
-                ),
-            ]
-        )
-
-    def get_last_timestamp():
-        """helper function to get last timestamp"""
-        return Seq(
-            [
-                If(
-                    App.globalGet(timestamps) == Bytes(""),
-                    last_timestamp.store(Bytes("0")),
-                    last_timestamp.store(
-                        Substring(
-                            App.globalGet(timestamps),
-                            Len(App.globalGet(timestamps)) - Int(6),
-                            Len(App.globalGet(timestamps)),
-                        )
-                    ),
-                )
             ]
         )
 
@@ -187,7 +145,6 @@ def report():
                     App.globalGet(query_id) == Txn.application_args[1],
                 )
             ),
-            get_last_timestamp(),
             add_value(),
             add_timestamp(),
             App.globalPut(Bytes("last_value"), Concat(last_timestamp.load(), last_value.load())),
