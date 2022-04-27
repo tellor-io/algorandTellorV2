@@ -10,7 +10,7 @@ timestamps = Bytes("timestamps")
 timestamp_freshness = Bytes("timestamp_freshness")
 values = Bytes("values")
 tip_amount = Bytes("tip_amount")
-stake_timestamp = Bytes("stake_timestamp")
+lock_timestamp = Bytes("lock_timestamp")
 medianizer = Bytes("medianizer")
 is_governance = Txn.sender() == App.globalGet(governance_address)
 is_reporter = Txn.sender() == App.globalGet(reporter)
@@ -41,19 +41,18 @@ def create():
     """
     return Seq(
         [
-            App.globalPut(governance_address, Txn.sender()),
+            App.globalPut(governance_address, Txn.sender()),  # governance multisig
             App.globalPut(tip_amount, Int(0)),
-            App.globalPut(query_id, Txn.application_args[0]),
-            App.globalPut(query_data, Txn.application_args[1]),
+            App.globalPut(query_id, Txn.application_args[0]), # query id to report
+            App.globalPut(query_data, Txn.application_args[1]), # query data descriptor
             App.globalPut(medianizer, Btoi(Txn.application_args[2])),
-            # 0-not Staked, 1=Staked
             App.globalPut(reporter, Bytes("")),
-            App.globalPut(staking_status, Int(0)),
+            App.globalPut(staking_status, Int(0)),  # 0-not Staked, 1=Staked
             App.globalPut(values, Bytes("base64", "")),
             App.globalPut(timestamps, Bytes("base64", "")),
-            App.globalPut(timestamp_freshness, Btoi(Txn.application_args[3])),
-            App.globalPut(stake_timestamp, Int(0)),
-            App.globalPut(stake_amount, Int(200000)),  # 200 dollars of ALGO
+            App.globalPut(timestamp_freshness, Btoi(Txn.application_args[3])),  # to check age of timestamp against 
+            App.globalPut(lock_timestamp, Int(0)),
+            App.globalPut(stake_amount, Int(200000)),  # 200 ALGOs stake amount
             Approve(),
         ]
     )
@@ -74,6 +73,7 @@ def change_governance():
                 And(
                     is_governance,
                     Txn.application_args.length() == Int(2),
+                    Len(Txn.application_args[1]) == Int(32)
                 )
             ),
             App.globalPut(governance_address, Txn.application_args[1]),
@@ -120,24 +120,8 @@ def report():
     last_timestamp = ScratchVar(TealType.bytes)
     last_value = ScratchVar(TealType.bytes)
 
-    def add_value():
-        return Seq(
-            [
-                last_value.store(Txn.application_args[2]),
-                If(
-                    Len(App.globalGet(values)) + Int(6) >= Int(128) - Len(values),
-                    Seq(
-                        [
-                            App.globalPut(values, Substring(App.globalGet(values), Int(6), Int(128))),
-                            App.globalPut(values, Concat(App.globalGet(values), Txn.application_args[2])),
-                        ]
-                    ),
-                    App.globalPut(values, Concat(App.globalGet(values), Txn.application_args[2])),
-                ),
-            ]
-        )
-
     def add_timestamp():
+        """helper function to add timestamp"""
         return Seq(
             [
                 last_timestamp.store(Txn.application_args[3]),
@@ -154,7 +138,26 @@ def report():
             ]
         )
 
+    def add_value():
+        """helper function to add value"""
+        return Seq(
+            [
+                last_value.store(Txn.application_args[2]),
+                If(
+                    Len(App.globalGet(values)) + Int(6) >= Int(128) - Len(values),
+                    Seq(
+                        [
+                            App.globalPut(values, Substring(App.globalGet(values), Int(6), Int(128))),
+                            App.globalPut(values, Concat(App.globalGet(values), Txn.application_args[2])),
+                        ]
+                    ),
+                    App.globalPut(values, Concat(App.globalGet(values), Txn.application_args[2])),
+                ),
+            ]
+        )
+
     def get_last_timestamp():
+        """helper function to get last timestamp"""
         return Seq(
             [
                 If(
@@ -178,8 +181,8 @@ def report():
             medianizer_query_id,
             Assert(
                 And(
-                    Minus(Global.latest_timestamp(), Btoi(Txn.application_args[3]))
-                    < App.globalGet(timestamp_freshness),
+                    # Minus(Global.latest_timestamp(), Btoi(Txn.application_args[3]))
+                    # < App.globalGet(timestamp_freshness),
                     Txn.applications[6] == App.globalGet(medianizer),
                     medianizer_query_id.hasValue(),
                     App.globalGet(query_id) == medianizer_query_id.value(),
@@ -189,18 +192,21 @@ def report():
                 )
             ),
             get_last_timestamp(),
-            # App.globalPut(values, Txn.application_args[2]),
-            # App.globalPut(timestamps, Int(int(time.time()))),
             add_value(),
             add_timestamp(),
             App.globalPut(Bytes("last_value"), Concat(last_timestamp.load(), last_value.load())),
+            
+            # inner transaction builder triggered when reports submits a value
             InnerTxnBuilder.Begin(),
             InnerTxnBuilder.SetFields(
                 {
+            # triggers medianizer function to pull values from all the feeds
+            # and pick median
                     TxnField.type_enum: TxnType.ApplicationCall,
                     TxnField.application_id: App.globalGet(medianizer),
                     TxnField.application_args: [Bytes("get_values")],
                     TxnField.applications: [
+                    # applications array for feed ids for passing to medianizer
                         Txn.applications[1],
                         Txn.applications[2],
                         Txn.applications[3],
@@ -251,9 +257,7 @@ def stake():
         [
             Assert(
                 And(
-                    # TODO: assert staking_status Int(0) and reporter Bytes("") to allow other reporter if in withdrawal stage
-                    App.globalGet(reporter)
-                    == Bytes(""),  # TODO: blocks other reporters to stake when reporter is in withdrawal process
+                    App.globalGet(reporter) == Bytes(""),
                     Gtxn[on_stake_tx_index].sender() == Txn.sender(),
                     Gtxn[on_stake_tx_index].receiver() == Global.current_application_address(),
                     Gtxn[on_stake_tx_index].amount() == App.globalGet(stake_amount),
@@ -261,7 +265,6 @@ def stake():
                 ),
             ),
             App.globalPut(staking_status, Int(1)),
-            # App.globalPut(stake_timestamp, Global.latest_timestamp()),
             App.globalPut(reporter, Gtxn[on_stake_tx_index].sender()),
             Approve(),
         ]
@@ -292,50 +295,10 @@ def tip():
     )
 
 
-def withdraw():
-    """
-    sends the reporter's stake back to their address
-    removes their permission to report data
-
-    solidity equivalent: withdrawStake()
-
-    Txn args:
-    0) will always equal "withdraw"
-
-    """
-    return Seq(
-        [
-            Assert(
-                And(
-                    is_reporter,
-                    Global.latest_timestamp() - App.globalGet(stake_timestamp)
-                    > Int(604800),  # assert the reporter's stake has been locked for 7 days since withdrawal request
-                    App.globalGet(staking_status) == Int(2),
-                )
-            ),
-            # change locked status to unstaked
-            App.globalPut(staking_status, Int(0)),
-            App.globalPut(stake_timestamp, Int(0)),
-            # send funds back to reporter (the sender) w/ inner tx
-            InnerTxnBuilder.Begin(),
-            InnerTxnBuilder.SetFields(
-                {
-                    TxnField.type_enum: TxnType.Payment,
-                    # TxnField.amount: App.globalGet(stake_amount),
-                    TxnField.close_remainder_to: App.globalGet(reporter),
-                    # TxnField.applications: Txn.applications,
-                }
-            ),
-            InnerTxnBuilder.Submit(),
-            Approve(),
-        ]
-    )
-
-
 def request_withdraw():
     """
     reporter has to request withdrawal and
-    lock their balance for 7 days
+    lock their balance for a day
     before they can withdraw their stake
 
     Txn args:
@@ -348,11 +311,11 @@ def request_withdraw():
                 And(
                     is_reporter,
                     App.globalGet(staking_status) == Int(1),  # is staked
-                    App.globalGet(stake_timestamp) == Int(0),  # first time requesting to withdraw
+                    App.globalGet(lock_timestamp) == Int(0),  # first time requesting to withdraw
                 )
             ),
-            App.globalPut(stake_timestamp, Global.latest_timestamp()),  # start staking time interval
-            App.globalPut(staking_status, Int(2)),  # status = 2 means your stake is in a locked state for 7 days
+            App.globalPut(lock_timestamp, Global.latest_timestamp()),  # start staking time lock
+            App.globalPut(staking_status, Int(2)),  # status 2) locked status
             Approve(),
         ]
     )
@@ -384,6 +347,46 @@ def slash_reporter():
             InnerTxnBuilder.Submit(),
             App.globalPut(staking_status, Int(0)),
             App.globalPut(reporter, Bytes("")),
+            Approve(),
+        ]
+    )
+
+
+def withdraw():
+    """
+    sends the reporter's stake back to their address
+    removes their permission to report data
+
+    solidity equivalent: withdrawStake()
+
+    Txn args:
+    0) will always equal "withdraw"
+
+    """
+    return Seq(
+        [
+            Assert(
+                And(
+                    is_reporter,
+                    # check reporter waited a day from request before withdrawing stake
+                    Global.latest_timestamp() - App.globalGet(lock_timestamp)
+                    > Int(86400),
+                    App.globalGet(staking_status) == Int(2),
+                )
+            ),
+            # change locked status to unstaked
+            App.globalPut(staking_status, Int(0)),
+            App.globalPut(lock_timestamp, Int(0)),
+            # send funds back to reporter (the sender) w/ inner tx
+            InnerTxnBuilder.Begin(),
+            InnerTxnBuilder.SetFields(
+                {   # send contract balance to reporter since only one staker
+                # TODO: WILL THIS LOCK THE CONTRACT?!
+                    TxnField.type_enum: TxnType.Payment,
+                    TxnField.close_remainder_to: App.globalGet(reporter),
+                }
+            ),
+            InnerTxnBuilder.Submit(),
             Approve(),
         ]
     )

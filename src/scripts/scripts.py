@@ -234,7 +234,7 @@ class Scripts:
         print(f"Medianizer active, tx hash: {tx_id}")
         return tx_id
 
-    def set_medianizer(self, multisigaccounts_sk: List[Any]) -> List[int]:
+    def change_medianizer(self, multisigaccounts_sk: List[Any]) -> List[int]:
         txn_ids = []
         for i in self.feeds:
             comp = AtomicTransactionComposer()
@@ -359,16 +359,16 @@ class Scripts:
                 sp=self.client.suggested_params(),
             )
             signedTxn = txn.sign(self.reporter.getPrivateKey())
-            dr_request = create_dryrun(self.client, [txn], latest_timestamp=time.time() + ff_time)
+            dr_request = create_dryrun(self.client, [signedTxn], latest_timestamp=time.time() + ff_time)
             dr_response = self.client.dryrun(dr_request)
             dr_result = dr_request.DryrunResponse(dr_response)
             for txn in dr_result.txns:
                 if txn.app_call_rejected():
-                    print(txn.app_trace(dryrun_results.StackPrinterConfig(max_value_width=0)))
+                    print(txn.app_trace(dr_result.StackPrinterConfig(max_value_width=0)))
 
     def request_withdraw(self):
         """
-        locks reporter for 7 days before being allowed to withdraw stake
+        locks reporter for 1 day before being allowed to withdraw stake
         """
         txn = transaction.ApplicationNoOpTxn(
             sender=self.reporter.getAddress(),
@@ -382,7 +382,7 @@ class Scripts:
 
     def withdraw_dry(self, txns: List = [], timestamp: int = 0):
         """
-        locks reporter for 7 days before being allowed to withdraw stake
+        locks reporter for 1 day before being allowed to withdraw stake
         """
         txn = transaction.ApplicationNoOpTxn(
             sender=self.reporter.getAddress(),
@@ -391,7 +391,7 @@ class Scripts:
             sp=self.client.suggested_params(),
         )
         signedTxn = txn.sign(self.reporter.getPrivateKey())
-        dryrun = transaction.create_dryrun(client=self.client, txns=[signedTxn] + txns, latest_timestamp=timestamp)
+        dryrun = transaction.create_dryrun(client=self.client, txns=[signedTxn], latest_timestamp=timestamp)
         dryrun_response = self.client.dryrun(dryrun)
 
         return dryrun_response

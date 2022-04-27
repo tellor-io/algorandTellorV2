@@ -90,6 +90,7 @@ def approval_program():
                     And(
                         is_governance,
                         Txn.application_args.length() == Int(2),
+                        Len(Txn.application_args[1]) == Int(32)
                     )
                 ),
                 App.globalPut(governance, Txn.application_args[1]),

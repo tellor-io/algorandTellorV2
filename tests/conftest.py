@@ -89,7 +89,7 @@ def deployed_contract(accounts, client, scripts):
             b"timestamps": b"",
             b"stake_amount": 200000,
             b"staking_status": 0,
-            b"stake_timestamp": 0,
+            b"lock_timestamp": 0,
             b"reporter_address": b"",
             b"values": b"",
             b"tip_amount": 0,
@@ -102,7 +102,7 @@ def deployed_contract(accounts, client, scripts):
     )
 
     scripts.activate_contract(multisigaccounts_sk=accounts.multisig_signers_sk)
-    scripts.set_medianizer(multisigaccounts_sk=accounts.multisig_signers_sk)
+    scripts.change_medianizer(multisigaccounts_sk=accounts.multisig_signers_sk)
 
     medianizerState = getAppGlobalState(client, medianizerAppID)
     feedState1 = getAppGlobalState(client, feedAppIDs[0])
