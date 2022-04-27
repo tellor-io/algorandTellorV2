@@ -1,6 +1,5 @@
 from algosdk.future.transaction import Multisig
 
-from src.utils.testing.resources import fundAccount
 from src.utils.testing.resources import getTemporaryAccount
 
 

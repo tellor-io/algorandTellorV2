@@ -41,7 +41,7 @@ medianizer_id = scripts.deploy_medianizer(
     timestamp_freshness=timestamp_freshness, query_id=query_id, multisigaccounts_sk=multisigaccounts_sk
 )
 activate_medianizer = scripts.activate_contract(multisigaccounts_sk=multisigaccounts_sk)
-connect_feeds_medianizer = scripts.set_medianizer(multisigaccounts_sk=multisigaccounts_sk)
+connect_feeds_medianizer = scripts.change_medianizer(multisigaccounts_sk=multisigaccounts_sk)
 
 print("5 feed contracts deployed! application id: ", feed_ids)
 print("medianizer contract deployed! application id: ", medianizer_id)
@@ -119,14 +119,14 @@ for i in range(3):
     print("---------------")
     good_value += 500
 
-print(f"reporter trying to withdraw stake...")
+print("reporter trying to withdraw stake...")
 try:
     scripts.withdraw()
 except AlgodHTTPError:
-    print(f"Error: need to request a withdraw and wait 7 days to withdraw ...")
+    print("Error: need to request a withdraw and wait 7 days to withdraw ...")
 print("---------------")
 
-print(f"reporter requesting to withdraw")
+print("reporter requesting to withdraw")
 scripts.request_withdraw()
 state = getAppGlobalState(client, appID=feed_ids[i])
 reporter = state[b"reporter_address"]
@@ -134,7 +134,7 @@ staking_status = state[b"staking_status"]
 print(f"reporter has requested withdrawal, staking status is now {staking_status}")
 print("---------------")
 
-print(f"reporter trying to withdraw immediately after request ...")
+print("reporter trying to withdraw immediately after request ...")
 try:
     scripts.withdraw()
 except AlgodHTTPError:

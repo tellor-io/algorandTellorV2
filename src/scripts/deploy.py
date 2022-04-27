@@ -72,11 +72,11 @@ def deploy(query_id: str, query_data: str, timestamp_freshness: int, network: st
 
     activate_medianizer = s.activate_contract(multisigaccounts_sk=multisig_accounts_sk)
 
-    set_medianizer = s.set_medianizer(multisigaccounts_sk=multisig_accounts_sk)
+    change_medianizer = s.change_medianizer(multisigaccounts_sk=multisig_accounts_sk)
     print(f"TellorFlex App deployed on {network}. App id: {tellor_flex_app_id}")
     print(f"Medianizer App deployed on {network}. App id: {medianizer_app_id}")
     print(f"Medianizer activate, Txn id: {activate_medianizer}")
-    print(f"Set Medianizer on feeds, Txn id: {set_medianizer}")
+    print(f"Set Medianizer on feeds, Txn id: {change_medianizer}")
     # print("please update config.yaml with new app_id.")
 
 

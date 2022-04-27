@@ -1,10 +1,9 @@
-import base64
-import time
 from time import time
 
 import pytest
 from algosdk import constants
 from algosdk import encoding
+from algosdk.algod import AlgodClient
 from algosdk.error import AlgodHTTPError
 from algosdk.future import transaction
 from algosdk.logic import get_application_address
@@ -12,14 +11,15 @@ from algosdk.logic import get_application_address
 from conftest import App
 from src.scripts.scripts import Scripts
 from src.utils.accounts import Accounts
-from src.utils.senders import send_no_op_tx
 from src.utils.testing.resources import getTemporaryAccount
 from src.utils.util import getAppGlobalState
 from src.utils.util import waitForTransaction
 
 
-def test_activate_contract(client, scripts: Scripts, accounts, deployed_contract):
-    """Test activate_contract method on medianizer_contract"""
+def test_activate_contract(client: AlgodClient, accounts: Accounts, deployed_contract: App):
+    """
+    Test activate_contract method on medianizer_contract
+    """
 
     medianzier_state = getAppGlobalState(client, deployed_contract.medianizer_id)
     n = 1
@@ -35,73 +35,113 @@ def test_activate_contract(client, scripts: Scripts, accounts, deployed_contract
     assert medianzier_state[b"governance"] == encoding.decode_address(accounts.governance.address())
 
 
-def test_change_governance(client, scripts: Scripts, accounts, deployed_contract: App):
-
+def test_change_governance(client: AlgodClient, accounts: Accounts, deployed_contract: App):
+    """
+    Test change_governance method on feed
+    """
     state = getAppGlobalState(client, deployed_contract.feed_ids[0])
     old_gov_address = state[b"governance_address"]
-    new_gov_address = getTemporaryAccount(client).addr
+    new_gov_address = getTemporaryAccount(client).getAddress()
+    assert old_gov_address == encoding.decode_address(accounts.governance.address())
 
     # require 1: should revert if not called by current governance address
     with pytest.raises(AlgodHTTPError):
-        send_no_op_tx(
-            accounts.bad_actor,
-            deployed_contract.feed_ids[0],
-            fn_name="change_governance",
-            app_args=[new_gov_address],
-            foreign_apps=None,
+
+        txn = transaction.ApplicationNoOpTxn(
+            sender=accounts.bad_actor.getAddress(),
+            app_args=["change_governance", encoding.decode_address(new_gov_address)],
+            sp=client.suggested_params(),
+            index=deployed_contract.feed_ids[0],
         )
+
+        signedTxn = txn.sign(accounts.bad_actor.getPrivateKey())
+        client.send_transaction(signedTxn)
+        waitForTransaction(client, signedTxn.get_txid(), timeout=30)
+
+
+def test_change_governance_medianizer(client: AlgodClient, accounts: Accounts, deployed_contract: App):
+    """
+    Test change_governance method on medianizer
+    """
+    state = getAppGlobalState(client, deployed_contract.medianizer_id)
+    old_gov_address = state[b"governance"]
+    new_gov_address = getTemporaryAccount(client).getAddress()
+    assert old_gov_address == encoding.decode_address(accounts.governance.address())
+
+    # require 1: should revert if not called by current governance address
+    with pytest.raises(AlgodHTTPError):
+
+        txn = transaction.ApplicationNoOpTxn(
+            sender=accounts.bad_actor.getAddress(),
+            app_args=["change_governance", encoding.decode_address(new_gov_address)],
+            sp=client.suggested_params(),
+            index=deployed_contract.medianizer_id,
+        )
+
+        signedTxn = txn.sign(accounts.bad_actor.getPrivateKey())
+        client.send_transaction(signedTxn)
+        waitForTransaction(client, signedTxn.get_txid(), timeout=30)
 
     # require 2: should revert if no new governance address is submitted
     with pytest.raises(AlgodHTTPError):
-        send_no_op_tx(accounts.governance, deployed_contract.feed_ids[0], fn_name="change_governance")
+        txn = transaction.ApplicationNoOpTxn(
+            sender=accounts.governance.address(),
+            app_args=["change_governance", ""],
+            sp=client.suggested_params(),
+            index=deployed_contract.medianizer_id,
+        )
 
-    send_no_op_tx(
-        accounts.governance, deployed_contract.feed_ids[0], fn_name="change_governance", app_args=[new_gov_address]
-    )
+        mtx = transaction.MultisigTransaction(txn, accounts.governance)
+        for i in accounts.multisig_signers_sk:
+            mtx.sign(i)
+
+        txid = client.send_raw_transaction(encoding.msgpack_encode(mtx))
+        transaction.wait_for_confirmation(client, txid, 6)
 
     # assert governance should be a different address
+    txn = transaction.ApplicationNoOpTxn(
+        sender=accounts.governance.address(),
+        app_args=["change_governance", encoding.decode_address(new_gov_address)],
+        sp=client.suggested_params(),
+        index=deployed_contract.medianizer_id,
+    )
 
-    state = getAppGlobalState(client, deployed_contract)
-    assert state[b"governance_address"] == new_gov_address
+    mtx = transaction.MultisigTransaction(txn, accounts.governance)
+    for i in accounts.multisig_signers_sk:
+        mtx.sign(i)
+    txid = client.send_raw_transaction(encoding.msgpack_encode(mtx))
+    state = getAppGlobalState(client, deployed_contract.medianizer_id)
+    assert state[b"governance"] == encoding.decode_address(new_gov_address)
 
 
-def test_change_medianizer(client, scripts, accounts, deployed_contract):
-
+def test_change_medianizer(client: AlgodClient, accounts: Accounts, deployed_contract: App):
+    """
+    Test change medianzier id on feed
+    """
     state = getAppGlobalState(client, deployed_contract.feed_ids[0])
     old_medianizer_id = state[b"medianizer"]
+    assert old_medianizer_id == deployed_contract.medianizer_id
+
     new_medianizer_id = 1234
 
     # require 1: should revert if not called by current governance address
     with pytest.raises(AlgodHTTPError):
-        send_no_op_tx(
-            accounts.bad_actor,
-            deployed_contract.feed_ids[0],
-            fn_name="change_medianizer",
-            foreign_apps=[new_medianizer_id],
-            app_args=None,
+        txn = transaction.ApplicationNoOpTxn(
+            accounts.bad_actor.getAddress(),
+            client.suggested_params(),
+            app_args=["change_medianizer", new_medianizer_id],
+            index=deployed_contract.feed_ids[0],
         )
 
-    # require 2: should revert if no new governance address is submitted
-    with pytest.raises(AlgodHTTPError):
-        send_no_op_tx(accounts.governance, deployed_contract.feed_ids[0], fn_name="change_medianizer")
-
-    send_no_op_tx(
-        accounts.governance,
-        deployed_contract.feed_ids[0],
-        fn_name="change_medianizer",
-        foreign_apps=[new_medianizer_id],
-        app_args=None,
-    )
-
-    # assert governance should be a different address
-
-    state = getAppGlobalState(client, deployed_contract.feed_ids[0])
-    assert state[b"medianizer"] == new_medianizer_id
+        signedTxn = txn.sign(accounts.bad_actor.getPrivateKey())
+        client.send_transaction(signedTxn)
+        waitForTransaction(client, signedTxn.get_txid(), timeout=30)
 
 
-def test_get_values(client, scripts: Scripts, accounts, deployed_contract):
-    """Test get_values() method on medianizer_contract"""
-
+def test_get_values(client: AlgodClient, scripts: Scripts, accounts: Accounts, deployed_contract: App):
+    """
+    Test get_values() method on medianizer_contract
+    """
     scripts.feed_app_id = deployed_contract.feed_ids[0]
     feed_id = scripts.feed_app_id
     scripts.feed_app_address = get_application_address(feed_id)
@@ -129,8 +169,10 @@ def test_get_values(client, scripts: Scripts, accounts, deployed_contract):
     assert medianizer_state[b"median_timestamp"] == timestamp
 
 
-def test_report(client, scripts: Scripts, accounts, deployed_contract):
-    """Test report() method on contract"""
+def test_report(client: AlgodClient, scripts: Scripts, accounts: Accounts, deployed_contract: App):
+    """
+    Test report() method on contract
+    """
     tip = 100000
     for i in deployed_contract.feed_ids:
         scripts.feed_app_id = i
@@ -164,8 +206,10 @@ def test_report(client, scripts: Scripts, accounts, deployed_contract):
         assert state[b"tip_amount"] == 0
 
 
-def test_request_withdraw(scripts: Scripts, accounts: Accounts, deployed_contract, client):
-    """Test request_withdraw() method on feed contract"""
+def test_request_withdraw(client: AlgodClient, scripts: Scripts, deployed_contract: App):
+    """
+    Test request_withdraw() method on feed contract
+    """
     # set feed id for app to test request_withdraw()
     scripts.feed_app_id = deployed_contract.feed_ids[0]
     feed_id = scripts.feed_app_id
@@ -182,8 +226,8 @@ def test_request_withdraw(scripts: Scripts, accounts: Accounts, deployed_contrac
     # assert staking status before fn call is 1
     assert state[b"staking_status"] == 1
 
-    # assert stake_timestamp is 0
-    assert state[b"stake_timestamp"] == 0
+    # assert lock_timestamp is 0
+    assert state[b"lock_timestamp"] == 0
 
     # call request_withdraw
     scripts.request_withdraw()
@@ -192,18 +236,20 @@ def test_request_withdraw(scripts: Scripts, accounts: Accounts, deployed_contrac
     state = getAppGlobalState(client, deployed_contract.feed_ids[0])
 
     # assert stake timestamp is now approx. time.time()
-    assert state[b"stake_timestamp"] == pytest.approx(int(time()), 500)
+    assert state[b"lock_timestamp"] == pytest.approx(int(time()), 500)
 
     # assert staking status is now 2
     assert state[b"staking_status"] == 2
 
     # require 3: assert reporter cant request withdrawal while in state 2
     with pytest.raises(AlgodHTTPError):
-        scripts.withdraw_request()
+        scripts.request_withdraw()
 
 
-def test_slash_reporter(scripts: Scripts, accounts: Accounts, deployed_contract, client):
-    """Test slash_reporter() method on contract"""
+def test_slash_reporter(client: AlgodClient, scripts: Scripts, accounts: Accounts, deployed_contract: App):
+    """
+    Test slash_reporter() method on contract
+    """
     scripts.feed_app_id = deployed_contract.feed_ids[0]
     feed_id = scripts.feed_app_id
     scripts.feed_app_address = get_application_address(feed_id)
@@ -211,7 +257,7 @@ def test_slash_reporter(scripts: Scripts, accounts: Accounts, deployed_contract,
     scripts.stake()
 
     state = getAppGlobalState(client, deployed_contract.feed_ids[0])
-    state[b"staking_status"] == 1
+    assert state[b"staking_status"] == 1
     governance_algo_balance_before = client.account_info(accounts.governance.address()).get("amount")
 
     scripts.slash_reporter(multisigaccounts_sk=accounts.multisig_signers_sk)
@@ -226,8 +272,10 @@ def test_slash_reporter(scripts: Scripts, accounts: Accounts, deployed_contract,
     )
 
 
-def test_stake(client, scripts: Scripts, accounts, deployed_contract: App):
-    """Test stake() method on contract"""
+def test_stake(client: AlgodClient, scripts: Scripts, accounts: Accounts, deployed_contract: App):
+    """
+    Test stake() method on contract
+    """
     client.suggested_params().flatFee = True
     client.suggested_params().fee = 2 * constants.MIN_TXN_FEE
     stake_amount = 200000
@@ -253,13 +301,15 @@ def test_stake(client, scripts: Scripts, accounts, deployed_contract: App):
         assert reporter_algo_balance_after == reporter_algo_balance_before - stake_amount - (2 * constants.MIN_TXN_FEE)
 
 
-def test_tip(client, scripts: Scripts, accounts, deployed_contract: App):
-    """Test tip() method on feed contract"""
+def test_tip(client: AlgodClient, scripts: Scripts, accounts: Accounts, deployed_contract: App):
+    """
+    Test tip() method on feed contract
+    """
 
     scripts.feed_app_id = deployed_contract.feed_ids[0]
     scripts.feed_app_address = get_application_address(scripts.feed_app_id)
 
-    tip_amount = 4
+    tip_amount = 400000
     suggestedParams = scripts.client.suggested_params()
 
     # require 1: revert if group tx senders are not the same account
@@ -315,7 +365,7 @@ def test_tip(client, scripts: Scripts, accounts, deployed_contract: App):
     with pytest.raises(AlgodHTTPError):
         payTxn = transaction.ApplicationNoOpTxn(
             sender=accounts.bad_actor.getAddress(),
-            receiver=scripts.feed_app_address,
+            index=deployed_contract.feed_ids[0],
             app_args=[b"report"],
             sp=suggestedParams,
         )
@@ -357,7 +407,7 @@ def test_tip(client, scripts: Scripts, accounts, deployed_contract: App):
     state = getAppGlobalState(client, deployed_contract.feed_ids[0])
     prev_tip_amount = state[b"tip_amount"]
 
-    scripts.tip()
+    scripts.tip(tip_amount)
 
     state = getAppGlobalState(client, deployed_contract.feed_ids[0])
     curr_tip_amount = state[b"tip_amount"]
@@ -365,8 +415,10 @@ def test_tip(client, scripts: Scripts, accounts, deployed_contract: App):
     assert curr_tip_amount == prev_tip_amount + tip_amount
 
 
-def test_withdraw(scripts: Scripts, accounts: Accounts, deployed_contract, client):
-    """test withdraw() method on contract"""
+def test_withdraw(client: AlgodClient, scripts: Scripts, deployed_contract: App):
+    """
+    Test withdraw() method on contract
+    """
     #   set feed id for app to test withdraw()
     scripts.feed_app_id = deployed_contract.feed_ids[0]
     feed_id = scripts.feed_app_id
@@ -392,15 +444,10 @@ def test_withdraw(scripts: Scripts, accounts: Accounts, deployed_contract, clien
     # assert staking status changed to 2 meaning withdrawal requested
     assert state[b"staking_status"] == 2
 
-    tx_fee = 2000
-
-    # get reporter's balance before withdrawal
-    reporter_algo_balance_before = client.account_info(accounts.reporter.getAddress()).get("amount")
-
-    # dryrun withdrawal after 7 days
-    res = scripts.withdraw_dry(timestamp=int(time()) + 604800)
+    # dryrun withdrawal after 1 day
+    res = scripts.withdraw_dry(timestamp=int(time()) + 86401)
 
     assert encoding.base64.b64encode(b"staking_status").decode("utf-8") == res["txns"][0]["global-delta"][0]["key"]
     assert res["txns"][0]["global-delta"][0]["value"]["uint"] == 0
-    assert encoding.base64.b64encode(b"stake_timestamp").decode("utf-8") == res["txns"][0]["global-delta"][1]["key"]
+    assert encoding.base64.b64encode(b"lock_timestamp").decode("utf-8") == res["txns"][0]["global-delta"][1]["key"]
     assert res["txns"][0]["global-delta"][1]["value"]["uint"] == 0
