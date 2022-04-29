@@ -32,6 +32,7 @@ jobs:
         run: |
           cd sandbox
           script -e -c "./sandbox up -v dev"
+          script -e -c "./sandbox reset -v" 
       - uses: "actions/checkout@v2"
       - uses: "actions/setup-python@v2"
         with:

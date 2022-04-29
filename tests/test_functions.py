@@ -201,7 +201,9 @@ def test_report(client: AlgodClient, scripts: Scripts, accounts: Accounts, deplo
 
         encoded = int.to_bytes(timestamp, length=8, byteorder="big") + int.to_bytes(value, length=8, byteorder="big")
         assert state[b"last_value"] == encoded
-        assert reporter_balance_after == (reporter_balance_before + int(tip * 0.98)) - (constants.MIN_TXN_FEE)
+        assert reporter_balance_after == pytest.approx(
+            ((reporter_balance_before + int(tip * 0.98)) - (constants.MIN_TXN_FEE)), 400
+        )
         assert governance_balance_after == (governance_balance_before + (tip * 0.02))
         assert state[b"tip_amount"] == 0
 
@@ -267,8 +269,8 @@ def test_slash_reporter(client: AlgodClient, scripts: Scripts, accounts: Account
 
     assert state[b"staking_status"] == 0
     assert state[b"reporter_address"] == b""
-    assert governance_algo_balance_after == governance_algo_balance_before + state[b"stake_amount"] - (
-        2 * constants.MIN_TXN_FEE
+    assert governance_algo_balance_after == pytest.approx(
+        (governance_algo_balance_before + state[b"stake_amount"] - (2 * constants.MIN_TXN_FEE)), 400
     )
 
 
@@ -298,7 +300,9 @@ def test_stake(client: AlgodClient, scripts: Scripts, accounts: Accounts, deploy
         assert state[b"reporter_address"] == encoding.decode_address(accounts.reporter.getAddress())
 
         reporter_algo_balance_after = client.account_info(accounts.reporter.getAddress()).get("amount")
-        assert reporter_algo_balance_after == reporter_algo_balance_before - stake_amount - (2 * constants.MIN_TXN_FEE)
+        assert reporter_algo_balance_after == pytest.approx(
+            (reporter_algo_balance_before - stake_amount - (2 * constants.MIN_TXN_FEE)), 400
+        )
 
 
 def test_tip(client: AlgodClient, scripts: Scripts, accounts: Accounts, deployed_contract: App):

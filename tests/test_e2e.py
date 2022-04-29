@@ -349,7 +349,7 @@ def test_reporter_clearing_algo_from_contract(scripts: Scripts, deployed_contrac
     app_balance_after_report = client.account_info(app_address).get("amount")
 
     # app balance should be reduced by only the tip amount after reporter takes the tip
-    assert app_balance_after_report == tip_amt + stake_amt - tip_amt - constants.MIN_TXN_FEE * 3
+    assert app_balance_after_report == pytest.approx((tip_amt + stake_amt - tip_amt - constants.MIN_TXN_FEE * 3), 400)
 
 
 #
@@ -404,7 +404,9 @@ def test_reporter_tip_receipt(scripts: Scripts, accounts: Accounts, deployed_con
 
     # reporter balance should increase by 3 times the tip amount minus 2% fee
     tip_amt = (tip_amt * 98) / 100
-    assert reporter_balance_after_report == reporter_balance_b4_staking + (tip_amt * 3) - constants.MIN_TXN_FEE
+    assert reporter_balance_after_report == pytest.approx(
+        (reporter_balance_b4_staking + (tip_amt * 3) - constants.MIN_TXN_FEE), 400
+    )
 
 
 def test_request_withdraw_without_staking(scripts: Scripts, deployed_contract: App, client: AlgodClient):
@@ -477,7 +479,9 @@ def test_tip_amount_received_by_reporter(
     reporter_balance_after_tipping = client.account_info(accounts.reporter.getAddress()).get("amount")
 
     # reporter balance should increase to 98 percent of tip amount
-    assert reporter_balance_after_tipping == (reporter_balance_b4_tipping + (tip_amt * 0.98)) - constants.MIN_TXN_FEE
+    assert reporter_balance_after_tipping == pytest.approx(
+        ((reporter_balance_b4_tipping + (tip_amt * 0.98)) - constants.MIN_TXN_FEE), 400
+    )
 
 
 def test_withdraw_after_request_withdraw(
