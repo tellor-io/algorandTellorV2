@@ -1,6 +1,5 @@
 ![CI](https://github.com/tellor-io/algorandTellor/actions/workflows/py39.yml/badge.svg)
-[![codecov](https://codecov.io/gh/tellor-io/algorandTellor/branch/main/graph/badge.svg?token=XE8G0FARZL)](https://codecov.io/gh/tellor-io/algorandTellor)
-
+[![codecov](https://codecov.io/gh/tellor-io/algorandTellorv2/branch/main/graph/badge.svg?token=4LQW27GID5)](https://codecov.io/gh/tellor-io/algorandTellorv2)
 # Overview
 This repo contains the contracts, tests, and deployment scripts for Tellor contracts on Algorand. The high-level goal of Tellor on Alogrand is to reimplement Tellor on Algorand's smart contract system, the Algorand Virtual Machine (AVM), and enable the Algorand community to interact with Tellor in their native environment. Its closest Solidity equivalent is [TellorFlex](https://github.com/tellor-io/tellorFlex), which is the Tellor contract for non-mainnet-Ethereum EVM chains.
 
