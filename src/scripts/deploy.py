@@ -30,13 +30,14 @@ def deploy(query_id: str, query_data: str, timestamp_freshness: int, network: st
     client = AlgodClient(algod_address=algo_address, algod_token=algo_token)
 
     print("current network: ", network)
-    if network == "testnet":
+    if network in  ["testnet", "mainnet"]:
         tipper = Account.FromMnemonic(os.getenv("TIPPER_MNEMONIC"))
         reporter = Account.FromMnemonic(os.getenv("REPORTER_MNEMONIC"))
-        member_1 = Account.FromMnemonic(os.getenv("MEMBER_1"))
-        member_2 = Account.FromMnemonic(os.getenv("MEMBER_2"))
-        multisig_accounts = [member_1, member_2]
-        governance = Multisig(version=1, threshold=2, addresses=multisig_accounts)
+        member_1 = Account.FromMnemonic(os.getenv("MEMBER_1").replace(",", ""))
+        member_2 = Account.FromMnemonic(os.getenv("MEMBER_2").replace(",", ""))
+        multisig_accounts_pk = [member_1.addr, member_2.addr]
+        multisig_accounts_sk = [member_1.getPrivateKey(), member_2.getPrivateKey()]
+        governance = Multisig(version=1, threshold=2, addresses=multisig_accounts_pk)
         print("Multisig Address: ", governance.address())
         print(
             "Go to the below link to fund the created account using testnet faucet: \
@@ -64,10 +65,10 @@ def deploy(query_id: str, query_data: str, timestamp_freshness: int, network: st
     s = Scripts(client=client, tipper=tipper, reporter=reporter, governance_address=governance, contract_count=5)
 
     tellor_flex_app_id = s.deploy_tellor_flex(
-        query_id=query_id, query_data=query_data, multisigaccounts_sk=multisig_accounts_sk
+        query_id=query_id, query_data=query_data, multisigaccounts_sk=multisig_accounts_sk, timestamp_freshness=120
     )
     medianizer_app_id = s.deploy_medianizer(
-        timestamp_freshness=timestamp_freshness, multisigaccounts_sk=multisig_accounts_sk
+        timestamp_freshness=timestamp_freshness, multisigaccounts_sk=multisig_accounts_sk, query_id=query_id
     )
 
     activate_medianizer = s.activate_contract(multisigaccounts_sk=multisig_accounts_sk)

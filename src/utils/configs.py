@@ -41,7 +41,7 @@ def get_configs(args: List[str]) -> Box:
         nargs=1,
         required=False,
         type=int,
-        help="the query_id to submit values to",
+        help="time interval between data reports in seconds",
     )
 
     parser.add_argument(
@@ -50,7 +50,7 @@ def get_configs(args: List[str]) -> Box:
         nargs=1,
         required=False,
         type=int,
-        help="the query_id to submit values to",
+        help="app_id of the medianizer contract",
     )
     # get dict of parsed args
     cli_cfg = vars(parser.parse_args(args))
