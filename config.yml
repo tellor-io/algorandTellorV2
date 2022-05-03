@@ -3,7 +3,7 @@ network: testnet
 error_waittime: 20
 receipt_timeout: 60
 
-#request IDs, their repsective price pairs/feeds/labels, and the networks they're live on
+#query IDs, their repsective price pairs/feeds/labels, and the networks they're live on
 feeds:
   ETHDAI:
     requestId: 1
@@ -16,11 +16,13 @@ feeds:
       - testnet
   BTCUSD:
     app_ids:
-      medianizer:
-    feeds:
-      testnet: []
-      mainnet: []
-    requestId: 3
+      medianizer: 
+        testnet: 87293591
+        mainnet:
+      feeds:
+        curr_index: 1
+        testnet: [87293472, 87293482, 87293548, 87293566, 87293580]
+        mainnet: []
   random_int:
     requestId: 4
     networks:

@@ -1,5 +1,6 @@
 import argparse
 from typing import List
+from pkg_resources import require
 
 import yaml
 from box import Box
@@ -33,6 +34,15 @@ def get_configs(args: List[str]) -> Box:
 
     parser.add_argument(
         "-qd", "--query-data", nargs=1, required=False, type=str, help="a description of the query_id (max 128 bytes)"
+    )
+
+    parser.add_argument(
+        "-a",
+        "--address",
+        nargs=1,
+        required=False,
+        type=str,
+        help="an account or multisig address on algorand"
     )
 
     parser.add_argument(

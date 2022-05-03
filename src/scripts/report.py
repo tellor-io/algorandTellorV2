@@ -44,7 +44,7 @@ config = get_configs(sys.argv[1:])
 print("app id: ", config.app_id[config.network])
 
 report(
-    app_id=config.app_id[config.network],
+    app_id=list(config.feeds[config.query_id].app_ids.feeds[config.network])[0],
     query_id=config.query_id,
     network=config.network,
     sources=config.apis[config.query_id],
