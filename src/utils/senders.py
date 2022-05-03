@@ -6,15 +6,17 @@ from typing import Optional
 from algosdk import mnemonic
 from algosdk.future.transaction import *
 from algosdk.v2client.algod import AlgodClient
+from dotenv import load_dotenv
 
 from src.utils.account import Account
 
 
 def send_multisig_tx(app_id: int, fn_name: str, app_args: Optional[List[Any]], foreign_apps: Optional[List[int]]):
+
+    load_dotenv()
     # Change these values with mnemonics
-    mnemonic1 = os.getenv("MNEMONIC1")
-    mnemonic2 = os.getenv("MNEMONIC2")
-    mnemonic3 = os.getenv("MNEMONIC3")
+    mnemonic1 = os.getenv("MEMBER_1").replace(",", "")
+    mnemonic2 = os.getenv("MEMBER_2").replace(",", "")
     # mnemonic4 = os.getenv("MNEMONIC4")
     # never use mnemonics in production code, replace for demo purposes only
 
@@ -27,13 +29,10 @@ def send_multisig_tx(app_id: int, fn_name: str, app_args: Optional[List[Any]], f
     private_key_2 = mnemonic.to_private_key(mnemonic2)
     account_2 = mnemonic.to_public_key(mnemonic2)
 
-    private_key_3 = mnemonic.to_private_key(mnemonic3)
-    account_3 = mnemonic.to_public_key(mnemonic3)
-
     # create a multisig account
     version = 1  # multisig version
-    threshold = 3  # how many signatures are necessary
-    msig = Multisig(version, threshold, [account_1, account_2, account_3])
+    threshold = 2  # how many signatures are necessary
+    msig = Multisig(version, threshold, [account_1, account_2])
 
     print("Multisig Address: ", msig.address())
     print(
@@ -69,7 +68,6 @@ def send_multisig_tx(app_id: int, fn_name: str, app_args: Optional[List[Any]], f
     # sign the transaction
     mtx.sign(private_key_1)
     mtx.sign(private_key_2)
-    mtx.sign(private_key_3)
     # print encoded transaction
     # print(encoding.msgpack_encode(mtx))
 

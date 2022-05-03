@@ -253,6 +253,26 @@ class Scripts:
             txn_ids.append(tx_id[0])
         return txn_ids
 
+    def change_governance(self, new_gov_address:str, multisigaccounts_sk: List[Any]) -> List[int]:
+        '''updates governance contract across all apps of a query_id'''
+        txn_ids = []
+        for i in self.feeds + [self.medianizer_app_id]:
+            comp = AtomicTransactionComposer()
+            comp.add_transaction(
+                TransactionWithSigner(
+                    transaction.ApplicationNoOpTxn(
+                        sender=self.governance_address.address(),
+                        sp=self.client.suggested_params(),
+                        index=i,
+                        app_args=["change_governance", new_gov_address],
+                    ),
+                    MultisigTransactionSigner(self.governance_address, multisigaccounts_sk),
+                )
+            )
+            tx_id = comp.execute(self.client, 3).tx_ids
+            txn_ids.append(tx_id[0])
+        return txn_ids
+
     def stake(self, stake_amount=None) -> None:
         """
         Send 2-txn group transaction to...
