@@ -1,7 +1,7 @@
 ![CI](https://github.com/tellor-io/algorandTellor/actions/workflows/py39.yml/badge.svg)
 [![codecov](https://codecov.io/gh/tellor-io/algorandTellorv2/branch/main/graph/badge.svg?token=4LQW27GID5)](https://codecov.io/gh/tellor-io/algorandTellorv2)
 # Overview
-For upwards of 2 years, Tellor has been live on Ethereum mainnet. In an effort to facilitate a multi-chain ecosystem, the Tellor oracle has been re-implemented for the Algorand Virtual Machine (AVM). On Algorand, Tellor continues to be secure, decentralized, and easy to integrate. 
+For upwards of 2 years, Tellor has been live on Ethereum mainnet. In an effort to facilitate a multi-chain ecosystem, the Tellor oracle has been re-implemented for the Algorand Virtual Machine (AVM). On Algorand, Tellor continues to be secure, decentralized, and easy to integrate.
 
 The primary contracts of the Tellor oracle on Algorand are the feed contracts, the medianzier contracts, and the governance contract. At a high level, each price feed, or “queryId”, uses a “medianizer contract” to calculate the median between 5 independent data submissions on 5 independent “feed contracts”. Tellor on Algorand implements a vigilant governance contract that prevents bad actors from interfering with the security of price feeds.
 

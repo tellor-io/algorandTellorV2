@@ -1,6 +1,5 @@
 import argparse
 from typing import List
-from pkg_resources import require
 
 import yaml
 from box import Box
@@ -37,12 +36,7 @@ def get_configs(args: List[str]) -> Box:
     )
 
     parser.add_argument(
-        "-a",
-        "--address",
-        nargs=1,
-        required=False,
-        type=str,
-        help="an account or multisig address on algorand"
+        "-a", "--address", nargs=1, required=False, type=str, help="an account or multisig address on algorand"
     )
 
     parser.add_argument(
@@ -62,6 +56,16 @@ def get_configs(args: List[str]) -> Box:
         type=int,
         help="app_id of the medianizer contract",
     )
+
+    parser.add_argument(
+        "-amt",
+        "--amount",
+        nargs=1,
+        required=False,
+        type=int,
+        help="tip amount",
+    )
+
     # get dict of parsed args
     cli_cfg = vars(parser.parse_args(args))
 

@@ -1,6 +1,7 @@
 import sys
-from src.utils.senders import send_multisig_tx
+
 from src.utils.configs import get_configs
+from src.utils.senders import send_multisig_tx
 
 
 def change_governance(app_id: int, new_gov_address: str):
@@ -10,15 +11,14 @@ def change_governance(app_id: int, new_gov_address: str):
 
 if __name__ == "__main__":
 
-    #read config
+    # read config
     config = get_configs(sys.argv[1:])
-    #parse app_ids of query_id from config
-    app_ids = ([config.feeds[config.query_id].app_ids.medianizer[config.network]]
-                    + list(config.feeds[config.query_id].app_ids.feeds[config.network])
-    ) 
+    # parse app_ids of query_id from config
+    app_ids = [config.feeds[config.query_id].app_ids.medianizer[config.network]] + list(
+        config.feeds[config.query_id].app_ids.feeds[config.network]
+    )
 
     print(f"changing governance address to {config.address}")
-
 
     print("now changing governance on query_id: ", config.query_id)
 

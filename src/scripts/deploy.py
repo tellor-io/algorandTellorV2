@@ -30,7 +30,7 @@ def deploy(query_id: str, query_data: str, timestamp_freshness: int, network: st
     client = AlgodClient(algod_address=algo_address, algod_token=algo_token)
 
     print("current network: ", network)
-    if network in  ["testnet", "mainnet"]:
+    if network in ["testnet", "mainnet"]:
         tipper = Account.FromMnemonic(os.getenv("TIPPER_MNEMONIC"))
         reporter = Account.FromMnemonic(os.getenv("REPORTER_MNEMONIC"))
         member_1 = Account.FromMnemonic(os.getenv("MEMBER_1").replace(",", ""))
