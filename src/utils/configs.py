@@ -66,6 +66,15 @@ def get_configs(args: List[str]) -> Box:
         help="tip amount",
     )
 
+    parser.add_argument(
+        "-fid",
+        "--feed_index",
+        nargs=1,
+        required=False,
+        type=int,
+        help="the index of the feed app id",
+    )
+
     # get dict of parsed args
     cli_cfg = vars(parser.parse_args(args))
 

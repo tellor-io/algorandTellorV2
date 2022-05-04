@@ -34,4 +34,4 @@ if __name__ == "__main__":
 
     # parse app_ids of query_id from config
     app_ids = config.feeds[config.query_id].app_ids.feeds[config.network]
-    stake(app_ids[1], config.network)
+    stake(app_ids[config.feed_index], config.network)
