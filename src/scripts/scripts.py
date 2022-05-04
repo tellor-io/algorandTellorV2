@@ -253,8 +253,8 @@ class Scripts:
             txn_ids.append(tx_id[0])
         return txn_ids
 
-    def change_governance(self, new_gov_address:str, multisigaccounts_sk: List[Any]) -> List[int]:
-        '''updates governance contract across all apps of a query_id'''
+    def change_governance(self, new_gov_address: str, multisigaccounts_sk: List[Any]) -> List[int]:
+        """updates governance contract across all apps of a query_id"""
         txn_ids = []
         for i in self.feeds + [self.medianizer_app_id]:
             comp = AtomicTransactionComposer()

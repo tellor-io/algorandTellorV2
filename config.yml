@@ -16,7 +16,7 @@ feeds:
       - testnet
   BTCUSD:
     app_ids:
-      medianizer: 
+      medianizer:
         testnet: 87293591
         mainnet:
       feeds:
