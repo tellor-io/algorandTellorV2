@@ -1,11 +1,12 @@
-import sys
 import os
+import sys
 
 from dotenv.main import load_dotenv
-from src.utils.account import Account
+
 from src.scripts.scripts import Scripts
-from src.utils.testing.setup import getAlgodClient
+from src.utils.account import Account
 from src.utils.configs import get_configs
+from src.utils.testing.setup import getAlgodClient
 
 
 def tip(app_id: int, amount: int, network: str):
@@ -28,8 +29,4 @@ if __name__ == "__main__":
 
     print(f"now tipping this query_id: {config.query_id}, on feed_id: {app_ids[1]}")
 
-    tip(
-        app_id=app_ids[1],
-        amount=config.amount,
-        network=config.network
-    )
+    tip(app_id=app_ids[1], amount=config.amount, network=config.network)
