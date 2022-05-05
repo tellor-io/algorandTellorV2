@@ -30,7 +30,7 @@ Prerequisites:
 Set up python environment
 ```
 python3 -m venv venv
-source activate venv
+source venv/bin/activate
 ```
 
 
