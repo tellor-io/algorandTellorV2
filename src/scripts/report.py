@@ -33,15 +33,12 @@ def report(app_id: int, medianizer_id: int, feed_ids: list, query_id: str, netwo
 
     print("reporter address:", reporter.addr)
     print("reporter's microAGLO balance:", getBalances(client, reporter.addr)[0])
-    member_1 = Account.FromMnemonic(os.getenv("MEMBER_1").replace(",", ""))
-    member_2 = Account.FromMnemonic(os.getenv("MEMBER_2").replace(",", ""))
-    print(f"reporting value '{value}' to query id '{query_id}'")
-    governance = Multisig(version=1, threshold=2, addresses=[member_1.addr, member_2.addr])
+    
     s = Scripts(
         client=client,
         reporter=reporter,
         medianizer_app_id=medianizer_id,
-        governance_address=governance,
+        governance_address=None,
         tipper=None,
         feed_app_id=app_id,
     )

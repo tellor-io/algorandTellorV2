@@ -344,7 +344,7 @@ class Scripts:
 
         submitValueTxn = transaction.ApplicationNoOpTxn(
             sender=self.reporter.getAddress(),
-            accounts=[self.governance_address.address()],
+            accounts=["P5UYSDZJWCOXG6T37XPDMDHGSCJXCNA3X7HBKYSKD5K6TWRPR5Y62PJG5Y"],
             index=self.feed_app_id,
             app_args=[b"report", query_id, value, timestamp],
             foreign_apps=self.feeds + [self.medianizer_app_id],
