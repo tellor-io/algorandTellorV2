@@ -3,7 +3,6 @@ import sys
 from time import time
 from typing import Dict
 
-from algosdk.future.transaction import Multisig
 from algosdk.v2client.algod import AlgodClient
 from dotenv import load_dotenv
 
@@ -33,7 +32,7 @@ def report(app_id: int, medianizer_id: int, feed_ids: list, query_id: str, netwo
 
     print("reporter address:", reporter.addr)
     print("reporter's microAGLO balance:", getBalances(client, reporter.addr)[0])
-    
+
     s = Scripts(
         client=client,
         reporter=reporter,
