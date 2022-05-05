@@ -27,6 +27,6 @@ if __name__ == "__main__":
     # parse app_ids of query_id from config
     app_ids = config.feeds[config.query_id].app_ids.feeds[config.network]
 
-    print(f"now tipping this query_id: {config.query_id}, on feed_id: {app_ids[1]}")
+    print(f"now tipping this query_id: {config.query_id}, on feed_id: {app_ids[config.feed_index]}")
 
-    tip(app_id=app_ids[1], amount=config.amount, network=config.network)
+    tip(app_id=app_ids[config.feed_index], amount=config.amount, network=config.network)

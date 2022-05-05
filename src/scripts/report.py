@@ -1,7 +1,9 @@
 import os
 import sys
+from time import time
 from typing import Dict
 
+from algosdk.future.transaction import Multisig
 from algosdk.v2client.algod import AlgodClient
 from dotenv import load_dotenv
 
@@ -12,7 +14,7 @@ from src.utils.configs import get_configs
 from src.utils.util import getBalances
 
 
-def report(app_id: int, query_id: str, network: str, sources: Dict):
+def report(app_id: int, medianizer_id: int, feed_ids: list, query_id: str, network: str, sources: Dict):
     load_dotenv()
 
     # create data feed
@@ -31,21 +33,38 @@ def report(app_id: int, query_id: str, network: str, sources: Dict):
 
     print("reporter address:", reporter.addr)
     print("reporter's microAGLO balance:", getBalances(client, reporter.addr)[0])
-
+    member_1 = Account.FromMnemonic(os.getenv("MEMBER_1").replace(",", ""))
+    member_2 = Account.FromMnemonic(os.getenv("MEMBER_2").replace(",", ""))
     print(f"reporting value '{value}' to query id '{query_id}'")
+    governance = Multisig(version=1, threshold=2, addresses=[member_1.addr, member_2.addr])
+    s = Scripts(
+        client=client,
+        reporter=reporter,
+        medianizer_app_id=medianizer_id,
+        governance_address=governance,
+        tipper=None,
+        feed_app_id=app_id,
+    )
+    s.feeds = feed_ids
+    s.report(query_id=query_id, value=value, timestamp=int(time() - 50))
 
-    s = Scripts(client=client, reporter=reporter, governance_address=None, tipper=None, app_id=app_id)
-    s.report(query_id=query_id, value=value)
     print(f"submitted value '{value}' to query id '{query_id}'")
     # print(f"algo explorer link: {}")
 
 
-config = get_configs(sys.argv[1:])
-print("app id: ", config.app_id[config.network])
+if __name__ == "__main__":
 
-report(
-    app_id=list(config.feeds[config.query_id].app_ids.feeds[config.network])[0],
-    query_id=config.query_id,
-    network=config.network,
-    sources=config.apis[config.query_id],
-)
+    # read config
+    config = get_configs(sys.argv[1:])
+
+    # parse app_ids of query_id from config
+    app_ids = config.feeds[config.query_id].app_ids.feeds[config.network]
+
+    report(
+        app_id=app_ids[config.feed_index],
+        medianizer_id=config.feeds[config.query_id].app_ids.medianizer[config.network],
+        feed_ids=app_ids,
+        query_id=config.query_id,
+        network=config.network,
+        sources=config.apis[config.query_id],
+    )
