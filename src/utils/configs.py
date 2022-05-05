@@ -68,7 +68,7 @@ def get_configs(args: List[str]) -> Box:
 
     parser.add_argument(
         "-fid",
-        "--feed_index",
+        "--feed-index",
         nargs=1,
         required=False,
         type=int,

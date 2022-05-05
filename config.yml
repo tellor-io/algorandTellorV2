@@ -18,11 +18,11 @@ feeds:
     app_ids:
       medianizer:
         testnet: 87293591
-        mainnet:
+        mainnet: 724386552
       feeds:
         curr_index: 1
         testnet: [87293472, 87293482, 87293548, 87293566, 87293580]
-        mainnet: []
+        mainnet: [724385740, 724385911, 724386053, 724386198, 724386398]
   random_int:
     requestId: 4
     networks:
