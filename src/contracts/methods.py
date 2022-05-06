@@ -39,6 +39,7 @@ def create():
     """
     return Seq(
         [
+            Assert(timestamp_freshness > Int(120)),
             App.globalPut(governance_address, Txn.sender()),  # governance multisig
             App.globalPut(tip_amount, Int(0)),
             App.globalPut(query_id, Txn.application_args[0]),  # query id to report
@@ -135,8 +136,8 @@ def report():
             medianizer_query_id,
             Assert(
                 And(
-                    # Minus(Global.latest_timestamp(), Btoi(Txn.application_args[3]))
-                    # < App.globalGet(timestamp_freshness),
+                    Minus(Global.latest_timestamp(), Btoi(Txn.application_args[3]))
+                    < App.globalGet(timestamp_freshness),
                     Txn.applications[6] == App.globalGet(medianizer),
                     medianizer_query_id.hasValue(),
                     App.globalGet(query_id) == medianizer_query_id.value(),
