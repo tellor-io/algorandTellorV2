@@ -20,12 +20,18 @@ Just like on Ethereum, all Tellor contracts on Alogrand are open-source, freely 
 
 
 # Setting up, interacting with, and testing the contract
-**An example walkthrough using the BTCUSD query id**
+**An example walkthrough using the BTCUSD feed on testnet**
+
+Prerequisites:
+- `docker` + `docker-compose` (on mac and windows, Docker Desktop)
+- [algorand sandbox node](https://github.com/algorand/sandbox)
+- funded account (for mainnet and testnet)
+- funded multisig (for devnet and testnet)
 
 Set up python environment
 ```
 python3 -m venv venv
-source activate venv
+source venv/bin/activate
 ```
 
 
@@ -39,19 +45,38 @@ Test locally
 python -m pytest
 ```
 
-Deploy Bitcoin price feed contract
+Deploy a price feed contract
 ```
-python -m src.scripts.deploy -qid BTCUSD -qd "bitcoin feed" -n devnet
+python -m src.scripts.deploy -qid BTCUSD -qd "btc/usd spot price ticker" -tf 120 -n testnet
+
+notes:
+- available networks:
+    - devnet
+    - testnet
+    - mainnet
+- seting timestamp freshness to 120 enforces fresh data submissions
 ```
 
-Stake account (become data reporter)
+Log application ids from terminal into `config.yml`
+```yaml
+feeds:
+  BTCUSD:
+    app_ids:
+      medianizer:
+        testnet: #put medianizer app id here!
+      feeds:
+        testnet: [] #put feed app ids in array here!
 ```
-python -m src.scripts.stake -n devnet
+
+Stake account (become data reporter) on one of five feed apps
+note: fid indicates the choice of feed app (choose 1-5)
+```
+python -m src.scripts.stake -qid BTCUSD -fid 1 -n testnet
 ```
 
 Report (submit value) BTCUSD price to contract
 ```
-python -m src.scripts.report -qid BTCUSD -n devnet
+python -m src.scripts.report -qid BTCUSD -fid 120 -n testnet
 ```
 
 
