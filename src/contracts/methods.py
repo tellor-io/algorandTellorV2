@@ -39,7 +39,6 @@ def create():
     """
     return Seq(
         [
-            Assert(timestamp_freshness > Int(120)),
             App.globalPut(governance_address, Txn.sender()),  # governance multisig
             App.globalPut(tip_amount, Int(0)),
             App.globalPut(query_id, Txn.application_args[0]),  # query id to report
@@ -50,6 +49,7 @@ def create():
             App.globalPut(timestamp_freshness, Btoi(Txn.application_args[3])),  # to check age of timestamp against
             App.globalPut(lock_timestamp, Int(0)),
             App.globalPut(stake_amount, Int(200000)),  # 200 ALGOs stake amount
+            Assert(App.globalGet(timestamp_freshness) > Int(120)),
             Approve(),
         ]
     )

@@ -59,7 +59,7 @@ def scripts(client, accounts):
 
 
 @pytest.fixture(autouse=True)
-def deployed_contract(accounts, client, scripts):
+def deployed_contract(accounts, client, scripts: Scripts):
     """deploys feeds and medianizer contracts, provides app ids for all contracts"""
 
     fundAccount(client, accounts.governance.address())
