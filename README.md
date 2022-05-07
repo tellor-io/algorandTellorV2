@@ -23,6 +23,7 @@ Just like on Ethereum, all Tellor contracts on Alogrand are open-source, freely 
 **An example walkthrough using the BTCUSD feed on testnet**
 
 Prerequisites:
+- `docker` + `docker-compose` (on mac and windows, Docker Desktop)
 - [algorand sandbox node](https://github.com/algorand/sandbox)
 - funded account (for mainnet and testnet)
 - funded multisig (for devnet and testnet)
@@ -46,17 +47,17 @@ python -m pytest
 
 Deploy a price feed contract
 ```
-python -m src.scripts.deploy -qid BTCUSD -qd "btc/usd spot price ticker" -tf 1 -n testnet
+python -m src.scripts.deploy -qid BTCUSD -qd "btc/usd spot price ticker" -tf 120 -n testnet
 
 notes:
 - available networks:
     - devnet
     - testnet
     - mainnet
-- set timestamp freshness to 1 to remove time lock
+- seting timestamp freshness to 120 enforces fresh data submissions
 ```
 
-Log application ids in terminal into `config.yml`
+Log application ids from terminal into `config.yml`
 ```yaml
 feeds:
   BTCUSD:
@@ -75,7 +76,7 @@ python -m src.scripts.stake -qid BTCUSD -fid 1 -n testnet
 
 Report (submit value) BTCUSD price to contract
 ```
-python -m src.scripts.report -qid BTCUSD -fid 1 -n testnet
+python -m src.scripts.report -qid BTCUSD -fid 120 -n testnet
 ```
 
 
