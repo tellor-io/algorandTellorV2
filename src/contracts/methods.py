@@ -39,7 +39,7 @@ def create():
     """
     return Seq(
         [
-            Assert(timestamp_freshness > Int(120)),
+            Assert(Btoi(Txn.application_args[3]) >= Int(120)),
             App.globalPut(governance_address, Txn.sender()),  # governance multisig
             App.globalPut(tip_amount, Int(0)),
             App.globalPut(query_id, Txn.application_args[0]),  # query id to report

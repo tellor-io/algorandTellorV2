@@ -20,7 +20,7 @@ def test_2_feeds(scripts: Scripts, deployed_contract: App, client: AlgodClient):
     """
 
     value = 3500
-    timestamp = int(time() - 500)
+    timestamp = int(time() - 3599)
     median = (3500 + 3550) / 2
     for i in range(2):
         scripts.feed_app_id = deployed_contract.feed_ids[i]
@@ -536,3 +536,25 @@ def test_withdraw_after_slashing(scripts: Scripts, accounts: Accounts, deployed_
 
     with pytest.raises(AlgodHTTPError):
         scripts.request_withdraw()
+
+
+def test_rever_stale_value(scripts: Scripts, accounts: Accounts, deployed_contract: App, client: AlgodClient):
+    """
+    Contract will revert submissions of stale values
+    """
+    scripts.feed_app_id = deployed_contract.feed_ids[0]
+    feed_id = scripts.feed_app_id
+    scripts.feed_app_address = get_application_address(feed_id)
+
+    state = getAppGlobalState(client, deployed_contract.feed_ids[0])
+
+    timestamp_freshness = state[b"timestamp_freshness"]
+
+    query_id = b"1"
+    value = 30000
+    timestamp = timestamp_freshness + 10  # submitting a timestamp 10 seconds too old
+
+    scripts.stake()
+
+    with pytest.raises(AlgodHTTPError):
+        scripts.report(query_id, value, timestamp)

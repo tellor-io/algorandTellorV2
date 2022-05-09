@@ -4,6 +4,7 @@ deployment script for testnet or devnet
 import os
 import sys
 
+from algosdk.error import AlgodHTTPError
 from algosdk.future.transaction import Multisig
 from algosdk.v2client.algod import AlgodClient
 from dotenv import load_dotenv
@@ -38,14 +39,17 @@ def deploy(query_id: str, query_data: str, timestamp_freshness: int, network: st
         multisig_accounts_pk = [member_1.addr, member_2.addr]
         multisig_accounts_sk = [member_1.getPrivateKey(), member_2.getPrivateKey()]
         governance = Multisig(version=1, threshold=2, addresses=multisig_accounts_pk)
-        print("Multisig Address: ", governance.address())
-        print(
-            "Go to the below link to fund the created account using testnet faucet: \
-            \n https://dispenser.testnet.aws.algodev.network/?account={}".format(
-                governance.address()
+
+        if network == "testnet":
+            print("Multisig Address: ", governance.address())
+            print(
+                "Go to the below link to fund the created account using testnet faucet: \
+                \n https://dispenser.testnet.aws.algodev.network/?account={}".format(
+                    governance.address()
+                )
             )
-        )
-        input("Press Enter to continue...")
+            input("Press Enter to continue...")
+
     elif network == "devnet":
         tipper = getTemporaryAccount(client)
         reporter = getTemporaryAccount(client)
@@ -57,16 +61,25 @@ def deploy(query_id: str, query_data: str, timestamp_freshness: int, network: st
         governance = Multisig(version=1, threshold=2, addresses=multisig_accounts_pk)
         fundAccount(client, governance.address())
         fundAccount(client, reporter.addr)
-        fundAccount(client, reporter.addr)
-        fundAccount(client, reporter.addr)
+        fundAccount(client, tipper.addr)
+        fundAccount(client, member_1.addr)
+        fundAccount(client, member_2.addr)
     else:
         raise Exception("invalid network selected")
 
     s = Scripts(client=client, tipper=tipper, reporter=reporter, governance_address=governance, contract_count=5)
 
-    tellor_flex_app_id = s.deploy_tellor_flex(
-        query_id=query_id, query_data=query_data, multisigaccounts_sk=multisig_accounts_sk, timestamp_freshness=120
-    )
+    try:
+        tellor_flex_app_id = s.deploy_tellor_flex(
+            query_id=query_id,
+            query_data=query_data,
+            multisigaccounts_sk=multisig_accounts_sk,
+            timestamp_freshness=timestamp_freshness,
+        )
+    except AlgodHTTPError as e:
+        if "pc=763" in str(e):
+            raise ValueError("timestamp freshness (-tf) must be >= 120")
+
     medianizer_app_id = s.deploy_medianizer(
         timestamp_freshness=timestamp_freshness, multisigaccounts_sk=multisig_accounts_sk, query_id=query_id
     )

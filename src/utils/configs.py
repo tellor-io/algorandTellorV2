@@ -41,7 +41,7 @@ def get_configs(args: List[str]) -> Box:
 
     parser.add_argument(
         "-tf",
-        "--timestamp_freshness",
+        "--timestamp-freshness",
         nargs=1,
         required=False,
         type=int,
