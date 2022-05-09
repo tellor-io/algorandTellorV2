@@ -28,6 +28,14 @@ Prerequisites:
 - funded account (for mainnet and testnet)
 - funded multisig (for devnet and testnet)
 
+Set up accounts in `.env.example`
+```
+REPORTER_MNEMONIC="<your reporter account mnemonic>"
+TIPPER_MNEMONIC="<your tipper account mnemonic>"
+MEMBER_1="<the first multisig account's mnemonic>"
+MEMBER_2="<the second multisig account's mnemonic>"
+```
+
 Set up python environment
 ```
 python3 -m venv venv
