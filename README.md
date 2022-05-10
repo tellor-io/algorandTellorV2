@@ -84,7 +84,7 @@ python -m src.scripts.stake -qid BTCUSD -fid 1 -n testnet
 
 Report (submit value) BTCUSD price to contract
 ```
-python -m src.scripts.report -qid BTCUSD -fid 120 -n testnet
+python -m src.scripts.report -qid BTCUSD -fid 1 -n testnet
 ```
 
 
