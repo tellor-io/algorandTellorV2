@@ -159,6 +159,8 @@ class Scripts:
         medianizer_id = 0
         app_args = [query_id.encode("utf-8"), query_data.encode("utf-8"), medianizer_id, timestamp_freshness]
 
+        print("Deploying contracts from governance address: ", self.governance_address.address())
+
         print(f"Forming {self.contract_count} {query_id} contracts")
         for i in range(self.contract_count):
             comp = AtomicTransactionComposer()
@@ -282,6 +284,8 @@ class Scripts:
         Args:
             stake_amount (int): override stake_amount for testing purposes
         """
+
+        print("reporter address: ", self.reporter.addr)
         appGlobalState = getAppGlobalState(self.client, self.feed_app_id)
 
         if stake_amount is None:
@@ -342,9 +346,10 @@ class Scripts:
             - value (bytes): the data the reporter submits on chain
         """
 
+        print("reporter address:", self.reporter.addr)
+
         submitValueTxn = transaction.ApplicationNoOpTxn(
             sender=self.reporter.getAddress(),
-            # accounts=["P5UYSDZJWCOXG6T37XPDMDHGSCJXCNA3X7HBKYSKD5K6TWRPR5Y62PJG5Y"],
             accounts=[self.governance_address.address()],
             index=self.feed_app_id,
             app_args=[b"report", query_id, value, timestamp],

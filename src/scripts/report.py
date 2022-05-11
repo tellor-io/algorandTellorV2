@@ -13,7 +13,9 @@ from src.utils.configs import get_configs
 from src.utils.util import getBalances
 
 
-def report(app_id: int, medianizer_id: int, feed_ids: list, query_id: str, network: str, sources: Dict):
+def report(
+    app_id: int, medianizer_id: int, feed_ids: list, query_id: str, network: str, governance_address: str, sources: Dict
+):
     load_dotenv()
 
     # create data feed
@@ -37,7 +39,7 @@ def report(app_id: int, medianizer_id: int, feed_ids: list, query_id: str, netwo
         client=client,
         reporter=reporter,
         medianizer_app_id=medianizer_id,
-        governance_address=None,
+        governance_address=governance_address,
         tipper=None,
         feed_app_id=app_id,
     )
@@ -62,5 +64,6 @@ if __name__ == "__main__":
         feed_ids=app_ids,
         query_id=config.query_id,
         network=config.network,
+        governance_address=config.governance_address,
         sources=config.apis[config.query_id],
     )
