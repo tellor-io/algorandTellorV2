@@ -27,7 +27,7 @@ Prerequisites:
 - [algorand sandbox node](https://github.com/algorand/sandbox)
 - reporter account, funded w/ 200 ALGO for staking (for mainnet and testnet)
 - if deploying:
-    - multisig account, funded w/ 1 ALGO for deployments (for devnet and testnet)
+    - multisig account, funded w/ 16 ALGO for deployments (for devnet and testnet)
 
 Set up accounts in `.env.example`
 **note:** algorand private keys are mnemonics, not hex strings!
