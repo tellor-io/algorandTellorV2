@@ -25,10 +25,12 @@ Just like on Ethereum, all Tellor contracts on Alogrand are open-source, freely 
 Prerequisites:
 - `docker` + `docker-compose` (on mac and windows, Docker Desktop)
 - [algorand sandbox node](https://github.com/algorand/sandbox)
-- funded account (for mainnet and testnet)
-- funded multisig (for devnet and testnet)
+- reporter account, funded w/ 200 ALGO for staking (for mainnet and testnet)
+- if deploying:
+    - multisig account, funded w/ 1 ALGO for deployments (for devnet and testnet)
 
 Set up accounts in `.env.example`
+**note:** algorand private keys are mnemonics, not hex strings!
 ```
 REPORTER_MNEMONIC="<your reporter account mnemonic>"
 TIPPER_MNEMONIC="<your tipper account mnemonic>"
