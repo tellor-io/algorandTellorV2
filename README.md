@@ -78,7 +78,7 @@ python -m pytest
 
 This script deploys the medianizer app and five BTCUSD data feeds from the **deployment** account you set up on the prerequisites section. 
 
-- Update the governance address in the `config.yml` file to be the **deployment** address you created and funded on the prerequesites section.
+- Update the governance_address in the `config.yml` file to be the **deployment** address you created and funded on the prerequesites section.
 
 ```
 python -m src.scripts.deploy -qid BTCUSD -qd "btc/usd spot price ticker" -tf 120 -n testnet
