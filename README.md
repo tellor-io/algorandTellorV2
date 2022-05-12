@@ -22,15 +22,22 @@ Just like on Ethereum, all Tellor contracts on Alogrand are open-source, freely 
 # Setting up, interacting with, and testing the contract
 **An example walkthrough using the BTCUSD feed on testnet**
 
-Prerequisites:
-- `docker` + `docker-compose` (on mac and windows, Docker Desktop)
-- [algorand sandbox node](https://github.com/algorand/sandbox)
-- reporter account, funded w/ 200 ALGO for staking (for mainnet and testnet)
-- if deploying:
-    - multisig account, funded w/ 16 ALGO for deployments (for devnet and testnet)
+**Prerequisites:**
+- [Install `docker` + `docker-compose`](https://docs.docker.com/desktop/mac/install/) (on mac and windows, Docker Desktop)
+- Fund a **reporter** account with a minimum of 200 ALGO for staking (for mainnet and testnet)
+- Fund a **deployment** account with 16 ALGO to test (this account will be used for deploying a medianizer and 5 data feed contracts). Algorand addresses have to be funded with a minimum of 15 ALGO but additional is needed to deploy and transact.
 
-Set up accounts in `.env.example`
-**note:** algorand private keys are mnemonics, not hex strings!
+**1. Run docker and leave it running**
+
+**2. Create .env file**
+
+This sets up accounts to be used securely since the .env file is not pushed to github. You can use the `.env.example` as an example.
+
+- Create a file called .env
+- Copy and paste the variable names from the `.env.examplea` file and add your mnemonics to the .env file
+- Save the .env file
+
+**note:** Algorand private keys are mnemonics, not hex strings!
 ```
 REPORTER_MNEMONIC="<your reporter account mnemonic>"
 TIPPER_MNEMONIC="<your tipper account mnemonic>"
@@ -38,24 +45,38 @@ MEMBER_1="<the first multisig account's mnemonic>"
 MEMBER_2="<the second multisig account's mnemonic>"
 ```
 
-Set up python environment
+
+**3. Open two terminals**
+One will be used to run and Algorand sanbox node and the other one will run the python commands/environment.
+
+**4. Run an [Algorand sandbox](https://github.com/algorand/sandbox) in one terminal**
+
+```
+git clone https://github.com/algorand/sandbox.git
+cd sandbox
+./sandbox up
+```
+
+**5. Set up python environment on the second terminal**
 ```
 python3 -m venv venv
 source venv/bin/activate
 ```
-
-
-Install Dependencies
+- Install Dependencies
 ```
 pip install -r requirements.txt
 ```
 
-Test locally
+**6. Test repo locally**
 ```
 python -m pytest
 ```
 
-Deploy a price feed contract
+**7. Deploy medianizer and price feed contracts**
+This script deploys the medianizer app and five BTCUSD data feeds from the **deployment** account you set up on the prerequisites section. 
+
+- Update the governance address in the `config.yml` file to be the **deployment** address you created and funded on the prerequesites section.
+
 ```
 python -m src.scripts.deploy -qid BTCUSD -qd "btc/usd spot price ticker" -tf 120 -n testnet
 
@@ -67,7 +88,8 @@ notes:
 - setting timestamp freshness to 120 enforces fresh data submissions
 ```
 
-Log application ids from terminal into `config.yml`
+- Update the application ids from terminal into `config.yml` for the medianizer and feeds.
+
 ```yaml
 feeds:
   BTCUSD:
@@ -77,19 +99,33 @@ feeds:
       feeds:
         testnet: [] #put feed app ids in array here!
 ```
-
-Stake account (become data reporter) on one of five feed apps
-note: fid indicates the choice of feed app (choose 1-5)
+**8. Stake account (become data reporter) on one of five feed apps**
+note: fid indicates the choice of feed app (choose 1-5) since 5 feed apps were deployed. For testing we are using the first app below.
 ```
 python -m src.scripts.stake -qid BTCUSD -fid 1 -n testnet
 ```
-
-Report (submit value) BTCUSD price to contract
+**9. Report (submit value) BTCUSD price to contract**
 ```
 python -m src.scripts.report -qid BTCUSD -fid 1 -n testnet
 ```
 
+## Current Price feeds
 
+These are the current feeds avialable on Algorand. For additional feeds please submit an issue in this repo. 
+
+**Mainnet price feeds**
+
+
+| **Contract** | **DataFeed** | **Algo App **                                  |
+|--------------|--------------|------------------------------------------------|
+| Medianizer   | BTC/USD      | https://algoexplorer.io/application/733871808  |
+| TellorFlex   | BTC/USD      | https://algoexplorer.io/application/733870916  |
+| TellorFlex   | BTC/USD      | https://algoexplorer.io/application/733871155  |
+| TellorFlex   | BTC/USD      | https://algoexplorer.io/application/733871343  |
+| TellorFlex   | BTC/USD      | https://algoexplorer.io/application/733871516  |
+| TellorFlex   | BTC/USD      | https://algoexplorer.io/application/733871647  |
+
+**Testnet price feeds**
 
 
 ## Maintainers <a name="maintainers"> </a>
