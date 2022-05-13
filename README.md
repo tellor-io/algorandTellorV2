@@ -35,7 +35,7 @@ Just like on Ethereum, all Tellor contracts on Alogrand are open-source, freely 
 This sets up accounts to be used securely since the .env file is not pushed to github. You can use the `.env.example` as an example.
 
 - Create a file called .env
-- Copy and paste the variable names from the `.env.examplea` file and add your mnemonics to the .env file
+- Copy and paste the variable names from the `.env.example` file and add your mnemonics to the .env file
 - Save the .env file
 
 **note:** Algorand private keys are mnemonics, not hex strings!
