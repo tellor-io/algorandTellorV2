@@ -76,7 +76,7 @@ python -m pytest
 
 **7. Deploy medianizer and price feed contracts**
 
-This script deploys the medianizer app and five BTCUSD data feeds from the **deployment** account you set up on the prerequisites section. 
+This script deploys the medianizer app and five BTCUSD data feeds from the **deployment** account you set up on the prerequisites section.
 
 - Update the governance_address in the `config.yml` file to be the **deployment** address you created and funded on the prerequesites section.
 
@@ -119,7 +119,7 @@ python -m src.scripts.report -qid BTCUSD -fid 1 -n testnet
 
 ## Current Price feeds <a name="feeds"> </a>
 
-These are the current feeds avialable on Algorand. For additional feeds please submit an issue in this repo. 
+These are the current feeds avialable on Algorand. For additional feeds please submit an issue in this repo.
 
 **Mainnet price feeds**
 
