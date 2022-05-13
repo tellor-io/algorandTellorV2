@@ -88,7 +88,7 @@ notes:
     - devnet
     - testnet
     - mainnet
-- setting timestamp freshness to 120 enforces fresh data submissions
+- setting timestamp freshness to 120 reverts reports of data older than 2 minutes
 ```
 
 - Update the application ids from terminal into `config.yml` for the medianizer and feeds (replace the entire array for the feeds).
