@@ -86,7 +86,7 @@ def deployed_contract(accounts, client, scripts: Scripts):
             b"query_data": query_data.encode("utf-8"),
             b"timestamp_freshness": timestamp_freshness,
             b"medianizer": 0,
-            b"stake_amount": 200000,
+            b"stake_amount": 200000000,
             b"staking_status": 0,
             b"lock_timestamp": 0,
             b"reporter_address": b"",
