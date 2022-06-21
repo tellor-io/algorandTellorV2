@@ -1,4 +1,5 @@
-from scripts.multisig.multisig import send_multisig_tx
+from scripts.scripts import Scripts
+from src.utils.senders import send_multisig_tx
 
 
 def slash_reporter(feed_id: int):

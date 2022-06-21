@@ -53,7 +53,7 @@ def scripts(client, accounts):
         client=client,
         tipper=accounts.tipper,
         reporter=accounts.reporter,
-        governance_address=accounts.governance,
+        governance_address=accounts.governance.address(),
         contract_count=5,
     )
 
