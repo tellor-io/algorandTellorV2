@@ -25,7 +25,7 @@ def payAccount(client: AlgodClient, sender: Account, to: str, amount: int) -> Pe
     return waitForTransaction(client, signedTxn.get_txid())
 
 
-FUNDING_AMOUNT = 100_000_000
+FUNDING_AMOUNT = 5_000_000_000
 
 
 def fundAccount(client: AlgodClient, address: str, amount: int = FUNDING_AMOUNT) -> PendingTxnResponse:
