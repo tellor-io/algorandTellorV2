@@ -1,4 +1,5 @@
-from scripts.multisig.multisig import send_multisig_tx
+from scripts.scripts import Scripts
+from src.utils.senders import send_multisig_tx
 
 
 def slash_reporter(feed_id: int):
@@ -7,4 +8,5 @@ def slash_reporter(feed_id: int):
     calls slash_reporter() on the contract, only callable by governance address
     """
 
+    s = Scripts()
     send_multisig_tx(app_id=feed_id, fn_name="slash_reporter", app_args=None, foreign_apps=None)

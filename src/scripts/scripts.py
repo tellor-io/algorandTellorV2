@@ -159,7 +159,10 @@ class Scripts:
         medianizer_id = 0
         app_args = [query_id.encode("utf-8"), query_data.encode("utf-8"), medianizer_id, timestamp_freshness]
 
-        print("Deploying contracts from governance address: ", self.governance_address.address())
+        multisig_public_keys = [Account(i).getAddress() for i in multisigaccounts_sk]
+        multisig = Multisig(version=1, threshold=2, addresses=multisig_public_keys)
+
+        print("Deploying contracts from governance address: ", self.governance_address)
 
         print(f"Forming {self.contract_count} {query_id} contracts")
         for i in range(self.contract_count):
@@ -167,7 +170,7 @@ class Scripts:
             comp.add_transaction(
                 TransactionWithSigner(
                     transaction.ApplicationCreateTxn(
-                        sender=self.governance_address.address(),
+                        sender=self.governance_address,
                         on_complete=transaction.OnComplete.NoOpOC,
                         approval_program=approval,
                         clear_program=clear,
@@ -177,7 +180,7 @@ class Scripts:
                         sp=self.client.suggested_params(),
                         note=f"{query_id} Feed {i}".encode(),
                     ),
-                    MultisigTransactionSigner(self.governance_address, multisigaccounts_sk),
+                    MultisigTransactionSigner(multisig, multisigaccounts_sk),
                 )
             )
             txid = comp.execute(self.client, 4).tx_ids
@@ -195,12 +198,15 @@ class Scripts:
         global_schema = transaction.StateSchema(num_uints=7, num_byte_slices=7)
         local_schema = transaction.StateSchema(num_uints=0, num_byte_slices=0)
 
+        multisig_public_keys = [Account(i).getAddress() for i in multisigaccounts_sk]
+        multisig = Multisig(version=1, threshold=2, addresses=multisig_public_keys)
+
         app_args = [timestamp_freshness, query_id]
         comp = AtomicTransactionComposer()
         comp.add_transaction(
             TransactionWithSigner(
                 transaction.ApplicationCreateTxn(
-                    sender=self.governance_address.address(),
+                    sender=self.governance_address,
                     sp=self.client.suggested_params(),
                     on_complete=transaction.OnComplete.NoOpOC,
                     approval_program=approval,
@@ -209,7 +215,7 @@ class Scripts:
                     local_schema=local_schema,
                     app_args=app_args,
                 ),
-                MultisigTransactionSigner(self.governance_address, multisigaccounts_sk),
+                MultisigTransactionSigner(multisig, multisigaccounts_sk),
             )
         )
         tx_id = comp.execute(self.client, 4).tx_ids
@@ -219,17 +225,22 @@ class Scripts:
         return self.medianizer_app_id
 
     def activate_contract(self, multisigaccounts_sk: List[Any]) -> List[int]:
+
+
+        multisig_public_keys = [Account(i).getAddress() for i in multisigaccounts_sk]
+        multisig = Multisig(version=1, threshold=2, addresses=multisig_public_keys)
+
         comp = AtomicTransactionComposer()
         comp.add_transaction(
             TransactionWithSigner(
                 transaction.ApplicationNoOpTxn(
-                    sender=self.governance_address.address(),
+                    sender=self.governance_address,
                     sp=self.client.suggested_params(),
                     index=self.medianizer_app_id,
                     app_args=["activate_contract"],
                     foreign_apps=self.feeds,
                 ),
-                MultisigTransactionSigner(self.governance_address, multisigaccounts_sk),
+                MultisigTransactionSigner(multisig, multisigaccounts_sk),
             )
         )
         tx_id = comp.execute(self.client, 4).tx_ids
@@ -237,18 +248,23 @@ class Scripts:
         return tx_id
 
     def change_medianizer(self, multisigaccounts_sk: List[Any]) -> List[int]:
+
+
+        multisig_public_keys = [Account(i).getAddress() for i in multisigaccounts_sk]
+        multisig = Multisig(version=1, threshold=2, addresses=multisig_public_keys)
+
         txn_ids = []
         for i in self.feeds:
             comp = AtomicTransactionComposer()
             comp.add_transaction(
                 TransactionWithSigner(
                     transaction.ApplicationNoOpTxn(
-                        sender=self.governance_address.address(),
+                        sender=self.governance_address,
                         sp=self.client.suggested_params(),
                         index=i,
                         app_args=["change_medianizer", self.medianizer_app_id],
                     ),
-                    MultisigTransactionSigner(self.governance_address, multisigaccounts_sk),
+                    MultisigTransactionSigner(multisig, multisigaccounts_sk),
                 )
             )
             tx_id = comp.execute(self.client, 3).tx_ids
@@ -263,7 +279,7 @@ class Scripts:
             comp.add_transaction(
                 TransactionWithSigner(
                     transaction.ApplicationNoOpTxn(
-                        sender=self.governance_address.address(),
+                        sender=self.governance_address,
                         sp=self.client.suggested_params(),
                         index=i,
                         app_args=["change_governance", new_gov_address],
@@ -348,9 +364,12 @@ class Scripts:
 
         print("reporter address:", self.reporter.addr)
 
+        if isinstance(self.governance_address, Multisig):
+            self.governance = self.governance.address()
+
         submitValueTxn = transaction.ApplicationNoOpTxn(
             sender=self.reporter.getAddress(),
-            accounts=[self.governance_address.address()],
+            accounts=[self.governance_address],
             index=self.feed_app_id,
             app_args=[b"report", query_id, value, timestamp],
             foreign_apps=self.feeds + [self.medianizer_app_id],
@@ -426,16 +445,20 @@ class Scripts:
         """
         governance slashes reporter for bad report
         """
+
+        multisig_public_keys = [Account(i).getAddress() for i in multisigaccounts_sk]
+        multisig = Multisig(version=1, threshold=2, addresses=multisig_public_keys)
+
         comp = AtomicTransactionComposer()
         comp.add_transaction(
             TransactionWithSigner(
                 transaction.ApplicationNoOpTxn(
-                    sender=self.governance_address.address(),
+                    sender=self.governance_address,
                     sp=self.client.suggested_params(),
                     index=self.feed_app_id,
                     app_args=["slash_reporter"],
                 ),
-                MultisigTransactionSigner(self.governance_address, multisigaccounts_sk),
+                MultisigTransactionSigner(multisig, multisigaccounts_sk),
             )
         )
         txn_id = comp.execute(self.client, 3).tx_ids
