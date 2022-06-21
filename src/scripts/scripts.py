@@ -226,7 +226,6 @@ class Scripts:
 
     def activate_contract(self, multisigaccounts_sk: List[Any]) -> List[int]:
 
-
         multisig_public_keys = [Account(i).getAddress() for i in multisigaccounts_sk]
         multisig = Multisig(version=1, threshold=2, addresses=multisig_public_keys)
 
@@ -248,7 +247,6 @@ class Scripts:
         return tx_id
 
     def change_medianizer(self, multisigaccounts_sk: List[Any]) -> List[int]:
-
 
         multisig_public_keys = [Account(i).getAddress() for i in multisigaccounts_sk]
         multisig = Multisig(version=1, threshold=2, addresses=multisig_public_keys)
