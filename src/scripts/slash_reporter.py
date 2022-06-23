@@ -1,4 +1,3 @@
-from scripts.scripts import Scripts
 from src.utils.senders import send_multisig_tx
 
 
