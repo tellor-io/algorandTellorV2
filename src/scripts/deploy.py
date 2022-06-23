@@ -67,7 +67,7 @@ def deploy(query_id: str, query_data: str, timestamp_freshness: int, network: st
     else:
         raise Exception("invalid network selected")
 
-    s = Scripts(client=client, tipper=tipper, reporter=reporter, governance_address=governance, contract_count=5)
+    s = Scripts(client=client, tipper=tipper, reporter=reporter, governance_address=governance.address(), contract_count=5)
 
     try:
         tellor_flex_app_id = s.deploy_tellor_flex(
