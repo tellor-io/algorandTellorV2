@@ -20,7 +20,7 @@ def create_accounts():
         private_key, public_address = account.generate_account()
         multisig_accounts_pk.append(public_address)
 
-        print("{} Base64 Private Key: {}\n".format(i, public_address))
+        print("{} Public Key: {}\n".format(i, public_address))
 
         print(f"{i} Mnemonic: ", mnemonic.from_private_key(private_key), "\n")
 
