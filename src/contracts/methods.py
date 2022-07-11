@@ -49,7 +49,7 @@ def create():
             App.globalPut(staking_status, Int(0)),  # 0-not Staked, 1=Staked
             App.globalPut(timestamp_freshness, Btoi(Txn.application_args[3])),  # to check age of timestamp against
             App.globalPut(lock_timestamp, Int(0)),
-            App.globalPut(stake_amount, Int(200000000)),  # 200 ALGOs stake amount
+            App.globalPut(stake_amount, Int(100000)),  # 200 ALGOs stake amount
             Approve(),
         ]
     )

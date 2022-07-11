@@ -2,7 +2,7 @@
 network: testnet
 error_waittime: 20
 receipt_timeout: 60
-governance_address: P5UYSDZJWCOXG6T37XPDMDHGSCJXCNA3X7HBKYSKD5K6TWRPR5Y62PJG5Y
+governance_address: 32Q3ACUD34V7EAMO4S3ZJA3HDZWB75AYOZINBH77Q3X5PWQQ5WRX6DY4Y4
 
 #query IDs, their repsective price pairs/feeds/labels, and the networks they're live on
 feeds:
@@ -18,11 +18,11 @@ feeds:
   BTCUSD:
     app_ids:
       medianizer:
-        testnet: 87293591
+        testnet: 97507954
         mainnet: 728084397
       feeds:
         curr_index: 1
-        testnet: [87293472, 87293482, 87293548, 87293566, 87293580]
+        testnet: [97507891, 97507899, 97507912, 97507927, 97507941]
         mainnet: [728083191, 728083383, 728083685, 728083922, 728084113]
   random_int:
     requestId: 4
@@ -54,11 +54,6 @@ apis:
       keywords:
         - bitcoin
         - usd
-    bittrex:
-      url: https://api.bittrex.com/api/v1.1/public/getticker?market=USD-BTC
-      keywords:
-        - result
-        - Last
     gemini:
       url: https://api.gemini.com/v1/pubticker/btcusd
       keywords:

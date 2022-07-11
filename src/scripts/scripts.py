@@ -363,8 +363,9 @@ class Scripts:
         print("reporter address:", self.reporter.addr)
 
         if isinstance(self.governance_address, Multisig):
-            self.governance = self.governance.address()
+            self.governance_address = self.governance_address.address()
 
+        print(self.reporter.addr)
         submitValueTxn = transaction.ApplicationNoOpTxn(
             sender=self.reporter.getAddress(),
             accounts=[self.governance_address],
@@ -377,6 +378,20 @@ class Scripts:
         signedSubmitValueTxn = submitValueTxn.sign(self.reporter.getPrivateKey())
         self.client.send_transaction(signedSubmitValueTxn)
         waitForTransaction(self.client, signedSubmitValueTxn.get_txid(), timeout=30)
+
+    def transfer(self, _from: str, _to: str, amount: int, multisigaccounts_sk: List[Any] = None):
+        """
+        transfer ALGO tokens
+        """
+
+        if multisigaccounts_sk is not None:
+            multisig_public_keys = [Account(i).getAddress() for i in multisigaccounts_sk]
+            multisig = Multisig(version=1, threshold=2, addresses=multisig_public_keys)
+
+            
+
+
+        
 
     def withdraw(self, ff_time: int = 0):
         """
