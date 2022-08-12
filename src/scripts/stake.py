@@ -13,7 +13,7 @@ from src.utils.util import getBalances
 
 def stake(app_id: Optional[int], network: str):
     load_dotenv()
-    client = getAlgodClient("testnet")
+    client = getAlgodClient(network)
     print(client.algod_address)
     print("------")
 
