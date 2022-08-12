@@ -10,7 +10,7 @@ from .setup import getKmdClient
 
 
 def test_getAlgodClient():
-    client = getAlgodClient()
+    client = getAlgodClient(network="testnet")
     assert isinstance(client, AlgodClient)
 
     response = client.health()

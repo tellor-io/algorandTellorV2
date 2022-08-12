@@ -13,7 +13,7 @@ from src.utils.util import getBalances
 
 def request_withdraw(app_id: Optional[int], network: str):
     load_dotenv()
-    client = getAlgodClient()
+    client = getAlgodClient(network)
 
     print("current network: ", network)
     reporter = Account.FromMnemonic(os.getenv("REPORTER_MNEMONIC"))

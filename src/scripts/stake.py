@@ -13,7 +13,9 @@ from src.utils.util import getBalances
 
 def stake(app_id: Optional[int], network: str):
     load_dotenv()
-    client = getAlgodClient()
+    client = getAlgodClient("testnet")
+    print(client.algod_address)
+    print("------")
 
     print("current network: ", network)
     reporter = Account.FromMnemonic(os.getenv("REPORTER_MNEMONIC"))

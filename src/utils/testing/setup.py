@@ -10,8 +10,17 @@ ALGOD_ADDRESS = "http://localhost:4001"
 ALGOD_TOKEN = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 
 
-def getAlgodClient() -> AlgodClient:
-    return AlgodClient(ALGOD_TOKEN, ALGOD_ADDRESS)
+def getAlgodClient(network) -> AlgodClient:
+    if network == "testnet":
+        algo_address = "http://testnet-api.algonode.cloud"
+        algo_token=""
+    elif network == "mainnet":
+        algo_address = "http://mainnet-api.algonode.cloud"
+        algo_token=""
+    else:
+        algo_address = "http://localhost:4001"
+        algo_token="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    return AlgodClient(algod_address=algo_address, algod_token=algo_token)
 
 
 KMD_ADDRESS = "http://localhost:4002"

@@ -18,11 +18,11 @@ feeds:
   BTCUSD:
     app_ids:
       medianizer:
-        testnet: 97507954
+        testnet: 104774582
         mainnet: 728084397
       feeds:
         curr_index: 1
-        testnet: [97507891, 97507899, 97507912, 97507927, 97507941]
+        testnet: [104774538, 104774551, 104774562, 104774572, 104774578]
         mainnet: [728083191, 728083383, 728083685, 728083922, 728084113]
   random_int:
     requestId: 4

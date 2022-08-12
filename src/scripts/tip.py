@@ -12,7 +12,7 @@ from src.utils.testing.setup import getAlgodClient
 def tip(app_id: int, amount: int, network: str):
     load_dotenv()
 
-    client = getAlgodClient()
+    client = getAlgodClient(network)
     print("current network: ", network)
     tipper = Account.FromMnemonic(os.getenv("TIPPER_MNEMONIC"))
 
