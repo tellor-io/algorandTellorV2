@@ -8,13 +8,18 @@ governance_address: 32Q3ACUD34V7EAMO4S3ZJA3HDZWB75AYOZINBH77Q3X5PWQQ5WRX6DY4Y4
 feeds:
   ALGOUSD:
     app_ids:
-        medianizer:
-          testnet: 107231894
-          mainnet:
-        feeds:
-          curr_index: 1
-          testnet: [107231817, 107231826, 107231842, 107231859, 107231877]
-          mainnet:
+      medianizer:
+        testnet: 107231894
+        mainnet:
+      feeds:
+        testnet: [107231817, 107231826, 107231842, 107231859, 107231877]
+        mainnet:
+  ALGOUSDT:
+    app_ids:
+      medianizer: 107233382
+        testnet:
+      feeds:
+        testnet: [107233327, 107233335, 107233346, 107233360, 107233371]
   ETHDAI:
     requestId: 1
     networks:
