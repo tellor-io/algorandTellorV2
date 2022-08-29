@@ -13,13 +13,13 @@ ALGOD_TOKEN = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 def getAlgodClient(network) -> AlgodClient:
     if network == "testnet":
         algo_address = "http://testnet-api.algonode.cloud"
-        algo_token=""
+        algo_token = ""
     elif network == "mainnet":
         algo_address = "http://mainnet-api.algonode.cloud"
-        algo_token=""
+        algo_token = ""
     else:
         algo_address = "http://localhost:4001"
-        algo_token="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        algo_token = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
     return AlgodClient(algod_address=algo_address, algod_token=algo_token)
 
 

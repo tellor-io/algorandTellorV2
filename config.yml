@@ -6,6 +6,15 @@ governance_address: 32Q3ACUD34V7EAMO4S3ZJA3HDZWB75AYOZINBH77Q3X5PWQQ5WRX6DY4Y4
 
 #query IDs, their repsective price pairs/feeds/labels, and the networks they're live on
 feeds:
+  ALGOUSD:
+    app_ids:
+        medianizer:
+          testnet: 107231894
+          mainnet:
+        feeds:
+          curr_index: 1
+          testnet: [107231817, 107231826, 107231842, 107231859, 107231877]
+          mainnet:
   ETHDAI:
     requestId: 1
     networks:
@@ -21,7 +30,6 @@ feeds:
         testnet: 104774582
         mainnet: 728084397
       feeds:
-        curr_index: 1
         testnet: [104774538, 104774551, 104774562, 104774572, 104774578]
         mainnet: [728083191, 728083383, 728083685, 728083922, 728084113]
   random_int:
@@ -44,6 +52,16 @@ feeds:
 # price data apis from centralized exchanges
 # a url to get price data and a list of keywords used to parse the received json
 apis:
+  ALGOUSDT:
+    binance:
+      url: https://api.binance.com/api/v3/ticker/price?symbol=ALGOUSDT
+      keywords:
+        - price
+  ALGOUSD:
+    coinbase:
+      url: https://api.pro.coinbase.com/products/ALGO-USD/ticker
+      keywords:
+        - price
   BTCUSD:
     coinbase:
       url: https://api.pro.coinbase.com/products/BTC-USD/ticker
