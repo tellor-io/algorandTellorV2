@@ -10,11 +10,11 @@ feeds:
     app_ids:
         medianizer:
           testnet: 107231894
-          mainnet: 
+          mainnet:
         feeds:
           curr_index: 1
           testnet: [107231817, 107231826, 107231842, 107231859, 107231877]
-          mainnet: 
+          mainnet:
   ETHDAI:
     requestId: 1
     networks:

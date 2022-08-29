@@ -1,17 +1,16 @@
 """Tests for datafeeds and their sources"""
-
 from assets.asset import Asset
-
 from utils.configs import get_configs
+
 
 def test_algo_usd_feed():
 
     # read config
     config = get_configs(None)
 
-    #read sources
-    sources=config.apis["ALGOUSD"]
-    
+    # read sources
+    sources = config.apis["ALGOUSD"]
+
     # create data feed
     asset = Asset(query_id="ALGOUSD", sources=sources)
 
