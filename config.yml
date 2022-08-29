@@ -44,6 +44,16 @@ feeds:
 # price data apis from centralized exchanges
 # a url to get price data and a list of keywords used to parse the received json
 apis:
+  ALGOUSDT:
+    binance:
+      url: https://api.binance.com/api/v3/ticker/price?symbol=ALGOUSDT
+      keywords:
+        - price
+  ALGOUSD:
+    coinbase:
+      url: https://api.pro.coinbase.com/products/BTC-USD/ticker
+      keywords:
+        - price
   BTCUSD:
     coinbase:
       url: https://api.pro.coinbase.com/products/BTC-USD/ticker

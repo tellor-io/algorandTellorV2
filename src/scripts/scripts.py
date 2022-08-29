@@ -379,19 +379,14 @@ class Scripts:
         self.client.send_transaction(signedSubmitValueTxn)
         waitForTransaction(self.client, signedSubmitValueTxn.get_txid(), timeout=30)
 
-    def transfer(self, _from: str, _to: str, amount: int, multisigaccounts_sk: List[Any] = None):
-        """
-        transfer ALGO tokens
-        """
+    # def transfer(self, _from: str, _to: str, amount: int, multisigaccounts_sk: List[Any] = None):
+    #     """
+    #     transfer ALGO tokens
+    #     """
 
-        if multisigaccounts_sk is not None:
-            multisig_public_keys = [Account(i).getAddress() for i in multisigaccounts_sk]
-            multisig = Multisig(version=1, threshold=2, addresses=multisig_public_keys)
-
-            
-
-
-        
+    #     if multisigaccounts_sk is not None:
+    #         multisig_public_keys = [Account(i).getAddress() for i in multisigaccounts_sk]
+    #         multisig = Multisig(version=1, threshold=2, addresses=multisig_public_keys)
 
     def withdraw(self, ff_time: int = 0):
         """

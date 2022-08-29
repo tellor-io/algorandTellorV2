@@ -76,12 +76,13 @@ def get_configs(args: List[str]) -> Box:
     )
 
     # get dict of parsed args
-    cli_cfg = vars(parser.parse_args(args))
+    if args is not None:
+        cli_cfg = vars(parser.parse_args(args))
 
-    # overwrite any configs from yaml file also given by user via cli
-    for flag, arg in cli_cfg.items():
-        if arg is not None:
-            config[flag] = arg[0]
+        # overwrite any configs from yaml file also given by user via cli
+        for flag, arg in cli_cfg.items():
+            if arg is not None:
+                config[flag] = arg[0]
 
     # enable dot notation for accessing configs
     config = Box(config)

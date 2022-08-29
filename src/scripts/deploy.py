@@ -26,13 +26,13 @@ def deploy(query_id: str, query_data: str, timestamp_freshness: int, network: st
     load_dotenv()
     if network == "testnet":
         algo_address = "http://testnet-api.algonode.network"
-        algo_token=""
+        algo_token = ""
     elif network == "mainnet":
         algo_address = "http://mainnet-api.algonode.network"
-        algo_token=""
+        algo_token = ""
     else:
         algo_address = "http://localhost:4001"
-        algo_token="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        algo_token = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 
     client = AlgodClient(algod_address=algo_address, algod_token=algo_token)
 
