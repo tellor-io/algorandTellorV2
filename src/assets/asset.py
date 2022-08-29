@@ -61,7 +61,7 @@ class Asset:
             rsp = rsp[keyword]
 
         # return price (last remaining element of the json)
-        return int(float(rsp))
+        return int(float(rsp) * self.precision)
 
     def __str__(self):
         return f"""Asset: {self.name} query_id: {self.query_id} price: {self.price} timestamp: {self.timestamp}"""
