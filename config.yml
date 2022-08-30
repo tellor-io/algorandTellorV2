@@ -16,7 +16,8 @@ feeds:
         mainnet:
   ALGOUSDT:
     app_ids:
-      medianizer: 107233382
+      medianizer: 
+        mainnet: 107233382
         testnet:
       feeds:
         testnet: [107233327, 107233335, 107233346, 107233360, 107233371]
